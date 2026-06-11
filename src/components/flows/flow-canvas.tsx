@@ -39,7 +39,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   applyNodeChanges,
-  Voltarground,
+  Background,
   Controls,
   Handle,
   MiniMap,
@@ -491,7 +491,7 @@ function FlowCanvasInner() {
           minZoom={0.2}
           maxZoom={1.5}
         >
-          <Voltarground gap={24} size={1} color="#1e293b" />
+          <Background gap={24} size={1} color="#1e293b" />
           <Controls
             classNome="!border-slate-700 !bg-slate-900 [&_button]:!border-slate-700 [&_button]:!bg-slate-900 [&_button:hover]:!bg-slate-800"
             showInteractive={false}

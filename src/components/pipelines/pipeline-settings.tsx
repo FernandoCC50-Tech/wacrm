@@ -10,10 +10,10 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
-  OrdenarableContext,
-  useOrdenarable,
+  SortableContext,
+  useSortable,
   arrayMove,
-  verticalListOrdenaringStrategy,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
@@ -254,9 +254,9 @@ export function PipelineSettings({
                   collisionDetection={closestCenter}
                   onDragEnd={handleReorder}
                 >
-                  <OrdenarableContext
+                  <SortableContext
                     items={localEtapas.map((s) => s.id)}
-                    strategy={verticalListOrdenaringStrategy}
+                    strategy={verticalListSortingStrategy}
                   >
                     <div classNome="space-y-2">
                       {localEtapas.map((stage, index) => (
@@ -278,7 +278,7 @@ export function PipelineSettings({
                         />
                       ))}
                     </div>
-                  </OrdenarableContext>
+                  </SortableContext>
                 </DndContext>
 
                 {/* Adicionar new stage */}
@@ -375,7 +375,7 @@ function OrdenarableEtapaRow({
   colors: string[];
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useOrdenarable({ id: stage.id });
+    useSortable({ id: stage.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),

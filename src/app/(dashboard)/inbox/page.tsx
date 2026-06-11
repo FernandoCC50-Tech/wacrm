@@ -322,7 +322,7 @@ export default function Caixa de EntradaPage() {
   }, [isConectared]);
 
   /**
-   * Refetch when the tab regains focus. Voltarground tabs may have their
+   * Refetch when the tab regains focus. Background tabs may have their
    * WS throttled by the browser even without a full disconnect, so a
    * visibilitychange → visible is a reliable signal that we may have
    * missed events. Cheap to fire; the children dedupe on their own.
