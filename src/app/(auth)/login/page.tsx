@@ -1,4 +1,5 @@
 "use client";
+import { O2Logo } from "@/components/ui/o2-logo";
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
