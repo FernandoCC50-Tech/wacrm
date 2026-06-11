@@ -126,7 +126,7 @@ function LoginPageInner() {
                 type="password"
                 placeholder="Enter your password"
                 value={password}
-                onChange={(e) => setSenha(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
                 required
                 className="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500 focus-visible:border-primary focus-visible:ring-primary/20"
               />
