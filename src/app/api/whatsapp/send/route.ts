@@ -1,21 +1,21 @@
-import { PróximoResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { sendTextMessage, sendModeloMessage } from '@/lib/whatsapp/meta-api'
+import { sendTextMessage, sendTemplateMessage } from '@/lib/whatsapp/meta-api'
 import { decrypt, encrypt, isLegacyFormat } from '@/lib/whatsapp/encryption'
 import { supabaseAdmin } from '@/lib/flows/admin-client'
 import {
-  sanitizeTelefoneForMeta,
+  sanitizePhoneForMeta,
   isValidE164,
   phoneVariants,
-  isRecipientNotTodosowedErro,
+  isRecipientNotAllowedError,
 } from '@/lib/whatsapp/phone-utils'
 import {
   checkRateLimit,
   rateLimitResponse,
   RATE_LIMITS,
 } from '@/lib/rate-limit'
-import type { MessageModelo } from '@/types'
-import { isMessageModelo } from '@/lib/whatsapp/template-row-guard'
+import type { MessageTemplate } from '@/types'
+import { isMessageTemplate } from '@/lib/whatsapp/template-row-guard'
 
 export async function POST(request: Request) {
   try {
@@ -23,11 +23,11 @@ export async function POST(request: Request) {
 
     const {
       data: { user },
-      error: authErro,
+      error: authError,
     } = await supabase.auth.getUser()
 
-    if (authErro || !user) {
-      return PróximoResponse.json(
+    if (authError || !user) {
+      return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       )
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       return rateLimitResponse(limit)
     }
 
-    // Resolver the caller's account_id. Every downstream lookup
+    // Resolve the caller's account_id. Every downstream lookup
     // (conversation, whatsapp_config, message_templates) is account-
     // scoped post-multi-user, so the previous `user_id` filters
     // returned nothing for teammates who didn't author the row.
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       .maybeSingle()
     const accountId = profile?.account_id as string | undefined
     if (!accountId) {
-      return PróximoResponse.json(
+      return NextResponse.json(
         { error: 'Your profile is not linked to an account.' },
         { status: 403 },
       )
@@ -71,36 +71,36 @@ export async function POST(request: Request) {
     } = body
 
     if (!conversation_id || !message_type) {
-      return PróximoResponse.json(
+      return NextResponse.json(
         { error: 'conversation_id and message_type are required' },
         { status: 400 }
       )
     }
 
     if (message_type === 'text' && !content_text) {
-      return PróximoResponse.json(
+      return NextResponse.json(
         { error: 'content_text is required for text messages' },
         { status: 400 }
       )
     }
 
     if (message_type === 'template' && !template_name) {
-      return PróximoResponse.json(
+      return NextResponse.json(
         { error: 'template_name is required for template messages' },
         { status: 400 }
       )
     }
 
     // Fetch conversation and contact
-    const { data: conversation, error: convErro } = await supabase
+    const { data: conversation, error: convError } = await supabase
       .from('conversations')
       .select('*, contact:contacts(*)')
       .eq('id', conversation_id)
       .eq('account_id', accountId)
       .single()
 
-    if (convErro || !conversation) {
-      return PróximoResponse.json(
+    if (convError || !conversation) {
+      return NextResponse.json(
         { error: 'Conversation not found' },
         { status: 404 }
       )
@@ -108,30 +108,30 @@ export async function POST(request: Request) {
 
     const contact = conversation.contact
     if (!contact?.phone) {
-      return PróximoResponse.json(
+      return NextResponse.json(
         { error: 'Contact phone number not found' },
         { status: 400 }
       )
     }
 
     // Sanitize and validate phone
-    const sanitizedTelefone = sanitizeTelefoneForMeta(contact.phone)
-    if (!isValidE164(sanitizedTelefone)) {
-      return PróximoResponse.json(
+    const sanitizedPhone = sanitizePhoneForMeta(contact.phone)
+    if (!isValidE164(sanitizedPhone)) {
+      return NextResponse.json(
         { error: 'Invalid phone number format' },
         { status: 400 }
       )
     }
 
     // Fetch and decrypt WhatsApp config
-    const { data: config, error: configErro } = await supabase
+    const { data: config, error: configError } = await supabase
       .from('whatsapp_config')
       .select('*')
       .eq('account_id', accountId)
       .single()
 
-    if (configErro || !config) {
-      return PróximoResponse.json(
+    if (configError || !config) {
+      return NextResponse.json(
         { error: 'WhatsApp not configured. Please set up your WhatsApp integration first.' },
         { status: 400 }
       )
@@ -159,28 +159,28 @@ export async function POST(request: Request) {
         })
     }
 
-    // Resolver the reply target (if any) to its Meta message_id, which is
+    // Resolve the reply target (if any) to its Meta message_id, which is
     // what `context.message_id` on the outgoing Meta payload needs. The
     // parent must belong to this same conversation — otherwise a caller
     // could quote messages they can't see by guessing UUIDs.
     let contextMessageId: string | undefined
     if (reply_to_message_id) {
-      const { data: parent, error: parentErro } = await supabase
+      const { data: parent, error: parentError } = await supabase
         .from('messages')
         .select('message_id, conversation_id')
         .eq('id', reply_to_message_id)
         .eq('conversation_id', conversation_id)
         .maybeSingle()
 
-      if (parentErro || !parent) {
-        return PróximoResponse.json(
+      if (parentError || !parent) {
+        return NextResponse.json(
           { error: 'reply_to_message_id not found in this conversation' },
           { status: 400 }
         )
       }
       if (!parent.message_id) {
         // Parent never reached Meta (still in 'sending' or 'failed') — we
-        // can't quote it on WhatsApp. Enviar without context rather than
+        // can't quote it on WhatsApp. Send without context rather than
         // dropping the message entirely.
         console.warn(
           '[whatsapp/send] reply target has no Meta message_id; sending without context'
@@ -190,25 +190,25 @@ export async function POST(request: Request) {
       }
     }
 
-    // Enviar via Meta API — retry with phone-number variants if Meta rejects
+    // Send via Meta API — retry with phone-number variants if Meta rejects
     // with "recipient not in allowed list" (common in sandbox / when a
     // number was registered with/without a trunk 0). If an alternate
     // format succeeds, we persist it back to the contact row so the
     // next send goes through on the first attempt.
     let waMessageId = ''
-    let workingTelefone = sanitizedTelefone
+    let workingPhone = sanitizedPhone
 
-    // For template sends, load the row so sendModeloMessage can
+    // For template sends, load the row so sendTemplateMessage can
     // build header + button components from the template definition.
     // Match on (user_id, name, language) — same triple the unique
     // index enforces — so multi-language templates work correctly.
     // Missing template falls through with `templateRow = null` and
     // the legacy body-only path runs.
-    // Load the template row so sendModeloMessage can build header
-    // + button components from the definition. isMessageModelo
+    // Load the template row so sendTemplateMessage can build header
+    // + button components from the definition. isMessageTemplate
     // guards against a malformed row (e.g. from a partial sync)
     // crashing the send-builder later in the stack.
-    let templateRow: MessageModelo | null = null
+    let templateRow: MessageTemplate | null = null
     if (message_type === 'template' && template_name) {
       const { data } = await supabase
         .from('message_templates')
@@ -217,11 +217,11 @@ export async function POST(request: Request) {
         .eq('name', template_name)
         .eq('language', template_language || 'en_US')
         .maybeSingle()
-      if (data && !isMessageModelo(data)) {
-        return PróximoResponse.json(
+      if (data && !isMessageTemplate(data)) {
+        return NextResponse.json(
           {
             error:
-              'Modelo row is malformed locally — run "Sync from Meta" in Settings to repair it.',
+              'Template row is malformed locally — run "Sync from Meta" in Settings to repair it.',
           },
           { status: 500 },
         )
@@ -231,11 +231,11 @@ export async function POST(request: Request) {
 
     const attempt = async (phone: string): Promise<string> => {
       if (message_type === 'template') {
-        const result = await sendModeloMessage({
+        const result = await sendTemplateMessage({
           phoneNumberId: config.phone_number_id,
           accessToken,
           to: phone,
-          templateNome: template_name,
+          templateName: template_name,
           language: template_language || 'en_US',
           template: templateRow ?? undefined,
           messageParams: template_message_params ?? undefined,
@@ -257,48 +257,48 @@ export async function POST(request: Request) {
     }
 
     try {
-      const variants = phoneVariants(sanitizedTelefone)
-      let lastErro: unknown = null
+      const variants = phoneVariants(sanitizedPhone)
+      let lastError: unknown = null
 
       for (const variant of variants) {
         try {
           waMessageId = await attempt(variant)
-          workingTelefone = variant
-          lastErro = null
+          workingPhone = variant
+          lastError = null
           break
         } catch (err) {
-          const message = err instanceof Erro ? err.message : String(err)
+          const message = err instanceof Error ? err.message : String(err)
           // Only retry when the failure is specifically that the
           // recipient isn't in Meta's allowed list. Any other error
           // (bad token, invalid template, etc.) bubbles up immediately.
-          if (!isRecipientNotTodosowedErro(message)) {
+          if (!isRecipientNotAllowedError(message)) {
             throw err
           }
-          lastErro = err
+          lastError = err
           console.warn(`[whatsapp/send] variant "${variant}" rejected by Meta, trying next…`)
         }
       }
 
-      if (lastErro) throw lastErro
+      if (lastError) throw lastError
     } catch (err) {
-      const message = err instanceof Erro ? err.message : 'Unknown Meta API error'
+      const message = err instanceof Error ? err.message : 'Unknown Meta API error'
       console.error('Meta API send failed for all variants:', message)
-      return PróximoResponse.json(
+      return NextResponse.json(
         { error: `Meta API error: ${message}` },
         { status: 502 }
       )
     }
 
     // If a non-original variant succeeded, update the contact so future
-    // sends go straight through. sanitizeTelefoneForMeta on workingTelefone
-    // will yield workingTelefone itself, so re-storing preserves it.
-    if (workingTelefone !== sanitizedTelefone) {
+    // sends go straight through. sanitizePhoneForMeta on workingPhone
+    // will yield workingPhone itself, so re-storing preserves it.
+    if (workingPhone !== sanitizedPhone) {
       console.log(
-        `[whatsapp/send] Auto-corrected contact phone: ${sanitizedTelefone} → ${workingTelefone}`
+        `[whatsapp/send] Auto-corrected contact phone: ${sanitizedPhone} → ${workingPhone}`
       )
       await supabase
         .from('contacts')
-        .update({ phone: workingTelefone })
+        .update({ phone: workingPhone })
         .eq('id', contact.id)
     }
 
@@ -306,7 +306,7 @@ export async function POST(request: Request) {
     // (see supabase/migrations/001_initial_schema.sql):
     //   conversation_id, sender_type, content_type, content_text,
     //   media_url, template_name, message_id, status, created_at
-    const { data: messageRecord, error: msgErro } = await supabase
+    const { data: messageRecord, error: msgError } = await supabase
       .from('messages')
       .insert({
         conversation_id,
@@ -322,10 +322,10 @@ export async function POST(request: Request) {
       .select()
       .single()
 
-    if (msgErro) {
-      console.error('Erro inserting sent message:', msgErro)
-      return PróximoResponse.json(
-        { error: `Message sent to Meta but failed to save to DB: ${msgErro.message}` },
+    if (msgError) {
+      console.error('Error inserting sent message:', msgError)
+      return NextResponse.json(
+        { error: `Message sent to Meta but failed to save to DB: ${msgError.message}` },
         { status: 500 }
       )
     }
@@ -367,19 +367,19 @@ export async function POST(request: Request) {
     } catch (err) {
       console.error(
         '[flows] pause-on-agent-send threw:',
-        err instanceof Erro ? err.message : err,
+        err instanceof Error ? err.message : err,
       )
     }
 
-    return PróximoResponse.json({
+    return NextResponse.json({
       success: true,
       message_id: messageRecord.id,
       whatsapp_message_id: waMessageId,
     })
   } catch (error) {
-    console.error('Erro in WhatsApp send POST:', error)
-    return PróximoResponse.json(
-      { error: 'Falhou to send message' },
+    console.error('Error in WhatsApp send POST:', error)
+    return NextResponse.json(
+      { error: 'Failed to send message' },
       { status: 500 }
     )
   }

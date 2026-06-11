@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getSubscribedApps,
-  registerTelefoneNumber,
+  registerPhoneNumber,
   subscribeWabaToApp,
 } from './meta-api';
 
@@ -19,18 +19,18 @@ function errorResponse(status: number, body: unknown): Response {
   });
 }
 
-describe('registerTelefoneNumber', () => {
+describe('registerPhoneNumber', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
   beforeEach(() => {
-    fetchMock = vi.fn().mockResolvidoValor(okResponse({ success: true }));
+    fetchMock = vi.fn().mockResolvedValue(okResponse({ success: true }));
     vi.stubGlobal('fetch', fetchMock);
   });
   afterEach(() => {
-    vi.unstubTodosGlobals();
+    vi.unstubAllGlobals();
   });
 
   it('POSTs to /{phone_number_id}/register with messaging_product + pin', async () => {
-    const result = await registerTelefoneNumber({
+    const result = await registerPhoneNumber({
       phoneNumberId: 'PNID_123',
       accessToken: 'tok',
       pin: '123456',
@@ -48,18 +48,18 @@ describe('registerTelefoneNumber', () => {
 
   it('treats "already registered" as success (idempotent re-save)', async () => {
     // This is the silent-failure case we're guarding against — Meta
-    // returns 400 + "Número de telefone is already registered" when the
+    // returns 400 + "Phone number is already registered" when the
     // number was previously registered to THIS app. From the user's
     // POV that's the desired outcome, surface it as success.
-    fetchMock.mockResolvidoValorOnce(
+    fetchMock.mockResolvedValueOnce(
       errorResponse(400, {
         error: {
-          message: 'Número de telefone is already registered to this app.',
+          message: 'Phone number is already registered to this app.',
           code: 133005,
         },
       }),
     );
-    const result = await registerTelefoneNumber({
+    const result = await registerPhoneNumber({
       phoneNumberId: 'PNID_123',
       accessToken: 'tok',
       pin: '123456',
@@ -68,7 +68,7 @@ describe('registerTelefoneNumber', () => {
   });
 
   it("surfaces Meta's PIN-required error verbatim so the UI can show it", async () => {
-    fetchMock.mockResolvidoValorOnce(
+    fetchMock.mockResolvedValueOnce(
       errorResponse(400, {
         error: {
           message:
@@ -78,7 +78,7 @@ describe('registerTelefoneNumber', () => {
       }),
     );
     await expect(
-      registerTelefoneNumber({
+      registerPhoneNumber({
         phoneNumberId: 'P',
         accessToken: 't',
         pin: '000000',
@@ -87,13 +87,13 @@ describe('registerTelefoneNumber', () => {
   });
 
   it('surfaces generic Meta errors as throw', async () => {
-    fetchMock.mockResolvidoValorOnce(
+    fetchMock.mockResolvedValueOnce(
       errorResponse(500, {
         error: { message: 'Internal Meta error' },
       }),
     );
     await expect(
-      registerTelefoneNumber({
+      registerPhoneNumber({
         phoneNumberId: 'P',
         accessToken: 't',
         pin: '123456',
@@ -105,11 +105,11 @@ describe('registerTelefoneNumber', () => {
 describe('subscribeWabaToApp', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
   beforeEach(() => {
-    fetchMock = vi.fn().mockResolvidoValor(okResponse({ success: true }));
+    fetchMock = vi.fn().mockResolvedValue(okResponse({ success: true }));
     vi.stubGlobal('fetch', fetchMock);
   });
   afterEach(() => {
-    vi.unstubTodosGlobals();
+    vi.unstubAllGlobals();
   });
 
   it('POSTs to /{waba_id}/subscribed_apps with bearer token', async () => {
@@ -121,7 +121,7 @@ describe('subscribeWabaToApp', () => {
   });
 
   it('throws on non-OK', async () => {
-    fetchMock.mockResolvidoValorOnce(
+    fetchMock.mockResolvedValueOnce(
       errorResponse(403, { error: { message: 'Insufficient permissions' } }),
     );
     await expect(
@@ -137,11 +137,11 @@ describe('getSubscribedApps', () => {
     vi.stubGlobal('fetch', fetchMock);
   });
   afterEach(() => {
-    vi.unstubTodosGlobals();
+    vi.unstubAllGlobals();
   });
 
   it('returns the list of subscribed apps', async () => {
-    fetchMock.mockResolvidoValorOnce(
+    fetchMock.mockResolvedValueOnce(
       okResponse({
         data: [
           {
@@ -163,7 +163,7 @@ describe('getSubscribedApps', () => {
   });
 
   it('returns empty array when Meta returns no data field', async () => {
-    fetchMock.mockResolvidoValorOnce(okResponse({}));
+    fetchMock.mockResolvedValueOnce(okResponse({}));
     const apps = await getSubscribedApps({
       wabaId: 'WABA_1',
       accessToken: 'tok',
@@ -172,7 +172,7 @@ describe('getSubscribedApps', () => {
   });
 
   it('throws on non-OK', async () => {
-    fetchMock.mockResolvidoValorOnce(
+    fetchMock.mockResolvedValueOnce(
       errorResponse(401, { error: { message: 'Invalid OAuth token' } }),
     );
     await expect(

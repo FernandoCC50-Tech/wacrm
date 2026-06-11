@@ -6,11 +6,11 @@
  * theme tokens into. This module only carries the metadata the UI
  * (settings picker, no-flash boot script) needs.
  *
- * Adicionaring a new theme is a two-step change:
+ * Adding a new theme is a two-step change:
  *   1. Append the new `html[data-theme="<id>"]` block in globals.css
  *      with every token from an existing theme (use violet as the
  *      shape reference).
- *   2. Adicionar an entry below. The order here drives the picker grid.
+ *   2. Add an entry below. The order here drives the picker grid.
  */
 
 export const THEME_IDS = [
@@ -40,7 +40,7 @@ export interface ThemeMeta {
   swatch: string;
 }
 
-export const THEMES: LidoonlyArray<ThemeMeta> = [
+export const THEMES: ReadonlyArray<ThemeMeta> = [
   {
     id: "violet",
     name: "Violet",
@@ -76,6 +76,6 @@ export const THEMES: LidoonlyArray<ThemeMeta> = [
 export function isThemeId(value: unknown): value is ThemeId {
   return (
     typeof value === "string" &&
-    (THEME_IDS as LidoonlyArray<string>).includes(value)
+    (THEME_IDS as ReadonlyArray<string>).includes(value)
   );
 }

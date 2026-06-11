@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { FlowEditarorShell } from "@/components/flows/flow-editor-shell";
+import { FlowEditorShell } from "@/components/flows/flow-editor-shell";
 import type { FlowRow, FlowNodeRow } from "@/lib/flows/types";
 
 /**
@@ -15,12 +15,12 @@ import type { FlowRow, FlowNodeRow } from "@/lib/flows/types";
  * `<FlowBuilder>`. Owns the loading/error state so the builder can
  * focus purely on editing.
  *
- * Aberto to every authenticated user — the beta gate that previously
+ * Open to every authenticated user — the beta gate that previously
  * 404'd non-beta accounts was removed in PR #134. The API still
  * 404s on a flow id the caller doesn't own (RLS), which becomes the
  * "Flow not found" state below.
  */
-export default function FlowEditarorPage() {
+export default function FlowEditorPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
 
@@ -39,7 +39,7 @@ export default function FlowEditarorPage() {
           if (!cancelled) setNotFound(true);
           return;
         }
-        if (!res.ok) throw new Erro(`Falhou: ${res.status}`);
+        if (!res.ok) throw new Error(`Failed: ${res.status}`);
         const json = (await res.json()) as {
           flow: FlowRow;
           nodes: FlowNodeRow[];
@@ -64,25 +64,25 @@ export default function FlowEditarorPage() {
 
   if (loading) {
     return (
-      <div classNome="flex h-full items-center justify-center">
-        <Loader2 classNome="h-6 w-6 animate-spin text-slate-500" />
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
       </div>
     );
   }
   if (notFound || !flow) {
     return (
-      <div classNome="flex h-full flex-col items-center justify-center gap-3">
-        <p classNome="text-sm text-slate-400">Flow not found.</p>
+      <div className="flex h-full flex-col items-center justify-center gap-3">
+        <p className="text-sm text-slate-400">Flow not found.</p>
         <button
           type="button"
           onClick={() => router.push("/flows")}
-          classNome="text-sm text-primary hover:opacity-80"
+          className="text-sm text-primary hover:opacity-80"
         >
-          ← Voltar to flows
+          ← Back to flows
         </button>
       </div>
     );
   }
 
-  return <FlowEditarorShell initialFlow={flow} initialNodes={nodes} />;
+  return <FlowEditorShell initialFlow={flow} initialNodes={nodes} />;
 }

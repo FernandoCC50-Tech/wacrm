@@ -12,7 +12,7 @@
  * delegates here when `change.field` starts with `message_template_`.
  *
  * ─── Setup requirement (out-of-band) ──────────────────────────────
- * These fields are NOT subscribed to by default. In Meta App Painel
+ * These fields are NOT subscribed to by default. In Meta App Dashboard
  * → WhatsApp → Configuration → Webhooks, you must explicitly toggle
  * each of the three fields above. There is no API to do this for
  * Cloud API apps — it's a one-time manual step per app. Until that's
@@ -36,11 +36,11 @@ const TEMPLATE_WEBHOOK_FIELDS = new Set([
   'message_template_components_update',
 ])
 
-export function isModeloWebhookField(field: string): boolean {
+export function isTemplateWebhookField(field: string): boolean {
   return TEMPLATE_WEBHOOK_FIELDS.has(field)
 }
 
-interface ModeloStatusUpdateValor {
+interface TemplateStatusUpdateValue {
   event?: string
   message_template_id?: string | number
   message_template_name?: string
@@ -48,7 +48,7 @@ interface ModeloStatusUpdateValor {
   reason?: string
 }
 
-interface ModeloQualityUpdateValor {
+interface TemplateQualityUpdateValue {
   message_template_id?: string | number
   message_template_name?: string
   message_template_language?: string
@@ -56,13 +56,13 @@ interface ModeloQualityUpdateValor {
   new_quality_score?: string
 }
 
-interface ModeloComponentsUpdateValor {
+interface TemplateComponentsUpdateValue {
   message_template_id?: string | number
   message_template_name?: string
   message_template_language?: string
 }
 
-export interface ModeloWebhookChange {
+export interface TemplateWebhookChange {
   field: string
   value: unknown
 }
@@ -70,11 +70,11 @@ export interface ModeloWebhookChange {
 /**
  * Dispatch a single change record to the matching handler. Returns
  * silently on unrecognised fields — the caller already pre-filtered
- * via isModeloWebhookField, but treat unknown values as no-ops
+ * via isTemplateWebhookField, but treat unknown values as no-ops
  * defensively in case Meta adds new template fields later.
  */
-export async function handleModeloWebhookChange(
-  change: ModeloWebhookChange,
+export async function handleTemplateWebhookChange(
+  change: TemplateWebhookChange,
   // SupabaseClient typed loosely — the webhook route lazy-initialises
   // the admin client and exposes it as `any`. Type as the generic
   // SupabaseClient here so this module is testable in isolation.
@@ -83,33 +83,33 @@ export async function handleModeloWebhookChange(
   switch (change.field) {
     case 'message_template_status_update':
       await handleStatusUpdate(
-        change.value as ModeloStatusUpdateValor,
+        change.value as TemplateStatusUpdateValue,
         supabase,
       )
       return
     case 'message_template_quality_update':
       await handleQualityUpdate(
-        change.value as ModeloQualityUpdateValor,
+        change.value as TemplateQualityUpdateValue,
         supabase,
       )
       return
     case 'message_template_components_update':
       handleComponentsUpdate(
-        change.value as ModeloComponentsUpdateValor,
+        change.value as TemplateComponentsUpdateValue,
       )
       return
   }
 }
 
 async function handleStatusUpdate(
-  value: ModeloStatusUpdateValor,
+  value: TemplateStatusUpdateValue,
   supabase: SupabaseClient,
 ): Promise<void> {
-  const metaModeloId =
+  const metaTemplateId =
     value.message_template_id !== undefined
       ? String(value.message_template_id)
       : null
-  if (!metaModeloId || !value.event) {
+  if (!metaTemplateId || !value.event) {
     console.warn(
       '[template-webhook] status update missing message_template_id or event:',
       value,
@@ -133,13 +133,13 @@ async function handleStatusUpdate(
   const { data, error } = await supabase
     .from('message_templates')
     .update(update)
-    .eq('meta_template_id', metaModeloId)
+    .eq('meta_template_id', metaTemplateId)
     .select('id')
 
   if (error) {
     console.error(
       '[template-webhook] status update failed for meta_template_id',
-      metaModeloId,
+      metaTemplateId,
       error.message,
     )
     return
@@ -147,27 +147,27 @@ async function handleStatusUpdate(
   if (!data || data.length === 0) {
     console.warn(
       '[template-webhook] status update received for unknown template:',
-      metaModeloId,
+      metaTemplateId,
       value.message_template_name,
     )
     return
   }
   if (data.length > 1) {
     console.warn(
-      `[template-webhook] status update matched ${data.length} rows for meta_template_id ${metaModeloId} — investigate.`,
+      `[template-webhook] status update matched ${data.length} rows for meta_template_id ${metaTemplateId} — investigate.`,
     )
   }
 }
 
 async function handleQualityUpdate(
-  value: ModeloQualityUpdateValor,
+  value: TemplateQualityUpdateValue,
   supabase: SupabaseClient,
 ): Promise<void> {
-  const metaModeloId =
+  const metaTemplateId =
     value.message_template_id !== undefined
       ? String(value.message_template_id)
       : null
-  if (!metaModeloId) {
+  if (!metaTemplateId) {
     console.warn(
       '[template-webhook] quality update missing message_template_id:',
       value,
@@ -184,12 +184,12 @@ async function handleQualityUpdate(
   const { error } = await supabase
     .from('message_templates')
     .update({ quality_score: score })
-    .eq('meta_template_id', metaModeloId)
+    .eq('meta_template_id', metaTemplateId)
 
   if (error) {
     console.error(
       '[template-webhook] quality update failed for meta_template_id',
-      metaModeloId,
+      metaTemplateId,
       error.message,
     )
   }
@@ -205,7 +205,7 @@ async function handleQualityUpdate(
  * thought they submitted. A future PR could mark the row with a
  * "Meta modified this template" banner.
  */
-function handleComponentsUpdate(value: ModeloComponentsUpdateValor): void {
+function handleComponentsUpdate(value: TemplateComponentsUpdateValue): void {
   console.info(
     '[template-webhook] components updated by Meta for template',
     value.message_template_id,

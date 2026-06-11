@@ -77,11 +77,11 @@ vi.mock("./admin-client", () => {
 });
 
 vi.mock("./meta-send", () => ({
-  engineEnviarText: vi.fn(async () => ({ whatsapp_message_id: "m1" })),
-  engineEnviarModelo: vi.fn(async () => ({ whatsapp_message_id: "m1" })),
+  engineSendText: vi.fn(async () => ({ whatsapp_message_id: "m1" })),
+  engineSendTemplate: vi.fn(async () => ({ whatsapp_message_id: "m1" })),
 }));
 
-import { runAutomaçõesForGatilho } from "./engine";
+import { runAutomationsForTrigger } from "./engine";
 
 const ACCOUNT = "acct-1";
 
@@ -93,7 +93,7 @@ beforeEach(() => {
   h.state.updateCalls = [];
 });
 
-describe("runAutomaçõesForGatilho — tenant isolation", () => {
+describe("runAutomationsForTrigger — tenant isolation", () => {
   it("refuses to dispatch when the contact is not in the account (GHSA-63cv-2c49-m5v3)", async () => {
     // Ownership lookup returns nothing — the contact belongs to another tenant.
     h.state.owned = null;
@@ -101,7 +101,7 @@ describe("runAutomaçõesForGatilho — tenant isolation", () => {
     h.state.automations = [automationWithUpdateStep()];
     h.state.steps = [updateStep()];
 
-    await runAutomaçõesForGatilho({
+    await runAutomationsForTrigger({
       accountId: ACCOUNT,
       triggerType: "new_message_received",
       contactId: "victim-contact-uuid",
@@ -118,7 +118,7 @@ describe("runAutomaçõesForGatilho — tenant isolation", () => {
     h.state.owned = { id: "c1" };
     h.state.automations = []; // no matching automations; just prove we got past the guard
 
-    await runAutomaçõesForGatilho({
+    await runAutomationsForTrigger({
       accountId: ACCOUNT,
       triggerType: "new_message_received",
       contactId: "c1",
@@ -133,7 +133,7 @@ describe("runAutomaçõesForGatilho — tenant isolation", () => {
     h.state.automations = [automationWithUpdateStep()];
     h.state.steps = [updateStep()];
 
-    await runAutomaçõesForGatilho({
+    await runAutomationsForTrigger({
       accountId: ACCOUNT,
       triggerType: "new_message_received",
       contactId: "c1",

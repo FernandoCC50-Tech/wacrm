@@ -16,7 +16,7 @@
  *   - Pure decision logic (which button matched, where to advance to,
  *     when to fallback) — here.
  *   - DB shape (table reads/writes) — here.
- *   - Meta API calls — `meta-send.ts` (engineEnviarInteractive*).
+ *   - Meta API calls — `meta-send.ts` (engineSendInteractive*).
  *   - Policy resolution (reprompt vs handoff vs end) — `fallback.ts`.
  *   - Type definitions — `types.ts`.
  *
@@ -34,28 +34,28 @@
 
 import { supabaseAdmin } from "./admin-client";
 import {
-  engineEnviarInteractiveButtons,
-  engineEnviarInteractiveList,
-  engineEnviarMedia,
-  engineEnviarText,
+  engineSendInteractiveButtons,
+  engineSendInteractiveList,
+  engineSendMedia,
+  engineSendText,
 } from "./meta-send";
 import { decideFallback, resolveFallbackPolicy } from "./fallback";
 import {
   type CollectInputNodeConfig,
-  type CondiçãoNodeConfig,
+  type ConditionNodeConfig,
   type DispatchInboundInput,
   type DispatchInboundResult,
   type FlowNodeRow,
   type FlowRow,
   type FlowRunRow,
   type ParsedInbound,
-  type EnviarButtonsNodeConfig,
-  type EnviarListNodeConfig,
-  type EnviarMediaNodeConfig,
-  type EnviarMessageNodeConfig,
+  type SendButtonsNodeConfig,
+  type SendListNodeConfig,
+  type SendMediaNodeConfig,
+  type SendMessageNodeConfig,
   type SetTagNodeConfig,
   type StartNodeConfig,
-  type KeywordGatilhoConfig,
+  type KeywordTriggerConfig,
 } from "./types";
 
 // ============================================================
@@ -72,12 +72,12 @@ export function matchReplyId(
   reply_id: string,
 ): string | null {
   if (node.node_type === "send_buttons") {
-    const cfg = node.config as unknown as EnviarButtonsNodeConfig;
+    const cfg = node.config as unknown as SendButtonsNodeConfig;
     const hit = cfg.buttons?.find((b) => b.reply_id === reply_id);
     return hit?.next_node_key ?? null;
   }
   if (node.node_type === "send_list") {
-    const cfg = node.config as unknown as EnviarListNodeConfig;
+    const cfg = node.config as unknown as SendListNodeConfig;
     for (const section of cfg.sections ?? []) {
       const hit = section.rows?.find((r) => r.reply_id === reply_id);
       if (hit) return hit.next_node_key;
@@ -92,9 +92,9 @@ export function matchReplyId(
  * Used by the trigger evaluator. Stable enough that the v3 builder
  * UI can preview matches by passing canned strings.
  */
-export function matchesKeywordGatilho(
+export function matchesKeywordTrigger(
   text: string,
-  cfg: KeywordGatilhoConfig,
+  cfg: KeywordTriggerConfig,
 ): boolean {
   if (!text || !cfg.keywords?.length) return false;
   const matchType = cfg.match_type ?? "contains";
@@ -136,42 +136,42 @@ export function isTerminal(node_type: string): boolean {
 
 /**
  * Evaluate a `condition` node's predicate against the current run
- * state. Exportared pure for unit testing — the engine wraps it with a
+ * state. Exported pure for unit testing — the engine wraps it with a
  * DB lookup for `tag` / `contact_field` subjects.
  */
-export function evaluateCondiçãoPredicate(args: {
-  operator: CondiçãoNodeConfig["operator"];
+export function evaluateConditionPredicate(args: {
+  operator: ConditionNodeConfig["operator"];
   /**
-   * Resolvido value of the subject. `undefined` means the subject is
+   * Resolved value of the subject. `undefined` means the subject is
    * absent (no var with that key / no such tag / contact field is
    * null). Pure function: caller does the DB lookup.
    */
-  subjectValor: string | undefined;
+  subjectValue: string | undefined;
   /** The configured comparison value, when applicable. */
-  configValor: string | undefined;
+  configValue: string | undefined;
 }): boolean {
   switch (args.operator) {
     case "present":
-      return args.subjectValor !== undefined && args.subjectValor !== "";
+      return args.subjectValue !== undefined && args.subjectValue !== "";
     case "absent":
-      return args.subjectValor === undefined || args.subjectValor === "";
+      return args.subjectValue === undefined || args.subjectValue === "";
     case "equals":
-      if (args.subjectValor === undefined) return false;
-      return args.subjectValor === (args.configValor ?? "");
+      if (args.subjectValue === undefined) return false;
+      return args.subjectValue === (args.configValue ?? "");
     case "contains":
-      if (args.subjectValor === undefined) return false;
-      return args.subjectValor.includes(args.configValor ?? "");
+      if (args.subjectValue === undefined) return false;
+      return args.subjectValue.includes(args.configValue ?? "");
   }
 }
 
 // ============================================================
 // DB I/O — wrapped in tiny helpers so the dispatch flow stays
-// readable. Erros surface as thrown — the entry point catches.
+// readable. Errors surface as thrown — the entry point catches.
 // ============================================================
 
 type AdminClient = ReturnType<typeof supabaseAdmin>;
 
-async function loadAtivoRunForContact(
+async function loadActiveRunForContact(
   db: AdminClient,
   accountId: string,
   contactId: string,
@@ -193,7 +193,7 @@ async function loadAtivoRunForContact(
     .order("started_at", { ascending: false })
     .limit(1);
   if (error) {
-    console.error("[flows] loadAtivoRunForContact error:", error.message);
+    console.error("[flows] loadActiveRunForContact error:", error.message);
     return null;
   }
   const rows = (data as FlowRunRow[] | null) ?? [];
@@ -225,7 +225,7 @@ async function loadFlow(
  * cleanly (every subsequent .get() returns undefined → the run
  * fails with node_not_found, same as the old per-node lookup).
  */
-async function loadTodosNodes(
+async function loadAllNodes(
   db: AdminClient,
   flowId: string,
 ): Promise<Map<string, FlowNodeRow>> {
@@ -234,7 +234,7 @@ async function loadTodosNodes(
     .select("*")
     .eq("flow_id", flowId);
   if (error) {
-    console.error("[flows] loadTodosNodes error:", error.message);
+    console.error("[flows] loadAllNodes error:", error.message);
     return new Map();
   }
   const map = new Map<string, FlowNodeRow>();
@@ -282,7 +282,7 @@ async function logEvent(
  * so the lookup is cheap (the index on flow_run_events(flow_run_id,
  * event_type) plus the small set of runs per contact).
  */
-async function isDuplicarInbound(
+async function isDuplicateInbound(
   db: AdminClient,
   accountId: string,
   contactId: string,
@@ -318,7 +318,7 @@ async function findEntryFlow(
   // are responses to existing prompts; they never start a new flow.
   if (message.kind !== "text") return null;
 
-  // Pull all active flows for this account. Ativo set is bounded
+  // Pull all active flows for this account. Active set is bounded
   // (the builder discourages double-trigger overlap; partial index
   // makes the lookup index-supported).
   const { data: flows, error } = await db
@@ -332,9 +332,9 @@ async function findEntryFlow(
   const typed = flows as FlowRow[];
   for (const flow of typed) {
     if (flow.trigger_type === "keyword") {
-      if (matchesKeywordGatilho(
+      if (matchesKeywordTrigger(
         message.text,
-        flow.trigger_config as KeywordGatilhoConfig,
+        flow.trigger_config as KeywordTriggerConfig,
       )) {
         return flow;
       }
@@ -357,8 +357,8 @@ async function sendButtonsAndSuspend(
   run: FlowRunRow,
   node: FlowNodeRow,
 ): Promise<{ outcome: "advanced"; node_key: string }> {
-  const cfg = node.config as unknown as EnviarButtonsNodeConfig;
-  const { whatsapp_message_id } = await engineEnviarInteractiveButtons({
+  const cfg = node.config as unknown as SendButtonsNodeConfig;
+  const { whatsapp_message_id } = await engineSendInteractiveButtons({
     accountId: run.account_id,
     userId: run.user_id,
     conversationId: run.conversation_id!,
@@ -393,14 +393,14 @@ async function sendListAndSuspend(
   run: FlowRunRow,
   node: FlowNodeRow,
 ): Promise<{ outcome: "advanced"; node_key: string }> {
-  const cfg = node.config as unknown as EnviarListNodeConfig;
-  const { whatsapp_message_id } = await engineEnviarInteractiveList({
+  const cfg = node.config as unknown as SendListNodeConfig;
+  const { whatsapp_message_id } = await engineSendInteractiveList({
     accountId: run.account_id,
     userId: run.user_id,
     conversationId: run.conversation_id!,
     contactId: run.contact_id!,
     bodyText: cfg.text,
-    buttonRótulo: cfg.button_label,
+    buttonLabel: cfg.button_label,
     headerText: cfg.header_text,
     footerText: cfg.footer_text,
     sections: cfg.sections.map((s) => ({
@@ -455,8 +455,8 @@ async function executeHandoff(
 }
 
 /**
- * Resolver a condition node's subject value from DB / run state, then
- * call the pure `evaluateCondiçãoPredicate`. Splits out so the
+ * Resolve a condition node's subject value from DB / run state, then
+ * call the pure `evaluateConditionPredicate`. Splits out so the
  * predicate itself stays unit-testable without a Supabase mock.
  *
  * Subject sources:
@@ -466,15 +466,15 @@ async function executeHandoff(
  *     `subject_key` IS the tag UUID; the SELECT returns 1 row or 0.
  *   - `contact_field` → one of name/email/phone/company on `contacts`.
  */
-async function evaluateCondiçãoNode(
+async function evaluateConditionNode(
   db: AdminClient,
   run: FlowRunRow,
-  cfg: CondiçãoNodeConfig,
+  cfg: ConditionNodeConfig,
 ): Promise<boolean> {
-  let subjectValor: string | undefined;
+  let subjectValue: string | undefined;
   if (cfg.subject === "var") {
     const v = run.vars[cfg.subject_key];
-    subjectValor = typeof v === "string" ? v : v === undefined ? undefined : String(v);
+    subjectValue = typeof v === "string" ? v : v === undefined ? undefined : String(v);
   } else if (cfg.subject === "tag") {
     const { count } = await db
       .from("contact_tags")
@@ -485,12 +485,12 @@ async function evaluateCondiçãoNode(
     // `present`/`absent` operators are the natural fit. equals/contains
     // against a tag UUID would still work mechanically (compare its
     // existence to the value).
-    subjectValor = (count ?? 0) > 0 ? cfg.subject_key : undefined;
+    subjectValue = (count ?? 0) > 0 ? cfg.subject_key : undefined;
   } else {
     const ALLOWED = ["name", "email", "phone", "company"] as const;
-    type TodosowedField = (typeof ALLOWED)[number];
-    if (!ALLOWED.includes(cfg.subject_key as TodosowedField)) {
-      throw new Erro(`unsupported contact_field: ${cfg.subject_key}`);
+    type AllowedField = (typeof ALLOWED)[number];
+    if (!ALLOWED.includes(cfg.subject_key as AllowedField)) {
+      throw new Error(`unsupported contact_field: ${cfg.subject_key}`);
     }
     const { data } = await db
       .from("contacts")
@@ -498,12 +498,12 @@ async function evaluateCondiçãoNode(
       .eq("id", run.contact_id!)
       .maybeSingle();
     const raw = (data as Record<string, unknown> | null)?.[cfg.subject_key];
-    subjectValor = typeof raw === "string" && raw.length > 0 ? raw : undefined;
+    subjectValue = typeof raw === "string" && raw.length > 0 ? raw : undefined;
   }
-  return evaluateCondiçãoPredicate({
+  return evaluateConditionPredicate({
     operator: cfg.operator,
-    subjectValor,
-    configValor: cfg.value,
+    subjectValue,
+    configValue: cfg.value,
   });
 }
 
@@ -578,9 +578,9 @@ async function advanceFromNodeKey(
       continue;
     }
     if (node.node_type === "send_message") {
-      const cfg = node.config as unknown as EnviarMessageNodeConfig;
+      const cfg = node.config as unknown as SendMessageNodeConfig;
       try {
-        const { whatsapp_message_id } = await engineEnviarText({
+        const { whatsapp_message_id } = await engineSendText({
           accountId: run.account_id,
     userId: run.user_id,
           conversationId: run.conversation_id!,
@@ -594,7 +594,7 @@ async function advanceFromNodeKey(
       } catch (err) {
         await logEvent(db, run.id, "error", node.node_key, {
           reason: "send_text_failed",
-          detail: err instanceof Erro ? err.message : String(err),
+          detail: err instanceof Error ? err.message : String(err),
         });
         await endRun(db, run.id, "failed", "send_text_failed");
         return { outcome: "completed" };
@@ -603,9 +603,9 @@ async function advanceFromNodeKey(
       continue;
     }
     if (node.node_type === "send_media") {
-      const cfg = node.config as unknown as EnviarMediaNodeConfig;
+      const cfg = node.config as unknown as SendMediaNodeConfig;
       try {
-        const { whatsapp_message_id } = await engineEnviarMedia({
+        const { whatsapp_message_id } = await engineSendMedia({
           accountId: run.account_id,
     userId: run.user_id,
           conversationId: run.conversation_id!,
@@ -625,7 +625,7 @@ async function advanceFromNodeKey(
       } catch (err) {
         await logEvent(db, run.id, "error", node.node_key, {
           reason: "send_media_failed",
-          detail: err instanceof Erro ? err.message : String(err),
+          detail: err instanceof Error ? err.message : String(err),
         });
         await endRun(db, run.id, "failed", "send_media_failed");
         return { outcome: "completed" };
@@ -634,11 +634,11 @@ async function advanceFromNodeKey(
       continue;
     }
     if (node.node_type === "collect_input") {
-      // Enviar the prompt and suspend. Customer's next TEXT reply will
-      // wake us up via handleReplyForAtivoRun's collect_input branch.
+      // Send the prompt and suspend. Customer's next TEXT reply will
+      // wake us up via handleReplyForActiveRun's collect_input branch.
       const cfg = node.config as unknown as CollectInputNodeConfig;
       try {
-        const { whatsapp_message_id } = await engineEnviarText({
+        const { whatsapp_message_id } = await engineSendText({
           accountId: run.account_id,
     userId: run.user_id,
           conversationId: run.conversation_id!,
@@ -663,7 +663,7 @@ async function advanceFromNodeKey(
       } catch (err) {
         await logEvent(db, run.id, "error", node.node_key, {
           reason: "collect_input_prompt_failed",
-          detail: err instanceof Erro ? err.message : String(err),
+          detail: err instanceof Error ? err.message : String(err),
         });
         await endRun(db, run.id, "failed", "collect_input_prompt_failed");
         return { outcome: "completed" };
@@ -682,16 +682,16 @@ async function advanceFromNodeKey(
       return { outcome: "advanced" };
     }
     if (node.node_type === "condition") {
-      const cfg = node.config as unknown as CondiçãoNodeConfig;
+      const cfg = node.config as unknown as ConditionNodeConfig;
       let branch: "true" | "false";
       try {
-        branch = (await evaluateCondiçãoNode(db, run, cfg))
+        branch = (await evaluateConditionNode(db, run, cfg))
           ? "true"
           : "false";
       } catch (err) {
         await logEvent(db, run.id, "error", node.node_key, {
           reason: "condition_evaluation_failed",
-          detail: err instanceof Erro ? err.message : String(err),
+          detail: err instanceof Error ? err.message : String(err),
         });
         await endRun(db, run.id, "failed", "condition_evaluation_failed");
         return { outcome: "completed" };
@@ -726,7 +726,7 @@ async function advanceFromNodeKey(
         // strand the customer mid-flow.
         await logEvent(db, run.id, "error", node.node_key, {
           reason: "set_tag_failed",
-          detail: err instanceof Erro ? err.message : String(err),
+          detail: err instanceof Error ? err.message : String(err),
         });
       }
       currentKey = cfg.next_node_key;
@@ -831,7 +831,7 @@ export async function dispatchInboundToFlows(
 ): Promise<DispatchInboundResult> {
   const db = supabaseAdmin();
   try {
-    const activeRun = await loadAtivoRunForContact(
+    const activeRun = await loadActiveRunForContact(
       db,
       input.accountId,
       input.contactId,
@@ -841,7 +841,7 @@ export async function dispatchInboundToFlows(
     // contact. For new runs, the partial unique index catches duplicate
     // starts at INSERT time.
     if (activeRun) {
-      const dupe = await isDuplicarInbound(
+      const dupe = await isDuplicateInbound(
         db,
         input.accountId,
         input.contactId,
@@ -855,9 +855,9 @@ export async function dispatchInboundToFlows(
         };
       }
       // One SELECT for the whole flow's nodes — advance loop is now
-      // in-memory. See loadTodosNodes.
-      const nodes = await loadTodosNodes(db, activeRun.flow_id);
-      return handleReplyForAtivoRun(db, activeRun, input.message, nodes);
+      // in-memory. See loadAllNodes.
+      const nodes = await loadAllNodes(db, activeRun.flow_id);
+      return handleReplyForActiveRun(db, activeRun, input.message, nodes);
     }
 
     // No active run → look for a flow whose entry trigger matches.
@@ -870,24 +870,24 @@ export async function dispatchInboundToFlows(
     if (!flow || !flow.entry_node_id) {
       return { consumed: false, outcome: "no_match" };
     }
-    const nodes = await loadTodosNodes(db, flow.id);
-    return startNovoRun(db, flow, input, nodes);
+    const nodes = await loadAllNodes(db, flow.id);
+    return startNewRun(db, flow, input, nodes);
   } catch (err) {
     console.error(
       "[flows] dispatchInboundToFlows threw:",
-      err instanceof Erro ? err.message : err,
+      err instanceof Error ? err.message : err,
     );
     return { consumed: false, outcome: "no_match" };
   }
 }
 
-async function handleReplyForAtivoRun(
+async function handleReplyForActiveRun(
   db: AdminClient,
   run: FlowRunRow,
   message: ParsedInbound,
   nodes: Map<string, FlowNodeRow>,
 ): Promise<DispatchInboundResult> {
-  // Nota: we intentionally do NOT persist the raw customer text. A
+  // Note: we intentionally do NOT persist the raw customer text. A
   // `collect_input` prompt that asks "what's your card number?" would
   // otherwise leave the PAN sitting in flow_run_events.payload forever,
   // visible to anyone with access to the runs viewer or the events
@@ -1014,7 +1014,7 @@ async function handleReplyForAtivoRun(
       // or var_key missing — rare). Re-send the prompt so they try again.
       const cfg = currentNode.config as unknown as CollectInputNodeConfig;
       try {
-        await engineEnviarText({
+        await engineSendText({
           accountId: run.account_id,
     userId: run.user_id,
           conversationId: run.conversation_id!,
@@ -1024,7 +1024,7 @@ async function handleReplyForAtivoRun(
       } catch (err) {
         await logEvent(db, run.id, "error", currentNode.node_key, {
           reason: "reprompt_send_failed",
-          detail: err instanceof Erro ? err.message : String(err),
+          detail: err instanceof Error ? err.message : String(err),
         });
       }
     }
@@ -1048,7 +1048,7 @@ async function handleReplyForAtivoRun(
   return { consumed: true, flow_run_id: run.id, outcome: "completed" };
 }
 
-async function startNovoRun(
+async function startNewRun(
   db: AdminClient,
   flow: FlowRow,
   input: DispatchInboundInput,
@@ -1082,7 +1082,7 @@ async function startNovoRun(
     if (msg.includes("23505") || msg.includes("duplicate key")) {
       return { consumed: true, outcome: "duplicate_inbound_ignored" };
     }
-    console.error("[flows] startNovoRun insert error:", insErr.message);
+    console.error("[flows] startNewRun insert error:", insErr.message);
     return { consumed: false, outcome: "no_match" };
   }
   const run = inserted as FlowRunRow;

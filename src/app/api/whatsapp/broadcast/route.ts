@@ -1,14 +1,14 @@
-import { PróximoResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { sendModeloMessage } from '@/lib/whatsapp/meta-api'
+import { sendTemplateMessage } from '@/lib/whatsapp/meta-api'
 import { decrypt } from '@/lib/whatsapp/encryption'
-import type { EnviarTimeParams } from '@/lib/whatsapp/template-send-builder'
-import { isMessageModelo } from '@/lib/whatsapp/template-row-guard'
+import type { SendTimeParams } from '@/lib/whatsapp/template-send-builder'
+import { isMessageTemplate } from '@/lib/whatsapp/template-row-guard'
 import {
-  sanitizeTelefoneForMeta,
+  sanitizePhoneForMeta,
   isValidE164,
   phoneVariants,
-  isRecipientNotTodosowedErro,
+  isRecipientNotAllowedError,
 } from '@/lib/whatsapp/phone-utils'
 import {
   checkRateLimit,
@@ -40,12 +40,12 @@ interface BroadcastResult {
  *       template_name, template_language
  *     }
  *
- * Anterior implementation only supported the legacy shape, and the
+ * Previous implementation only supported the legacy shape, and the
  * sending hook was forced to ship every batch with `templateParams[0]`
  * — meaning every recipient got contact-0's personalization. The new
  * shape is what actually fixes that.
  */
-interface NovoRecipient {
+interface NewRecipient {
   phone: string
   /** Body variable values, one per {{N}}. Legacy field. */
   params?: string[]
@@ -53,9 +53,9 @@ interface NovoRecipient {
    * Structured per-send values (header text variable, media URL
    * override, URL/COPY_CODE button values). When set, takes
    * precedence over `params` for the body too — see
-   * sendModeloMessage for the merge rules.
+   * sendTemplateMessage for the merge rules.
    */
-  messageParams?: EnviarTimeParams
+  messageParams?: SendTimeParams
 }
 
 export async function POST(request: Request) {
@@ -64,14 +64,14 @@ export async function POST(request: Request) {
 
     const {
       data: { user },
-      error: authErro,
+      error: authError,
     } = await supabase.auth.getUser()
 
-    if (authErro || !user) {
-      return PróximoResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Per-user broadcast budget. Nota: this limits how often a user
+    // Per-user broadcast budget. Note: this limits how often a user
     // can *start* a campaign, not how many messages go out inside
     // one — the fan-out loop below runs without additional gating.
     const limit = checkRateLimit(`broadcast:${user.id}`, RATE_LIMITS.broadcast)
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
       return rateLimitResponse(limit)
     }
 
-    // Resolver the caller's account_id. whatsapp_config + templates
+    // Resolve the caller's account_id. whatsapp_config + templates
     // + broadcasts are all account-scoped post-multi-user, so the
     // old `.eq('user_id', user.id)` filters miss every row created
     // by a teammate.
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
       .maybeSingle()
     const accountId = profile?.account_id as string | undefined
     if (!accountId) {
-      return PróximoResponse.json(
+      return NextResponse.json(
         { error: 'Your profile is not linked to an account.' },
         { status: 403 },
       )
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
 
     const body = await request.json()
     const {
-      recipients: newDestinatários,
+      recipients: newRecipients,
       phone_numbers,
       template_name,
       template_language,
@@ -106,9 +106,9 @@ export async function POST(request: Request) {
     } = body
 
     // Normalize to a list of {phone, params} regardless of shape.
-    let recipients: NovoRecipient[]
-    if (Array.isArray(newDestinatários) && newDestinatários.length > 0) {
-      recipients = newDestinatários
+    let recipients: NewRecipient[]
+    if (Array.isArray(newRecipients) && newRecipients.length > 0) {
+      recipients = newRecipients
     } else if (Array.isArray(phone_numbers) && phone_numbers.length > 0) {
       const shared: string[] = Array.isArray(template_params)
         ? template_params
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
         params: shared,
       }))
     } else {
-      return PróximoResponse.json(
+      return NextResponse.json(
         {
           error:
             'Provide either `recipients` (preferred) or `phone_numbers` — must be a non-empty array',
@@ -128,20 +128,20 @@ export async function POST(request: Request) {
     }
 
     if (!template_name) {
-      return PróximoResponse.json(
+      return NextResponse.json(
         { error: 'template_name is required' },
         { status: 400 }
       )
     }
 
-    const { data: config, error: configErro } = await supabase
+    const { data: config, error: configError } = await supabase
       .from('whatsapp_config')
       .select('*')
       .eq('account_id', accountId)
       .single()
 
-    if (configErro || !config) {
-      return PróximoResponse.json(
+    if (configError || !config) {
+      return NextResponse.json(
         {
           error:
             'WhatsApp not configured. Please set up your WhatsApp integration first.',
@@ -152,35 +152,35 @@ export async function POST(request: Request) {
 
     const accessToken = decrypt(config.access_token)
 
-    // Load the template row once so sendModeloMessage can build
+    // Load the template row once so sendTemplateMessage can build
     // header + button components on each iteration. Loading inside
     // the loop would N+1 against Supabase for every recipient.
     // Guard against a malformed local row crashing every send in
-    // the loop with the same opaque TypeErro — fail loudly once.
-    const { data: rawModeloRow } = await supabase
+    // the loop with the same opaque TypeError — fail loudly once.
+    const { data: rawTemplateRow } = await supabase
       .from('message_templates')
       .select('*')
       .eq('account_id', accountId)
       .eq('name', template_name)
       .eq('language', template_language || 'en_US')
       .maybeSingle()
-    if (rawModeloRow && !isMessageModelo(rawModeloRow)) {
-      return PróximoResponse.json(
+    if (rawTemplateRow && !isMessageTemplate(rawTemplateRow)) {
+      return NextResponse.json(
         {
           error:
-            'Modelo row is malformed locally — run "Sync from Meta" in Settings to repair it before broadcasting.',
+            'Template row is malformed locally — run "Sync from Meta" in Settings to repair it before broadcasting.',
         },
         { status: 500 },
       )
     }
-    const templateRow = rawModeloRow ?? null
+    const templateRow = rawTemplateRow ?? null
 
     const results: BroadcastResult[] = []
     let sentCount = 0
     let failedCount = 0
 
     for (const recipient of recipients) {
-      const sanitized = sanitizeTelefoneForMeta(recipient.phone)
+      const sanitized = sanitizePhoneForMeta(recipient.phone)
 
       if (!isValidE164(sanitized)) {
         results.push({
@@ -196,31 +196,31 @@ export async function POST(request: Request) {
       // that differ only in a trunk-prefix 0 still reach recipients.
       const variants = phoneVariants(sanitized)
       let sentMessageId: string | null = null
-      let lastErro: string | null = null
+      let lastError: string | null = null
 
       for (const variant of variants) {
         try {
-          const result = await sendModeloMessage({
+          const result = await sendTemplateMessage({
             phoneNumberId: config.phone_number_id,
             accessToken,
             to: variant,
-            templateNome: template_name,
+            templateName: template_name,
             language: template_language || 'en_US',
             template: templateRow ?? undefined,
             messageParams: recipient.messageParams,
             params: recipient.params ?? [],
           })
           sentMessageId = result.messageId
-          lastErro = null
+          lastError = null
           break
         } catch (error) {
           const errorMessage =
-            error instanceof Erro ? error.message : 'Unknown error'
-          if (!isRecipientNotTodosowedErro(errorMessage)) {
-            lastErro = errorMessage
+            error instanceof Error ? error.message : 'Unknown error'
+          if (!isRecipientNotAllowedError(errorMessage)) {
+            lastError = errorMessage
             break
           }
-          lastErro = errorMessage
+          lastError = errorMessage
           // retry with next variant
         }
       }
@@ -234,19 +234,19 @@ export async function POST(request: Request) {
         sentCount++
       } else {
         console.error(
-          `Falhou to send broadcast to ${recipient.phone}:`,
-          lastErro
+          `Failed to send broadcast to ${recipient.phone}:`,
+          lastError
         )
         results.push({
           phone: recipient.phone,
           status: 'failed',
-          error: lastErro || 'Unknown error',
+          error: lastError || 'Unknown error',
         })
         failedCount++
       }
     }
 
-    return PróximoResponse.json({
+    return NextResponse.json({
       success: true,
       total: recipients.length,
       sent: sentCount,
@@ -254,9 +254,9 @@ export async function POST(request: Request) {
       results,
     })
   } catch (error) {
-    console.error('Erro in WhatsApp broadcast POST:', error)
-    return PróximoResponse.json(
-      { error: 'Falhou to process broadcast' },
+    console.error('Error in WhatsApp broadcast POST:', error)
+    return NextResponse.json(
+      { error: 'Failed to process broadcast' },
       { status: 500 }
     )
   }

@@ -1,20 +1,20 @@
 import { createServerClient } from '@supabase/ssr'
-import { PróximoResponse, type PróximoRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: PróximoRequest) {
-  let supabaseResponse = PróximoResponse.next({ request })
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getTodos() {
-          return request.cookies.getTodos()
+        getAll() {
+          return request.cookies.getAll()
         },
-        setTodos(cookiesToSet) {
+        setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-          supabaseResponse = PróximoResponse.next({ request })
+          supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )
@@ -49,7 +49,7 @@ export async function middleware(request: PróximoRequest) {
       url.pathname = '/dashboard'
       url.search = ''
     }
-    return PróximoResponse.redirect(url)
+    return NextResponse.redirect(url)
   }
 
   // Protected pages - redirect to login if not authenticated
@@ -57,13 +57,13 @@ export async function middleware(request: PróximoRequest) {
   if (!user && protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    return PróximoResponse.redirect(url)
+    return NextResponse.redirect(url)
   }
 
   // API routes that need auth (not webhooks)
   if (!user && request.nextUrl.pathname.startsWith('/api/whatsapp/') &&
       !request.nextUrl.pathname.includes('/webhook')) {
-    return PróximoResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   return supabaseResponse

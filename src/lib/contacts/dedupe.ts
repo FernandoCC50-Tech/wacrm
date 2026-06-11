@@ -1,12 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { normalizeTelefone, phonesMatch } from "@/lib/whatsapp/phone-utils";
+import { normalizePhone, phonesMatch } from "@/lib/whatsapp/phone-utils";
 
 /**
  * Contact de-duplication helpers, shared by the WhatsApp webhook, the
  * manual contact form, and CSV import so all paths agree on what
  * "same number" means (issue #212).
  *
- * The canonical key is `normalizeTelefone` (digits-only) — the same form
+ * The canonical key is `normalizePhone` (digits-only) — the same form
  * the DB stores in the generated `contacts.phone_normalized` column
  * and enforces unique per account. `phonesMatch` adds trunk-prefix
  * tolerance (last-8-digit match) for the softer "possible duplicate"
@@ -15,7 +15,7 @@ import { normalizeTelefone, phonesMatch } from "@/lib/whatsapp/phone-utils";
 
 /** Canonical de-dup key for a phone string (digits only). */
 export function normalizeKey(phone: string): string {
-  return normalizeTelefone(phone);
+  return normalizePhone(phone);
 }
 
 /** Minimal shape we need back from a contacts lookup. */
@@ -37,7 +37,7 @@ export async function findExistingContact(
   accountId: string,
   phone: string,
 ): Promise<ExistingContact | null> {
-  const normalized = normalizeTelefone(phone);
+  const normalized = normalizePhone(phone);
   if (!normalized) return null;
 
   const suffix = normalized.length >= 8 ? normalized.slice(-8) : normalized;
@@ -80,7 +80,7 @@ export function isUniqueViolation(error: unknown): boolean {
  * (they can't be a valid contact). Returns the unique rows plus the
  * count removed as in-file duplicates.
  */
-export function dedupeByTelefone<T extends { phone: string }>(
+export function dedupeByPhone<T extends { phone: string }>(
   rows: T[],
 ): { unique: T[]; duplicates: number } {
   const seen = new Set<string>();

@@ -7,7 +7,7 @@ import type { Conversation } from "@/types";
 /**
  * Count of conversations with at least one unread inbound message for
  * the current user. Used by the sidebar to surface a green dot on the
- * Caixa de Entrada nav entry when the user is elsewhere in the app.
+ * Inbox nav entry when the user is elsewhere in the app.
  *
  * Lives on its own realtime channel (distinct from the inbox page's
  * "inbox-realtime") so both can coexist without sharing state.

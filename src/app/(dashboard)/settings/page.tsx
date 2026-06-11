@@ -10,15 +10,15 @@ import {
   UsersRound,
   Coins,
 } from 'lucide-react';
-import { Tabs, TabsList, TabsGatilho, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { WhatsAppConfig } from '@/components/settings/whatsapp-config';
-import { ModeloManager } from '@/components/settings/template-manager';
+import { TemplateManager } from '@/components/settings/template-manager';
 import { TagManager } from '@/components/settings/tag-manager';
 import { ProfileForm } from '@/components/settings/profile-form';
-import { SenhaForm } from '@/components/settings/password-form';
+import { PasswordForm } from '@/components/settings/password-form';
 import { SessionsCard } from '@/components/settings/sessions-card';
-import { AparênciaPanel } from '@/components/settings/appearance-panel';
-import { MembrosTab } from '@/components/settings/members-tab';
+import { AppearancePanel } from '@/components/settings/appearance-panel';
+import { MembersTab } from '@/components/settings/members-tab';
 import { DealsSettings } from '@/components/settings/deals-settings';
 
 const TAB_VALUES = [
@@ -30,9 +30,9 @@ const TAB_VALUES = [
   'appearance',
   'members',
 ] as const;
-type TabValor = (typeof TAB_VALUES)[number];
+type TabValue = (typeof TAB_VALUES)[number];
 
-function isTabValor(v: string | null): v is TabValor {
+function isTabValue(v: string | null): v is TabValue {
   return !!v && (TAB_VALUES as readonly string[]).includes(v);
 }
 
@@ -45,80 +45,80 @@ export default function SettingsPage() {
   // into `useState` + a sync effect, which tripped React 19's
   // set-state-in-effect rule and was also redundant.
   const queryTab = searchParams.get('tab');
-  const tab: TabValor = isTabValor(queryTab) ? queryTab : 'profile';
+  const tab: TabValue = isTabValue(queryTab) ? queryTab : 'profile';
 
-  const onChange = (next: TabValor) => {
+  const onChange = (next: TabValue) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('tab', next);
     router.replace(`/settings?${params.toString()}`, { scroll: false });
   };
 
   return (
-    <div classNome="space-y-6">
+    <div className="space-y-6">
       <div>
-        <h1 classNome="text-2xl font-bold text-white">Configurações</h1>
-        <p classNome="text-sm text-slate-400 mt-1">
+        <h1 className="text-2xl font-bold text-white">Settings</h1>
+        <p className="text-sm text-slate-400 mt-1">
           Manage your profile, WhatsApp® integration, message templates, and
           tags.
         </p>
       </div>
 
-      <Tabs value={tab} onValorChange={(v) => onChange(v as TabValor)}>
-        <TabsList classNome="bg-slate-900 border border-slate-700">
-          <TabsGatilho
+      <Tabs value={tab} onValueChange={(v) => onChange(v as TabValue)}>
+        <TabsList className="bg-slate-900 border border-slate-700">
+          <TabsTrigger
             value="profile"
-            classNome="data-active:bg-slate-800 data-active:text-primary text-slate-400"
+            className="data-active:bg-slate-800 data-active:text-primary text-slate-400"
           >
-            <User classNome="size-4" />
+            <User className="size-4" />
             Profile
-          </TabsGatilho>
-          <TabsGatilho
+          </TabsTrigger>
+          <TabsTrigger
             value="whatsapp"
-            classNome="data-active:bg-slate-800 data-active:text-primary text-slate-400"
+            className="data-active:bg-slate-800 data-active:text-primary text-slate-400"
           >
-            <Settings classNome="size-4" />
-            Configuração WhatsApp
-          </TabsGatilho>
-          <TabsGatilho
+            <Settings className="size-4" />
+            WhatsApp Config
+          </TabsTrigger>
+          <TabsTrigger
             value="templates"
-            classNome="data-active:bg-slate-800 data-active:text-primary text-slate-400"
+            className="data-active:bg-slate-800 data-active:text-primary text-slate-400"
           >
-            <MessageSquare classNome="size-4" />
-            Modelos
-          </TabsGatilho>
-          <TabsGatilho
+            <MessageSquare className="size-4" />
+            Templates
+          </TabsTrigger>
+          <TabsTrigger
             value="tags"
-            classNome="data-active:bg-slate-800 data-active:text-primary text-slate-400"
+            className="data-active:bg-slate-800 data-active:text-primary text-slate-400"
           >
-            <Tag classNome="size-4" />
-            Etiquetas
-          </TabsGatilho>
-          <TabsGatilho
+            <Tag className="size-4" />
+            Tags
+          </TabsTrigger>
+          <TabsTrigger
             value="deals"
-            classNome="data-active:bg-slate-800 data-active:text-primary text-slate-400"
+            className="data-active:bg-slate-800 data-active:text-primary text-slate-400"
           >
-            <Coins classNome="size-4" />
+            <Coins className="size-4" />
             Deals
-          </TabsGatilho>
-          <TabsGatilho
+          </TabsTrigger>
+          <TabsTrigger
             value="appearance"
-            classNome="data-active:bg-slate-800 data-active:text-primary text-slate-400"
+            className="data-active:bg-slate-800 data-active:text-primary text-slate-400"
           >
-            <Palette classNome="size-4" />
-            Aparência
-          </TabsGatilho>
-          <TabsGatilho
+            <Palette className="size-4" />
+            Appearance
+          </TabsTrigger>
+          <TabsTrigger
             value="members"
-            classNome="data-active:bg-slate-800 data-active:text-primary text-slate-400"
+            className="data-active:bg-slate-800 data-active:text-primary text-slate-400"
           >
-            <UsersRound classNome="size-4" />
-            Membros
-          </TabsGatilho>
+            <UsersRound className="size-4" />
+            Members
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="profile" classNome="space-y-6">
+        <TabsContent value="profile" className="space-y-6">
           <ProfileForm />
-          <SenhaForm />
+          <PasswordForm />
           <SessionsCard />
         </TabsContent>
 
@@ -127,7 +127,7 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="templates">
-          <ModeloManager />
+          <TemplateManager />
         </TabsContent>
 
         <TabsContent value="tags">
@@ -139,11 +139,11 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="appearance">
-          <AparênciaPanel />
+          <AppearancePanel />
         </TabsContent>
 
         <TabsContent value="members">
-          <MembrosTab />
+          <MembersTab />
         </TabsContent>
       </Tabs>
     </div>

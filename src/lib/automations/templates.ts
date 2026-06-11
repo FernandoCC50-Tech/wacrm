@@ -1,34 +1,34 @@
 import type {
   AutomationStepConfig,
   AutomationStepType,
-  AutomationGatilhoConfig,
-  AutomationGatilhoType,
+  AutomationTriggerConfig,
+  AutomationTriggerType,
 } from '@/types'
 
-export type ModeloSlug =
+export type TemplateSlug =
   | 'welcome_message'
   | 'out_of_office'
   | 'lead_qualifier'
   | 'follow_up_reminder'
 
-export interface ModeloStepSeed {
+export interface TemplateStepSeed {
   step_type: AutomationStepType
   step_config: AutomationStepConfig
   branch?: 'yes' | 'no' | null
-  /** Index (within this seed list) of the Condição parent, if nested. */
+  /** Index (within this seed list) of the Condition parent, if nested. */
   parent_index?: number | null
 }
 
-export interface AutomationModeloDefinition {
-  slug: ModeloSlug
+export interface AutomationTemplateDefinition {
+  slug: TemplateSlug
   name: string
   description: string
-  trigger_type: AutomationGatilhoType
-  trigger_config: AutomationGatilhoConfig
-  steps: ModeloStepSeed[]
+  trigger_type: AutomationTriggerType
+  trigger_config: AutomationTriggerConfig
+  steps: TemplateStepSeed[]
 }
 
-export const AUTOMATION_TEMPLATES: Record<ModeloSlug, AutomationModeloDefinition> = {
+export const AUTOMATION_TEMPLATES: Record<TemplateSlug, AutomationTemplateDefinition> = {
   welcome_message: {
     slug: 'welcome_message',
     name: 'Welcome Message',
@@ -108,7 +108,7 @@ export const AUTOMATION_TEMPLATES: Record<ModeloSlug, AutomationModeloDefinition
   follow_up_reminder: {
     slug: 'follow_up_reminder',
     name: 'Follow-up Reminder',
-    description: 'Enviar a nudge if a contact has not replied within 24 hours.',
+    description: 'Send a nudge if a contact has not replied within 24 hours.',
     trigger_type: 'new_message_received',
     trigger_config: {},
     steps: [
@@ -127,6 +127,6 @@ export const AUTOMATION_TEMPLATES: Record<ModeloSlug, AutomationModeloDefinition
   },
 }
 
-export function getModelo(slug: string): AutomationModeloDefinition | null {
-  return AUTOMATION_TEMPLATES[slug as ModeloSlug] ?? null
+export function getTemplate(slug: string): AutomationTemplateDefinition | null {
+  return AUTOMATION_TEMPLATES[slug as TemplateSlug] ?? null
 }

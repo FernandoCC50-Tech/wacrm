@@ -6,17 +6,17 @@
 //
 // Why both verbs share a route file
 //   They speak about the same singular resource (the caller's
-//   account) and reuse the same `requireFunção` plumbing. Splitting
+//   account) and reuse the same `requireRole` plumbing. Splitting
 //   them across files would duplicate the `account_id` lookup
 //   without buying anything.
 // ============================================================
 
-import { PróximoResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 import {
-  requireFunção,
+  requireRole,
   getCurrentAccount,
-  toErroResponse,
+  toErrorResponse,
 } from "@/lib/auth/account";
 import {
   checkRateLimit,
@@ -27,12 +27,12 @@ import {
 export async function GET() {
   try {
     const ctx = await getCurrentAccount();
-    return PróximoResponse.json({
+    return NextResponse.json({
       account: ctx.account,
       role: ctx.role,
     });
   } catch (err) {
-    return toErroResponse(err);
+    return toErrorResponse(err);
   }
 }
 
@@ -40,7 +40,7 @@ const MAX_NAME_LEN = 80;
 
 export async function PATCH(request: Request) {
   try {
-    const ctx = await requireFunção("admin");
+    const ctx = await requireRole("admin");
 
     // Per-user limit on admin-class mutations. Bounds accidental
     // abuse (script run in a loop) and a compromised admin session
@@ -48,38 +48,38 @@ export async function PATCH(request: Request) {
     // one route doesn't starve another.
     const limit = checkRateLimit(
       `admin:rename:${ctx.userId}`,
-      RATE_LIMITS.adminAção,
+      RATE_LIMITS.adminAction,
     );
     if (!limit.success) return rateLimitResponse(limit);
 
     const body = (await request.json().catch(() => null)) as
       | { name?: unknown }
       | null;
-    const rawNome = body?.name;
+    const rawName = body?.name;
 
-    if (typeof rawNome !== "string") {
-      return PróximoResponse.json(
+    if (typeof rawName !== "string") {
+      return NextResponse.json(
         { error: "'name' must be a string" },
         { status: 400 },
       );
     }
 
-    const name = rawNome.trim();
+    const name = rawName.trim();
     if (name.length === 0) {
-      return PróximoResponse.json(
+      return NextResponse.json(
         { error: "Account name cannot be empty" },
         { status: 400 },
       );
     }
     if (name.length > MAX_NAME_LEN) {
-      return PróximoResponse.json(
+      return NextResponse.json(
         { error: `Account name must be ${MAX_NAME_LEN} characters or fewer` },
         { status: 400 },
       );
     }
 
     // RLS allows this UPDATE because accounts_update requires
-    // `is_account_member(id, 'admin')`, and requireFunção already
+    // `is_account_member(id, 'admin')`, and requireRole already
     // guaranteed the caller is admin+.
     const { data, error } = await ctx.supabase
       .from("accounts")
@@ -90,14 +90,14 @@ export async function PATCH(request: Request) {
 
     if (error) {
       console.error("[PATCH /api/account] update error:", error);
-      return PróximoResponse.json(
-        { error: "Falhou to update account" },
+      return NextResponse.json(
+        { error: "Failed to update account" },
         { status: 500 },
       );
     }
 
-    return PróximoResponse.json({ account: data });
+    return NextResponse.json({ account: data });
   } catch (err) {
-    return toErroResponse(err);
+    return toErrorResponse(err);
   }
 }

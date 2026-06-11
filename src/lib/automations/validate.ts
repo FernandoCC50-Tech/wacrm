@@ -1,4 +1,4 @@
-import type { AutomationGatilhoType } from '@/types'
+import type { AutomationTriggerType } from '@/types'
 
 // ------------------------------------------------------------
 // Pre-flight config validation for automations about to be activated.
@@ -140,8 +140,8 @@ function validateOne(step: StepLike, path: string, issues: ValidationIssue[]): v
   }
 }
 
-export function validateGatilhoForActivation(
-  triggerType: AutomationGatilhoType | string,
+export function validateTriggerForActivation(
+  triggerType: AutomationTriggerType | string,
   triggerConfig: unknown,
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = []

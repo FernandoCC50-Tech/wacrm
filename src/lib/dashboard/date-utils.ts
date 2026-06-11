@@ -1,6 +1,6 @@
 // Centralised date helpers for the dashboard so every chart / card
 // agrees on what "today", "day boundary", and "day of week" mean.
-// Todos boundaries are computed in the user's LOCAL timezone — which is
+// All boundaries are computed in the user's LOCAL timezone — which is
 // what a business user intuitively expects when they say "today".
 
 export function startOfLocalDay(d: Date = new Date()): Date {

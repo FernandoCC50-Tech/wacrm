@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  applyEdgeConectarion,
+  applyEdgeConnection,
   deriveCanvasEdges,
   outgoingSlots,
   unlinkNodeReferences,
@@ -378,14 +378,14 @@ describe("outgoingSlots", () => {
   });
 });
 
-describe("applyEdgeConectarion", () => {
+describe("applyEdgeConnection", () => {
   it("patches next_node_key for single-outgoing nodes", () => {
     const node: BuilderNode = {
       node_key: "a",
       node_type: "send_message",
       config: { text: "hi", next_node_key: "" },
     };
-    expect(applyEdgeConectarion(node, "next", "b")).toEqual({
+    expect(applyEdgeConnection(node, "next", "b")).toEqual({
       next_node_key: "b",
     });
   });
@@ -396,8 +396,8 @@ describe("applyEdgeConectarion", () => {
       node_type: "send_message",
       config: {},
     };
-    expect(applyEdgeConectarion(node, "true", "b")).toBeNull();
-    expect(applyEdgeConectarion(node, "button:x", "b")).toBeNull();
+    expect(applyEdgeConnection(node, "true", "b")).toBeNull();
+    expect(applyEdgeConnection(node, "button:x", "b")).toBeNull();
   });
 
   it("patches the right branch on a condition", () => {
@@ -413,8 +413,8 @@ describe("applyEdgeConectarion", () => {
         false_next: "",
       },
     };
-    expect(applyEdgeConectarion(node, "true", "t")).toEqual({ true_next: "t" });
-    expect(applyEdgeConectarion(node, "false", "f")).toEqual({
+    expect(applyEdgeConnection(node, "true", "t")).toEqual({ true_next: "t" });
+    expect(applyEdgeConnection(node, "false", "f")).toEqual({
       false_next: "f",
     });
   });
@@ -431,7 +431,7 @@ describe("applyEdgeConectarion", () => {
         ],
       },
     };
-    const patch = applyEdgeConectarion(node, "button:yes", "ok");
+    const patch = applyEdgeConnection(node, "button:yes", "ok");
     expect(patch).toEqual({
       buttons: [
         { reply_id: "yes", title: "Yes", next_node_key: "ok" },
@@ -449,7 +449,7 @@ describe("applyEdgeConectarion", () => {
         buttons: [{ reply_id: "a", title: "A", next_node_key: "" }],
       },
     };
-    expect(applyEdgeConectarion(node, "button:ghost", "z")).toBeNull();
+    expect(applyEdgeConnection(node, "button:ghost", "z")).toBeNull();
   });
 
   it("patches the matching list row across sections", () => {
@@ -465,7 +465,7 @@ describe("applyEdgeConectarion", () => {
         ],
       },
     };
-    const patch = applyEdgeConectarion(node, "row:o2", "tgt") as {
+    const patch = applyEdgeConnection(node, "row:o2", "tgt") as {
       sections: Array<{ rows: Array<{ next_node_key: string }> }>;
     };
     expect(patch.sections[0].rows[0].next_node_key).toBe("");
@@ -474,14 +474,14 @@ describe("applyEdgeConectarion", () => {
 
   it("returns null for terminal nodes (no outgoing)", () => {
     expect(
-      applyEdgeConectarion(
+      applyEdgeConnection(
         { node_key: "h", node_type: "handoff", config: {} },
         "next",
         "x",
       ),
     ).toBeNull();
     expect(
-      applyEdgeConectarion(
+      applyEdgeConnection(
         { node_key: "e", node_type: "end", config: {} },
         "next",
         "x",

@@ -14,7 +14,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import type { Deal, PipelineEtapa } from "@/types";
+import type { Deal, PipelineStage } from "@/types";
 import { DealCard } from "./deal-card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -22,37 +22,37 @@ import { useAuth } from "@/hooks/use-auth";
 import { formatCurrency } from "@/lib/currency";
 
 interface PipelineBoardProps {
-  stages: PipelineEtapa[];
+  stages: PipelineStage[];
   deals: Deal[];
-  onDealMoved: (dealId: string, newEtapaId: string) => void;
-  onAdicionarDeal: (stageId: string) => void;
-  onEditarDeal: (deal: Deal) => void;
+  onDealMoved: (dealId: string, newStageId: string) => void;
+  onAddDeal: (stageId: string) => void;
+  onEditDeal: (deal: Deal) => void;
 }
 
 export function PipelineBoard({
   stages,
   deals,
   onDealMoved,
-  onAdicionarDeal,
-  onEditarDeal,
+  onAddDeal,
+  onEditDeal,
 }: PipelineBoardProps) {
   const { defaultCurrency } = useAuth();
-  const [activeDealId, setAtivoDealId] = useState<string | null>(null);
+  const [activeDealId, setActiveDealId] = useState<string | null>(null);
 
-  const sortedEtapas = useMemo(
+  const sortedStages = useMemo(
     () => [...stages].sort((a, b) => a.position - b.position),
     [stages],
   );
 
-  const dealsByEtapa = useMemo(() => {
+  const dealsByStage = useMemo(() => {
     const map = new Map<string, Deal[]>();
-    for (const stage of sortedEtapas) map.set(stage.id, []);
+    for (const stage of sortedStages) map.set(stage.id, []);
     for (const deal of deals) {
       const bucket = map.get(deal.stage_id);
       if (bucket) bucket.push(deal);
     }
     return map;
-  }, [sortedEtapas, deals]);
+  }, [sortedStages, deals]);
 
   const sensors = useSensors(
     // 5px activation distance avoids clicks being interpreted as drags.
@@ -67,25 +67,25 @@ export function PipelineBoard({
     : null;
 
   function handleDragStart(event: DragStartEvent) {
-    setAtivoDealId(String(event.active.id));
+    setActiveDealId(String(event.active.id));
   }
 
   function handleDragEnd(event: DragEndEvent) {
-    setAtivoDealId(null);
+    setActiveDealId(null);
     const { active, over } = event;
     if (!over) return;
     const dealId = String(active.id);
-    const targetEtapaId = String(over.id);
+    const targetStageId = String(over.id);
 
     const deal = deals.find((d) => d.id === dealId);
-    if (!deal || deal.stage_id === targetEtapaId) return;
-    if (!sortedEtapas.some((s) => s.id === targetEtapaId)) return;
+    if (!deal || deal.stage_id === targetStageId) return;
+    if (!sortedStages.some((s) => s.id === targetStageId)) return;
 
-    onDealMoved(dealId, targetEtapaId);
+    onDealMoved(dealId, targetStageId);
   }
 
-  function handleDragCancelar() {
-    setAtivoDealId(null);
+  function handleDragCancel() {
+    setActiveDealId(null);
   }
 
   return (
@@ -94,30 +94,30 @@ export function PipelineBoard({
       collisionDetection={closestCorners}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      onDragCancelar={handleDragCancelar}
+      onDragCancel={handleDragCancel}
     >
       {/* snap-x + snap-mandatory on mobile so swipes land the next
           stage cleanly at the viewport edge instead of mid-column.
-          Desativard on lg+ where snapping would interfere with the
+          Disabled on lg+ where snapping would interfere with the
           natural layout. The board can still overflow horizontally on
           lg+ once a pipeline has many stages (columns keep a 260px
           min-width), so a thin scrollbar stays visible on desktop. */}
-      <div classNome="pipeline-scroll flex snap-x snap-mandatory gap-3 overflow-x-auto pb-4 lg:snap-none">
-        {sortedEtapas.map((stage) => {
-          const stageDeals = dealsByEtapa.get(stage.id) ?? [];
-          const totalValor = stageDeals.reduce(
+      <div className="pipeline-scroll flex snap-x snap-mandatory gap-3 overflow-x-auto pb-4 lg:snap-none">
+        {sortedStages.map((stage) => {
+          const stageDeals = dealsByStage.get(stage.id) ?? [];
+          const totalValue = stageDeals.reduce(
             (s, d) => s + Number(d.value || 0),
             0,
           );
           return (
-            <EtapaColumn
+            <StageColumn
               key={stage.id}
               stage={stage}
               deals={stageDeals}
-              totalValor={totalValor}
+              totalValue={totalValue}
               currency={defaultCurrency}
-              onAdicionarDeal={onAdicionarDeal}
-              onEditarDeal={onEditarDeal}
+              onAddDeal={onAddDeal}
+              onEditDeal={onEditDeal}
             />
           );
         })}
@@ -130,13 +130,13 @@ export function PipelineBoard({
         }}
       >
         {activeDeal ? (
-          <div classNome="opacity-90">
+          <div className="opacity-90">
             <DealCard
               deal={activeDeal}
               stage={
-                sortedEtapas.find((s) => s.id === activeDeal.stage_id) ?? null
+                sortedStages.find((s) => s.id === activeDeal.stage_id) ?? null
               }
-              onEditar={() => {}}
+              onEdit={() => {}}
               isOverlay
             />
           </div>
@@ -185,20 +185,20 @@ export function PipelineBoard({
   );
 }
 
-function EtapaColumn({
+function StageColumn({
   stage,
   deals,
-  totalValor,
+  totalValue,
   currency,
-  onAdicionarDeal,
-  onEditarDeal,
+  onAddDeal,
+  onEditDeal,
 }: {
-  stage: PipelineEtapa;
+  stage: PipelineStage;
   deals: Deal[];
-  totalValor: number;
+  totalValue: number;
   currency: string;
-  onAdicionarDeal: (stageId: string) => void;
-  onEditarDeal: (deal: Deal) => void;
+  onAddDeal: (stageId: string) => void;
+  onEditDeal: (deal: Deal) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
 
@@ -209,34 +209,34 @@ function EtapaColumn({
     // restore the flex-1 share-the-row behavior. The droppable ref is
     // on the inner messages region below — intentionally NOT here, so
     // a drag over the column header doesn't highlight the whole column.
-    <div classNome="flex w-[85vw] min-w-[260px] max-w-[320px] shrink-0 snap-start flex-col rounded-xl border border-slate-800 bg-slate-900/60 p-4 lg:w-auto lg:max-w-none lg:flex-1 lg:basis-[260px] lg:shrink lg:snap-none">
+    <div className="flex w-[85vw] min-w-[260px] max-w-[320px] shrink-0 snap-start flex-col rounded-xl border border-slate-800 bg-slate-900/60 p-4 lg:w-auto lg:max-w-none lg:flex-1 lg:basis-[260px] lg:shrink lg:snap-none">
       {/* 3px colored top border — sits above the column's padding */}
       <div
-        classNome="-mx-4 -mt-4 h-[3px] rounded-t-xl"
-        style={{ backgroundCor: stage.color }}
+        className="-mx-4 -mt-4 h-[3px] rounded-t-xl"
+        style={{ backgroundColor: stage.color }}
       />
-      <div classNome="flex items-center justify-between pt-3">
-        <h3 classNome="truncate text-sm font-semibold text-white">
+      <div className="flex items-center justify-between pt-3">
+        <h3 className="truncate text-sm font-semibold text-white">
           {stage.name}
         </h3>
-        <span classNome="shrink-0 rounded-full bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-300">
+        <span className="shrink-0 rounded-full bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-300">
           {deals.length}
         </span>
       </div>
-      <p classNome="text-xs text-slate-400">
-        {formatCurrency(totalValor, currency)}
+      <p className="text-xs text-slate-400">
+        {formatCurrency(totalValue, currency)}
       </p>
 
       <div
         ref={setNodeRef}
-        classNome={`mt-3 flex flex-1 flex-col gap-2 rounded-lg transition-all ${
+        className={`mt-3 flex flex-1 flex-col gap-2 rounded-lg transition-all ${
           isOver
             ? "bg-primary/5 outline outline-2 outline-dashed outline-primary outline-offset-2"
             : ""
         }`}
       >
         {deals.length === 0 ? (
-          <div classNome="flex flex-1 items-center justify-center rounded-lg border-2 border-dashed border-slate-700 py-10 text-xs text-slate-500">
+          <div className="flex flex-1 items-center justify-center rounded-lg border-2 border-dashed border-slate-700 py-10 text-xs text-slate-500">
             Drop a deal here
           </div>
         ) : (
@@ -245,7 +245,7 @@ function EtapaColumn({
               key={deal.id}
               deal={deal}
               stage={stage}
-              onEditar={onEditarDeal}
+              onEdit={onEditDeal}
             />
           ))
         )}
@@ -254,11 +254,11 @@ function EtapaColumn({
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => onAdicionarDeal(stage.id)}
-        classNome="mt-3 w-full justify-start border border-dashed border-slate-700 bg-transparent text-slate-400 hover:border-slate-600 hover:bg-slate-800 hover:text-white"
+        onClick={() => onAddDeal(stage.id)}
+        className="mt-3 w-full justify-start border border-dashed border-slate-700 bg-transparent text-slate-400 hover:border-slate-600 hover:bg-slate-800 hover:text-white"
       >
-        <Plus classNome="mr-1 h-3 w-3" />
-        Adicionar Deal
+        <Plus className="mr-1 h-3 w-3" />
+        Add Deal
       </Button>
     </div>
   );
@@ -267,11 +267,11 @@ function EtapaColumn({
 function DraggableDealCard({
   deal,
   stage,
-  onEditar,
+  onEdit,
 }: {
   deal: Deal;
-  stage: PipelineEtapa;
-  onEditar: (deal: Deal) => void;
+  stage: PipelineStage;
+  onEdit: (deal: Deal) => void;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: deal.id,
@@ -282,9 +282,9 @@ function DraggableDealCard({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      style={{ opacity: isDragging ? 0.3 : 1, touchAção: "none" }}
+      style={{ opacity: isDragging ? 0.3 : 1, touchAction: "none" }}
     >
-      <DealCard deal={deal} stage={stage} onEditar={onEditar} />
+      <DealCard deal={deal} stage={stage} onEdit={onEdit} />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { PróximoResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getMediaUrl, downloadMedia } from '@/lib/whatsapp/meta-api'
 import { decrypt } from '@/lib/whatsapp/encryption'
@@ -11,7 +11,7 @@ export async function GET(
     const { mediaId } = await params
 
     if (!mediaId) {
-      return PróximoResponse.json(
+      return NextResponse.json(
         { error: 'Media ID is required' },
         { status: 400 }
       )
@@ -21,17 +21,17 @@ export async function GET(
 
     const {
       data: { user },
-      error: authErro,
+      error: authError,
     } = await supabase.auth.getUser()
 
-    if (authErro || !user) {
-      return PróximoResponse.json(
+    if (authError || !user) {
+      return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       )
     }
 
-    // Resolver the caller's account_id — whatsapp_config is one-per-
+    // Resolve the caller's account_id — whatsapp_config is one-per-
     // account post-multi-user, so a teammate fetching media for a
     // conversation in the shared inbox needs the account's config,
     // not their personal (non-existent) row.
@@ -42,21 +42,21 @@ export async function GET(
       .maybeSingle()
     const accountId = profile?.account_id as string | undefined
     if (!accountId) {
-      return PróximoResponse.json(
+      return NextResponse.json(
         { error: 'Your profile is not linked to an account.' },
         { status: 403 },
       )
     }
 
     // Fetch and decrypt WhatsApp config
-    const { data: config, error: configErro } = await supabase
+    const { data: config, error: configError } = await supabase
       .from('whatsapp_config')
       .select('*')
       .eq('account_id', accountId)
       .single()
 
-    if (configErro || !config) {
-      return PróximoResponse.json(
+    if (configError || !config) {
+      return NextResponse.json(
         { error: 'WhatsApp not configured' },
         { status: 400 }
       )
@@ -67,7 +67,7 @@ export async function GET(
     // Get the download URL from Meta
     const mediaInfo = await getMediaUrl({ mediaId, accessToken })
 
-    // Baixar the binary data
+    // Download the binary data
     const { buffer, contentType } = await downloadMedia({
       downloadUrl: mediaInfo.url,
       accessToken,
@@ -81,9 +81,9 @@ export async function GET(
       },
     })
   } catch (error) {
-    console.error('Erro in WhatsApp media GET:', error)
-    return PróximoResponse.json(
-      { error: 'Falhou to fetch media' },
+    console.error('Error in WhatsApp media GET:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch media' },
       { status: 500 }
     )
   }

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Rótulo } from "@/components/ui/label";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -15,46 +15,46 @@ import {
 } from "@/components/ui/card";
 import { MessageSquare, CheckCircle, ArrowLeft } from "lucide-react";
 
-export default function ForgotSenhaPage() {
-  const [email, setE-mail] = useState("");
-  const [error, setErro] = useState<string | null>(null);
+export default function ForgotPasswordPage() {
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [success, setSucesso] = useState(false);
+  const [success, setSuccess] = useState(false);
   const supabase = createClient();
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErro(null);
+    setError(null);
     setLoading(true);
 
-    const { error } = await supabase.auth.resetSenhaForE-mail(email, {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
     });
 
     if (error) {
-      setErro(error.message);
+      setError(error.message);
       setLoading(false);
       return;
     }
 
-    setSucesso(true);
+    setSuccess(true);
     setLoading(false);
   };
 
   if (success) {
     return (
-      <div classNome="flex min-h-screen items-center justify-center bg-slate-950 px-4">
-        <Card classNome="w-full max-w-md border-slate-800 bg-slate-900">
-          <CardHeader classNome="items-center text-center">
-            <div classNome="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-              <CheckCircle classNome="h-6 w-6 text-primary" />
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
+        <Card className="w-full max-w-md border-slate-800 bg-slate-900">
+          <CardHeader className="items-center text-center">
+            <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+              <CheckCircle className="h-6 w-6 text-primary" />
             </div>
-            <CardTitle classNome="text-xl text-white">
-              Verifique seu e-mail
+            <CardTitle className="text-xl text-white">
+              Check your email
             </CardTitle>
-            <CardDescription classNome="text-slate-400">
+            <CardDescription className="text-slate-400">
               We&apos;ve sent a password reset link to{" "}
-              <span classNome="text-white">{email}</span>. Please check your
+              <span className="text-white">{email}</span>. Please check your
               inbox.
             </CardDescription>
           </CardHeader>
@@ -62,9 +62,9 @@ export default function ForgotSenhaPage() {
             <Link href="/login">
               <Button
                 variant="outline"
-                classNome="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
               >
-                Voltar ao login
+                Back to sign in
               </Button>
             </Link>
           </CardContent>
@@ -74,55 +74,55 @@ export default function ForgotSenhaPage() {
   }
 
   return (
-    <div classNome="flex min-h-screen items-center justify-center bg-slate-950 px-4">
-      <Card classNome="w-full max-w-md border-slate-800 bg-slate-900">
-        <CardHeader classNome="items-center text-center">
-          <div classNome="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-            <MessageSquare classNome="h-6 w-6 text-primary" />
+    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
+      <Card className="w-full max-w-md border-slate-800 bg-slate-900">
+        <CardHeader className="items-center text-center">
+          <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+            <MessageSquare className="h-6 w-6 text-primary" />
           </div>
-          <CardTitle classNome="text-xl text-white">Reset password</CardTitle>
-          <CardDescription classNome="text-slate-400">
+          <CardTitle className="text-xl text-white">Reset password</CardTitle>
+          <CardDescription className="text-slate-400">
             Enter your email and we&apos;ll send you a reset link
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleReset} classNome="flex flex-col gap-4">
+          <form onSubmit={handleReset} className="flex flex-col gap-4">
             {error && (
-              <div classNome="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+              <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
                 {error}
               </div>
             )}
 
-            <div classNome="flex flex-col gap-2">
-              <Rótulo htmlFor="email" classNome="text-slate-300">
-                E-mail
-              </Rótulo>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="email" className="text-slate-300">
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="voce@exemplo.com"
+                placeholder="you@example.com"
                 value={email}
-                onChange={(e) => setE-mail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
                 required
-                classNome="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500 focus-visible:border-primary focus-visible:ring-primary/20"
+                className="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500 focus-visible:border-primary focus-visible:ring-primary/20"
               />
             </div>
 
             <Button
               type="submit"
               disabled={loading}
-              classNome="mt-2 h-10 w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              className="mt-2 h-10 w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
-              {loading ? "Enviaring..." : "Enviar reset link"}
+              {loading ? "Sending..." : "Send reset link"}
             </Button>
           </form>
 
           <Link
             href="/login"
-            classNome="mt-6 flex items-center justify-center gap-2 text-sm text-slate-400 hover:text-slate-300"
+            className="mt-6 flex items-center justify-center gap-2 text-sm text-slate-400 hover:text-slate-300"
           >
-            <ArrowLeft classNome="h-4 w-4" />
-            Voltar ao login
+            <ArrowLeft className="h-4 w-4" />
+            Back to sign in
           </Link>
         </CardContent>
       </Card>

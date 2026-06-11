@@ -5,28 +5,28 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
-import { MessageModelo } from '@/types';
-import { Step1ChooseModelo } from '@/components/broadcasts/step1-choose-template';
-import { Step2SelecionarAudience } from '@/components/broadcasts/step2-select-audience';
+import { MessageTemplate } from '@/types';
+import { Step1ChooseTemplate } from '@/components/broadcasts/step1-choose-template';
+import { Step2SelectAudience } from '@/components/broadcasts/step2-select-audience';
 import { Step3Personalize } from '@/components/broadcasts/step3-personalize';
-import { Step4ScheduleEnviar } from '@/components/broadcasts/step4-schedule-send';
-import { useBroadcastEnviaring } from '@/hooks/use-broadcast-sending';
+import { Step4ScheduleSend } from '@/components/broadcasts/step4-schedule-send';
+import { useBroadcastSending } from '@/hooks/use-broadcast-sending';
 import { Check } from 'lucide-react';
 
 const steps = [
-  { label: 'Modelo', key: 'template' },
+  { label: 'Template', key: 'template' },
   { label: 'Audience', key: 'audience' },
   { label: 'Personalize', key: 'personalize' },
-  { label: 'Enviar', key: 'send' },
+  { label: 'Send', key: 'send' },
 ] as const;
 
-export default function NovoBroadcastPage() {
+export default function NewBroadcastPage() {
   const router = useRouter();
   const { accountId } = useAuth();
-  const { createAndEnviarBroadcast, isProcessing, progress } = useBroadcastEnviaring();
+  const { createAndSendBroadcast, isProcessing, progress } = useBroadcastSending();
 
   const [currentStep, setCurrentStep] = useState(0);
-  const [template, setModelo] = useState<MessageModelo | null>(null);
+  const [template, setTemplate] = useState<MessageTemplate | null>(null);
   const [audience, setAudience] = useState<{
     type: 'all' | 'tags' | 'custom_field' | 'csv';
     tagIds?: string[];
@@ -35,35 +35,35 @@ export default function NovoBroadcastPage() {
       operator: 'is' | 'is_not' | 'contains';
       value: string;
     };
-    csvContatos?: { phone: string; name?: string }[];
+    csvContacts?: { phone: string; name?: string }[];
     excludeTagIds?: string[];
   }>({ type: 'all' });
   const [variables, setVariables] = useState<
     Record<string, { type: 'static' | 'field' | 'custom_field'; value: string }>
   >({});
-  const [name, setNome] = useState('');
+  const [name, setName] = useState('');
 
-  async function handleEnviar() {
+  async function handleSend() {
     if (!template) return;
 
     try {
-      const broadcastId = await createAndEnviarBroadcast({
+      const broadcastId = await createAndSendBroadcast({
         name,
         template,
         audience: {
           type: audience.type,
           tagIds: audience.tagIds,
           customField: audience.customField,
-          csvContatos: audience.csvContatos,
+          csvContacts: audience.csvContacts,
           excludeTagIds: audience.excludeTagIds,
         },
         variables,
       });
       router.push(`/broadcasts/${broadcastId}`);
     } catch (err) {
-      // Anteriorly swallowed with console.error — the wizard would
+      // Previously swallowed with console.error — the wizard would
       // just no-op, leaving the user confused. Surface the reason.
-      const message = err instanceof Erro ? err.message : 'Broadcast failed';
+      const message = err instanceof Error ? err.message : 'Broadcast failed';
       console.error('Broadcast failed:', err);
       toast.error(message);
     }
@@ -78,7 +78,7 @@ export default function NovoBroadcastPage() {
    * recognize the draft but not to exactly round-trip into the wizard.
    * A full resume-draft UX is a future polish.
    */
-  async function handleSalvarRascunho() {
+  async function handleSaveDraft() {
     if (!template || !name.trim()) {
       toast.error('Give the broadcast a name before saving a draft.');
       return;
@@ -118,46 +118,46 @@ export default function NovoBroadcastPage() {
     });
 
     if (error) {
-      toast.error(`Falhou to save draft: ${error.message}`);
+      toast.error(`Failed to save draft: ${error.message}`);
       return;
     }
-    toast.success('Rascunho saved');
+    toast.success('Draft saved');
     router.push('/broadcasts');
   }
 
   return (
-    <div classNome="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto max-w-3xl space-y-8">
       {/* Header */}
       <div>
-        <h1 classNome="text-2xl font-bold text-white">Novo Broadcast</h1>
-        <p classNome="mt-1 text-sm text-slate-400">
-          Criar and send a broadcast message to your contacts.
+        <h1 className="text-2xl font-bold text-white">New Broadcast</h1>
+        <p className="mt-1 text-sm text-slate-400">
+          Create and send a broadcast message to your contacts.
         </p>
       </div>
 
       {/* Step Indicator */}
-      <div classNome="flex items-center justify-between">
+      <div className="flex items-center justify-between">
         {steps.map((step, index) => {
-          const isAtivo = index === currentStep;
+          const isActive = index === currentStep;
           const isCompleted = index < currentStep;
 
           return (
-            <div key={step.key} classNome="flex flex-1 items-center">
-              <div classNome="flex items-center gap-2">
+            <div key={step.key} className="flex flex-1 items-center">
+              <div className="flex items-center gap-2">
                 <div
-                  classNome={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium transition-all ${
+                  className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium transition-all ${
                     isCompleted
                       ? 'bg-primary text-primary-foreground'
-                      : isAtivo
+                      : isActive
                         ? 'border-2 border-primary bg-primary/10 text-primary'
                         : 'border border-slate-700 bg-slate-800 text-slate-500'
                   }`}
                 >
-                  {isCompleted ? <Check classNome="h-4 w-4" /> : index + 1}
+                  {isCompleted ? <Check className="h-4 w-4" /> : index + 1}
                 </div>
                 <span
-                  classNome={`hidden text-sm font-medium sm:block ${
-                    isAtivo ? 'text-white' : isCompleted ? 'text-primary' : 'text-slate-500'
+                  className={`hidden text-sm font-medium sm:block ${
+                    isActive ? 'text-white' : isCompleted ? 'text-primary' : 'text-slate-500'
                   }`}
                 >
                   {step.label}
@@ -165,7 +165,7 @@ export default function NovoBroadcastPage() {
               </div>
               {index < steps.length - 1 && (
                 <div
-                  classNome={`mx-3 h-px flex-1 ${
+                  className={`mx-3 h-px flex-1 ${
                     index < currentStep ? 'bg-primary' : 'bg-slate-800'
                   }`}
                 />
@@ -176,28 +176,28 @@ export default function NovoBroadcastPage() {
       </div>
 
       {/* Step Content */}
-      <div classNome="relative min-h-[400px]">
+      <div className="relative min-h-[400px]">
         <div
-          classNome="transition-all duration-300 ease-in-out"
+          className="transition-all duration-300 ease-in-out"
           style={{
             opacity: isProcessing ? 0.6 : 1,
             pointerEvents: isProcessing ? 'none' : 'auto',
           }}
         >
           {currentStep === 0 && (
-            <Step1ChooseModelo
-              selectedModelo={template}
-              onSelecionar={setModelo}
-              onPróximo={() => setCurrentStep(1)}
-              onVoltar={() => router.push('/broadcasts')}
+            <Step1ChooseTemplate
+              selectedTemplate={template}
+              onSelect={setTemplate}
+              onNext={() => setCurrentStep(1)}
+              onBack={() => router.push('/broadcasts')}
             />
           )}
           {currentStep === 1 && (
-            <Step2SelecionarAudience
+            <Step2SelectAudience
               audience={audience}
               onUpdate={setAudience}
-              onPróximo={() => setCurrentStep(2)}
-              onVoltar={() => setCurrentStep(0)}
+              onNext={() => setCurrentStep(2)}
+              onBack={() => setCurrentStep(0)}
             />
           )}
           {currentStep === 2 && template && (
@@ -205,19 +205,19 @@ export default function NovoBroadcastPage() {
               template={template}
               variables={variables}
               onUpdate={setVariables}
-              onPróximo={() => setCurrentStep(3)}
-              onVoltar={() => setCurrentStep(1)}
+              onNext={() => setCurrentStep(3)}
+              onBack={() => setCurrentStep(1)}
             />
           )}
           {currentStep === 3 && template && (
-            <Step4ScheduleEnviar
+            <Step4ScheduleSend
               name={name}
-              onNomeChange={setNome}
+              onNameChange={setName}
               template={template}
               audience={audience}
-              onEnviar={handleEnviar}
-              onSalvarRascunho={handleSalvarRascunho}
-              onVoltar={() => setCurrentStep(2)}
+              onSend={handleSend}
+              onSaveDraft={handleSaveDraft}
+              onBack={() => setCurrentStep(2)}
               isProcessing={isProcessing}
               progress={progress}
             />

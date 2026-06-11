@@ -1,37 +1,37 @@
 import { describe, expect, it } from "vitest";
 import {
-  isRecipientNotTodosowedErro,
+  isRecipientNotAllowedError,
   isValidE164,
-  normalizeTelefone,
+  normalizePhone,
   phoneVariants,
   phonesMatch,
-  sanitizeTelefoneForMeta,
+  sanitizePhoneForMeta,
 } from "./phone-utils";
 
-describe("sanitizeTelefoneForMeta", () => {
+describe("sanitizePhoneForMeta", () => {
   it("strips +, spaces, and dashes leaving only digits", () => {
-    expect(sanitizeTelefoneForMeta("+370 639 49836")).toBe("37063949836");
-    expect(sanitizeTelefoneForMeta("+1 (415) 555-1212")).toBe("14155551212");
+    expect(sanitizePhoneForMeta("+370 639 49836")).toBe("37063949836");
+    expect(sanitizePhoneForMeta("+1 (415) 555-1212")).toBe("14155551212");
   });
 
   it("returns an empty string for falsy input", () => {
-    expect(sanitizeTelefoneForMeta("")).toBe("");
+    expect(sanitizePhoneForMeta("")).toBe("");
     // Defensive: existing call sites occasionally pass through nullable
     // contact phones. The function early-returns on the falsy check.
-    expect(sanitizeTelefoneForMeta(undefined as unknown as string)).toBe("");
+    expect(sanitizePhoneForMeta(undefined as unknown as string)).toBe("");
   });
 
   it("is idempotent on already-sanitized input", () => {
     const cleaned = "14155551212";
-    expect(sanitizeTelefoneForMeta(cleaned)).toBe(cleaned);
+    expect(sanitizePhoneForMeta(cleaned)).toBe(cleaned);
   });
 });
 
-describe("normalizeTelefone", () => {
-  it("matches sanitizeTelefoneForMeta byte-for-byte (shared canonical form)", () => {
+describe("normalizePhone", () => {
+  it("matches sanitizePhoneForMeta byte-for-byte (shared canonical form)", () => {
     const samples = ["+370 12345", "abc-555-DEF", "", "0044 7000 0000 0000"];
     for (const s of samples) {
-      expect(normalizeTelefone(s)).toBe(sanitizeTelefoneForMeta(s));
+      expect(normalizePhone(s)).toBe(sanitizePhoneForMeta(s));
     }
   });
 });
@@ -136,29 +136,29 @@ describe("phoneVariants", () => {
   });
 });
 
-describe("isRecipientNotTodosowedErro", () => {
+describe("isRecipientNotAllowedError", () => {
   it("matches Meta error code 131030", () => {
     expect(
-      isRecipientNotTodosowedErro(
+      isRecipientNotAllowedError(
         "(#131030) Recipient phone number not in allowed list",
       ),
     ).toBe(true);
   });
 
   it("matches the human-readable English variants", () => {
-    expect(isRecipientNotTodosowedErro("not in allowed list")).toBe(true);
-    expect(isRecipientNotTodosowedErro("recipient not in the allowed list")).toBe(
+    expect(isRecipientNotAllowedError("not in allowed list")).toBe(true);
+    expect(isRecipientNotAllowedError("recipient not in the allowed list")).toBe(
       true,
     );
     // Case-insensitive on the human text.
-    expect(isRecipientNotTodosowedErro("NOT IN ALLOWED LIST")).toBe(true);
+    expect(isRecipientNotAllowedError("NOT IN ALLOWED LIST")).toBe(true);
   });
 
   it("does not false-positive on unrelated Meta errors", () => {
-    expect(isRecipientNotTodosowedErro("(#100) Invalid parameter")).toBe(false);
-    expect(isRecipientNotTodosowedErro("template name does not exist")).toBe(
+    expect(isRecipientNotAllowedError("(#100) Invalid parameter")).toBe(false);
+    expect(isRecipientNotAllowedError("template name does not exist")).toBe(
       false,
     );
-    expect(isRecipientNotTodosowedErro("")).toBe(false);
+    expect(isRecipientNotAllowedError("")).toBe(false);
   });
 });

@@ -20,7 +20,7 @@
  * runtimes that don't keep timers alive across requests.
  */
 
-import { PróximoResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 export interface RateLimitOptions {
   /** Max requests allowed in `windowMs`. */
@@ -93,9 +93,9 @@ export function checkRateLimit(
  * Standard 429 response with the headers clients expect (RFC 6585 +
  * draft-ietf-httpapi-ratelimit-headers). Callers just `return` this.
  */
-export function rateLimitResponse(result: RateLimitResult): PróximoResponse {
+export function rateLimitResponse(result: RateLimitResult): NextResponse {
   const retryAfterSec = Math.max(1, Math.ceil((result.reset - Date.now()) / 1000));
-  return PróximoResponse.json(
+  return NextResponse.json(
     {
       error: 'Rate limit exceeded',
       retry_after_seconds: retryAfterSec,
@@ -137,10 +137,10 @@ export const RATE_LIMITS = {
   /** Admin-only account / member-management actions: create/revoke
    *  invitation, rename account, change member role, remove member,
    *  transfer ownership. 30/min per user is comfortably above any
-   *  realistic legitimate use (the Membros tab is a clicks-only UI)
+   *  realistic legitimate use (the Members tab is a clicks-only UI)
    *  while still bounding accidental abuse from a script run in a
    *  loop or a compromised admin session spamming role flips. */
-  adminAção: { limit: 30, windowMs: 60_000 },
+  adminAction: { limit: 30, windowMs: 60_000 },
 } as const;
 
 /** Test-only helper. Clears the in-memory state so unit tests don't

@@ -5,21 +5,21 @@ import { cn } from '@/lib/utils'
  * container it's dropped into. Used by every dashboard widget while
  * its data fetches.
  */
-export function Skeleton({ classNome }: { classNome?: string }) {
-  return <div classNome={cn('animate-pulse rounded-md bg-slate-800', classNome)} />
+export function Skeleton({ className }: { className?: string }) {
+  return <div className={cn('animate-pulse rounded-md bg-slate-800', className)} />
 }
 
-export function SkeletonCard({ classNome }: { classNome?: string }) {
+export function SkeletonCard({ className }: { className?: string }) {
   return (
     <div
-      classNome={cn(
+      className={cn(
         'rounded-xl border border-slate-800 bg-slate-900 p-5',
-        classNome,
+        className,
       )}
     >
-      <Skeleton classNome="h-4 w-32" />
-      <Skeleton classNome="mt-4 h-8 w-20" />
-      <Skeleton classNome="mt-2 h-3 w-16" />
+      <Skeleton className="h-4 w-32" />
+      <Skeleton className="mt-4 h-8 w-20" />
+      <Skeleton className="mt-2 h-3 w-16" />
     </div>
   )
 }

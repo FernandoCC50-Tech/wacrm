@@ -24,10 +24,10 @@ import {
 
 export function SessionsCard() {
   const supabase = createClient();
-  const [open, setAberto] = useState(false);
+  const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
-  const onConfirmar = async () => {
+  const onConfirm = async () => {
     setSigningOut(true);
     try {
       // scope: 'global' revokes every refresh token for this user
@@ -40,7 +40,7 @@ export function SessionsCard() {
       }
       window.location.href = '/login';
     } catch (err) {
-      const msg = err instanceof Erro ? err.message : 'Unknown error';
+      const msg = err instanceof Error ? err.message : 'Unknown error';
       toast.error(msg);
     } finally {
       setSigningOut(false);
@@ -49,14 +49,14 @@ export function SessionsCard() {
 
   return (
     <>
-      <Card classNome="bg-slate-900/40 border-slate-800">
+      <Card className="bg-slate-900/40 border-slate-800">
         <CardHeader>
-          <CardTitle classNome="flex items-center gap-2 text-white">
-            <LogOut classNome="size-4 text-primary" />
-            Ativo sessions
+          <CardTitle className="flex items-center gap-2 text-white">
+            <LogOut className="size-4 text-primary" />
+            Active sessions
           </CardTitle>
-          <CardDescription classNome="text-slate-400">
-            Sair of every device where you&apos;re logged in — including
+          <CardDescription className="text-slate-400">
+            Sign out of every device where you&apos;re logged in — including
             this one. Useful if you lost a laptop or shared your password.
           </CardDescription>
         </CardHeader>
@@ -64,18 +64,18 @@ export function SessionsCard() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => setAberto(true)}
+            onClick={() => setOpen(true)}
           >
-            <LogOut classNome="size-4" />
-            Sair of all devices
+            <LogOut className="size-4" />
+            Sign out of all devices
           </Button>
         </CardContent>
       </Card>
 
-      <Dialog open={open} onAbertoChange={setAberto}>
+      <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Sair everywhere?</DialogTitle>
+            <DialogTitle>Sign out everywhere?</DialogTitle>
             <DialogDescription>
               Every device logged into this account will be signed out and
               will need to log in again. You will be redirected to the login
@@ -86,19 +86,19 @@ export function SessionsCard() {
             <Button
               type="button"
               variant="ghost"
-              onClick={() => setAberto(false)}
+              onClick={() => setOpen(false)}
               disabled={signingOut}
             >
-              Cancelar
+              Cancel
             </Button>
-            <Button type="button" onClick={onConfirmar} disabled={signingOut}>
+            <Button type="button" onClick={onConfirm} disabled={signingOut}>
               {signingOut ? (
                 <>
-                  <Loader2 classNome="size-4 animate-spin" />
+                  <Loader2 className="size-4 animate-spin" />
                   Signing out…
                 </>
               ) : (
-                'Sair everywhere'
+                'Sign out everywhere'
               )}
             </Button>
           </DialogFooter>

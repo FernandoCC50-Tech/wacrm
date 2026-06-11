@@ -5,10 +5,10 @@ import { cn } from "@/lib/utils";
 import type { Message } from "@/types";
 
 interface ReplyQuoteProps {
-  /** Enviarer label of the quoted message: "You" for our own messages,
+  /** Sender label of the quoted message: "You" for our own messages,
    *  contact name for customer-sent messages. Caller resolves this — the
    *  quote component doesn't see the parent Message. */
-  authorRótulo: string;
+  authorLabel: string;
   /** Compact text preview. Falls back to a placeholder for media types. */
   preview: string;
   /** Present → renders the composer-chip variant with an X button. Absent →
@@ -17,23 +17,23 @@ interface ReplyQuoteProps {
 }
 
 export function ReplyQuote({
-  authorRótulo,
+  authorLabel,
   preview,
   onDismiss,
 }: ReplyQuoteProps) {
   const isChip = !!onDismiss;
   return (
     <div
-      classNome={cn(
+      className={cn(
         "flex items-start gap-2 border-l-2 border-primary px-2 py-1",
         isChip
           ? "rounded-md bg-slate-800/80"
           : "mb-1.5 rounded-md bg-black/20",
       )}
     >
-      <div classNome="min-w-0 flex-1 overflow-hidden">
-        <div classNome="truncate text-[11px] font-medium text-primary">
-          {authorRótulo}
+      <div className="min-w-0 flex-1 overflow-hidden">
+        <div className="truncate text-[11px] font-medium text-primary">
+          {authorLabel}
         </div>
         {/* Wrap the preview instead of truncating to a single line.
          *  `truncate` (white-space: nowrap) forced the quote onto one
@@ -42,7 +42,7 @@ export function ReplyQuote({
          *  layout wider, shoving the contact sidebar off-screen.
          *  `break-words` also wraps long URLs that have no whitespace
          *  to break on. Issue #165. */}
-        <div classNome="whitespace-pre-wrap break-words text-xs text-slate-200/80">
+        <div className="whitespace-pre-wrap break-words text-xs text-slate-200/80">
           {preview}
         </div>
       </div>
@@ -50,10 +50,10 @@ export function ReplyQuote({
         <button
           type="button"
           onClick={onDismiss}
-          aria-label="Cancelar reply"
-          classNome="flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-400 hover:bg-slate-700 hover:text-white"
+          aria-label="Cancel reply"
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-400 hover:bg-slate-700 hover:text-white"
         >
-          <X classNome="h-3.5 w-3.5" />
+          <X className="h-3.5 w-3.5" />
         </button>
       )}
     </div>
@@ -75,7 +75,7 @@ export function buildReplyPreview(message: Message): string {
     case "location":
       return "[Location]";
     case "template":
-      return "[Modelo]";
+      return "[Template]";
     default:
       return "[Message]";
   }

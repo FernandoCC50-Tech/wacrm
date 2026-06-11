@@ -10,8 +10,8 @@
  *   https://developers.facebook.com/docs/whatsapp/business-management-api/message-templates/components
  */
 
-import type { ModeloPayload } from './template-validators';
-import type { ModeloButton } from '@/types';
+import type { TemplatePayload } from './template-validators';
+import type { TemplateButton } from '@/types';
 
 export interface MetaComponent {
   type: 'HEADER' | 'BODY' | 'FOOTER' | 'BUTTONS';
@@ -34,7 +34,7 @@ interface MetaButtonPayload {
   example?: string[];
 }
 
-function buildHeaderComponent(payload: ModeloPayload): MetaComponent | null {
+function buildHeaderComponent(payload: TemplatePayload): MetaComponent | null {
   const { header_type, header_content, header_media_url, header_handle } = payload;
   if (!header_type) return null;
 
@@ -66,7 +66,7 @@ function buildHeaderComponent(payload: ModeloPayload): MetaComponent | null {
   return component;
 }
 
-function buildBodyComponent(payload: ModeloPayload): MetaComponent {
+function buildBodyComponent(payload: TemplatePayload): MetaComponent {
   const component: MetaComponent = {
     type: 'BODY',
     text: payload.body_text,
@@ -81,12 +81,12 @@ function buildBodyComponent(payload: ModeloPayload): MetaComponent {
   return component;
 }
 
-function buildFooterComponent(payload: ModeloPayload): MetaComponent | null {
+function buildFooterComponent(payload: TemplatePayload): MetaComponent | null {
   if (!payload.footer_text?.trim()) return null;
   return { type: 'FOOTER', text: payload.footer_text };
 }
 
-function buildButtonPayload(b: ModeloButton): MetaButtonPayload {
+function buildButtonPayload(b: TemplateButton): MetaButtonPayload {
   switch (b.type) {
     case 'QUICK_REPLY':
       return { type: 'QUICK_REPLY', text: b.text };
@@ -106,7 +106,7 @@ function buildButtonPayload(b: ModeloButton): MetaButtonPayload {
   }
 }
 
-function buildButtonsComponent(payload: ModeloPayload): MetaComponent | null {
+function buildButtonsComponent(payload: TemplatePayload): MetaComponent | null {
   if (!payload.buttons || payload.buttons.length === 0) return null;
   return {
     type: 'BUTTONS',
@@ -114,7 +114,7 @@ function buildButtonsComponent(payload: ModeloPayload): MetaComponent | null {
   };
 }
 
-export interface MetaModeloSubmitPayload {
+export interface MetaTemplateSubmitPayload {
   name: string;
   category: 'MARKETING' | 'UTILITY' | 'AUTHENTICATION';
   language: string;
@@ -123,7 +123,7 @@ export interface MetaModeloSubmitPayload {
 
 const CATEGORY_TO_META: Record<
   'Marketing' | 'Utility' | 'Authentication',
-  MetaModeloSubmitPayload['category']
+  MetaTemplateSubmitPayload['category']
 > = {
   Marketing: 'MARKETING',
   Utility: 'UTILITY',
@@ -134,9 +134,9 @@ const CATEGORY_TO_META: Record<
  * Assemble the full submit payload (name + category + language +
  * components in canonical order: HEADER → BODY → FOOTER → BUTTONS).
  */
-export function buildMetaModeloPayload(
-  payload: ModeloPayload,
-): MetaModeloSubmitPayload {
+export function buildMetaTemplatePayload(
+  payload: TemplatePayload,
+): MetaTemplateSubmitPayload {
   const components: MetaComponent[] = [];
   const header = buildHeaderComponent(payload);
   if (header) components.push(header);

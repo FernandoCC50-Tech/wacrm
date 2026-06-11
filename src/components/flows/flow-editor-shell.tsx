@@ -21,8 +21,8 @@ import { LayoutGrid, ListTree } from "lucide-react";
 
 import { FlowBuilder } from "./flow-builder";
 import { FlowCanvas } from "./flow-canvas";
-import { FlowEditarorProvider } from "./flow-editor-state";
-import { EditarorHeader } from "./header";
+import { FlowEditorProvider } from "./flow-editor-state";
+import { EditorHeader } from "./header";
 import { ValidationPanel } from "./validation-panel";
 import { cn } from "@/lib/utils";
 import type { FlowRow, FlowNodeRow } from "@/lib/flows/types";
@@ -37,15 +37,15 @@ const MOBILE_BREAKPOINT = "(max-width: 767px)";
 
 type View = "canvas" | "list";
 
-const STORAGE_KEY = "wacrm.flowEditaror.view";
+const STORAGE_KEY = "wacrm.flowEditor.view";
 
 interface Props {
   initialFlow: FlowRow;
   initialNodes: FlowNodeRow[];
 }
 
-export function FlowEditarorShell({ initialFlow, initialNodes }: Props) {
-  // Lido the persisted choice in the useState initializer. Safe even
+export function FlowEditorShell({ initialFlow, initialNodes }: Props) {
+  // Read the persisted choice in the useState initializer. Safe even
   // though this is a client component because the parent page only
   // mounts us AFTER a client-side fetch resolves — there's no SSR
   // pass for this subtree, so no hydration mismatch to worry about.
@@ -77,26 +77,26 @@ export function FlowEditarorShell({ initialFlow, initialNodes }: Props) {
   };
 
   return (
-    <FlowEditarorProvider initialFlow={initialFlow} initialNodes={initialNodes}>
-      <div classNome="mx-auto flex h-full max-w-4xl flex-col gap-6 p-6">
-        <EditarorHeader />
+    <FlowEditorProvider initialFlow={initialFlow} initialNodes={initialNodes}>
+      <div className="mx-auto flex h-full max-w-4xl flex-col gap-6 p-6">
+        <EditorHeader />
         {!isMobile && (
-          <div classNome="flex items-center justify-end">
+          <div className="flex items-center justify-end">
             <div
               role="group"
-              aria-label="Editaror view"
-              classNome="inline-flex items-center gap-1 rounded-md border border-slate-700 bg-slate-900 p-0.5 text-xs"
+              aria-label="Editor view"
+              className="inline-flex items-center gap-1 rounded-md border border-slate-700 bg-slate-900 p-0.5 text-xs"
             >
               <ToggleButton
                 active={effectiveView === "canvas"}
                 onClick={() => choose("canvas")}
-                icon={<LayoutGrid classNome="h-3 w-3" />}
+                icon={<LayoutGrid className="h-3 w-3" />}
                 label="Canvas"
               />
               <ToggleButton
                 active={effectiveView === "list"}
                 onClick={() => choose("list")}
-                icon={<ListTree classNome="h-3 w-3" />}
+                icon={<ListTree className="h-3 w-3" />}
                 label="List"
               />
             </div>
@@ -108,11 +108,11 @@ export function FlowEditarorShell({ initialFlow, initialNodes }: Props) {
         {/* Sticky-bottom validation panel mirrors the placement used
             when this lived inside FlowBuilder — the activate-readiness
             status follows the user as they scroll, in either view. */}
-        <div classNome="sticky bottom-4 z-10 shadow-xl shadow-slate-950/60">
+        <div className="sticky bottom-4 z-10 shadow-xl shadow-slate-950/60">
           <ValidationPanel />
         </div>
       </div>
-    </FlowEditarorProvider>
+    </FlowEditorProvider>
   );
 }
 
@@ -154,7 +154,7 @@ function ToggleButton({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      classNome={cn(
+      className={cn(
         "inline-flex items-center gap-1.5 rounded px-2 py-1 transition-colors",
         active
           ? "bg-slate-700 text-slate-100"

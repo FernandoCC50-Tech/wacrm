@@ -12,7 +12,7 @@
 //   ├──────────────────────┼───────────────┼─────────────────────────┤
 //   │ loading              │ —             │ spinner                  │
 //   │ ok:false (any reason)│ —             │ friendly error + signup  │
-//   │ ok:true              │ signed out    │ "Sign up" + "Entrar"    │
+//   │ ok:true              │ signed out    │ "Sign up" + "Sign in"    │
 //   │ ok:true              │ signed in     │ "Accept" button → redeem │
 //   └──────────────────────┴───────────────┴─────────────────────────┘
 //
@@ -85,7 +85,7 @@ const FAIL_COPY: Record<PeekFail['reason'], { title: string; body: string }> = {
     body: 'This invitation has expired. Ask the account admin to send a new one — they take a few seconds to generate.',
   },
   server_error: {
-    title: 'Algo deu errado',
+    title: 'Something went wrong',
     body: 'We couldn’t verify this invitation right now. Try refreshing the page in a moment.',
   },
 };
@@ -109,7 +109,7 @@ export default function JoinPage() {
   const [conflictMessage, setConflictMessage] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
 
-  // Extracted so the "Tentar novamente" button on the server_error card
+  // Extracted so the "Try again" button on the server_error card
   // can re-run the same logic without remounting the component.
   const loadPeekAndAuth = useCallback(async () => {
     if (!token) return;
@@ -183,10 +183,10 @@ export default function JoinPage() {
         if (res.status === 409) {
           setConflictMessage(
             payload.error ||
-              'You are already in another account. Entrar with a different email to join this one.',
+              'You are already in another account. Sign in with a different email to join this one.',
           );
         } else {
-          toast.error(payload.error || 'Falhou to accept invitation');
+          toast.error(payload.error || 'Failed to accept invitation');
         }
         setAccepting(false);
         return;
@@ -220,10 +220,10 @@ export default function JoinPage() {
   // ----- Loading state (peek pending OR auth not yet resolved) -----
   if (peek === null || authedUserId === undefined) {
     return (
-      <Card classNome="w-full max-w-md border-slate-800 bg-slate-900">
-        <CardContent classNome="flex flex-col items-center gap-3 py-12">
-          <Loader2 classNome="size-6 animate-spin text-primary" />
-          <p classNome="text-sm text-slate-400">Verificaring invitation…</p>
+      <Card className="w-full max-w-md border-slate-800 bg-slate-900">
+        <CardContent className="flex flex-col items-center gap-3 py-12">
+          <Loader2 className="size-6 animate-spin text-primary" />
+          <p className="text-sm text-slate-400">Verifying invitation…</p>
         </CardContent>
       </Card>
     );
@@ -233,17 +233,17 @@ export default function JoinPage() {
   if (!peek.ok) {
     const copy = FAIL_COPY[peek.reason];
     return (
-      <Card classNome="w-full max-w-md border-slate-800 bg-slate-900">
-        <CardHeader classNome="items-center text-center">
-          <div classNome="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-red-500/10">
-            <MailX classNome="h-6 w-6 text-red-400" />
+      <Card className="w-full max-w-md border-slate-800 bg-slate-900">
+        <CardHeader className="items-center text-center">
+          <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-red-500/10">
+            <MailX className="h-6 w-6 text-red-400" />
           </div>
-          <CardTitle classNome="text-xl text-white">{copy.title}</CardTitle>
-          <CardDescription classNome="text-slate-400">
+          <CardTitle className="text-xl text-white">{copy.title}</CardTitle>
+          <CardDescription className="text-slate-400">
             {copy.body}
           </CardDescription>
         </CardHeader>
-        <CardContent classNome="flex flex-col gap-2">
+        <CardContent className="flex flex-col gap-2">
           {/* For server_error the failure is transient — the network
               flapped or the peek endpoint hiccupped. Try-again is
               the right primary action; the "create account" /
@@ -255,32 +255,32 @@ export default function JoinPage() {
             <>
               <Button
                 onClick={loadPeekAndAuth}
-                classNome="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
               >
-                Tentar novamente
+                Try again
               </Button>
               <Link href="/signup">
                 <Button
                   variant="outline"
-                  classNome="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                  className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
                 >
-                  Criar a new account instead
+                  Create a new account instead
                 </Button>
               </Link>
             </>
           ) : (
             <>
               <Link href="/signup">
-                <Button classNome="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                  Criar a new account instead
+                <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                  Create a new account instead
                 </Button>
               </Link>
               <Link href="/login">
                 <Button
                   variant="outline"
-                  classNome="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                  className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
                 >
-                  Entrar
+                  Sign in
                 </Button>
               </Link>
             </>
@@ -292,18 +292,18 @@ export default function JoinPage() {
 
   // ----- Peek OK -----
   const inviteHeader = (
-    <CardHeader classNome="items-center text-center">
-      <div classNome="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-        <UsersRound classNome="h-6 w-6 text-primary" />
+    <CardHeader className="items-center text-center">
+      <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+        <UsersRound className="h-6 w-6 text-primary" />
       </div>
-      <CardTitle classNome="text-xl text-white">
+      <CardTitle className="text-xl text-white">
         You&apos;re invited to{' '}
-        <span classNome="text-primary">{peek.account_name}</span>
+        <span className="text-primary">{peek.account_name}</span>
       </CardTitle>
-      <CardDescription classNome="text-slate-400">
+      <CardDescription className="text-slate-400">
         You&apos;ll join as{' '}
-        <span classNome="inline-flex items-center gap-1 text-white">
-          <ShieldCheck classNome="size-3.5 text-primary" />
+        <span className="inline-flex items-center gap-1 text-white">
+          <ShieldCheck className="size-3.5 text-primary" />
           {ROLE_LABEL[peek.role]}
         </span>
         . Link valid until{' '}
@@ -321,29 +321,29 @@ export default function JoinPage() {
   if (authedUserId) {
     return (
       <>
-        <Card classNome="w-full max-w-md border-slate-800 bg-slate-900">
+        <Card className="w-full max-w-md border-slate-800 bg-slate-900">
           {inviteHeader}
-          <CardContent classNome="flex flex-col gap-3">
+          <CardContent className="flex flex-col gap-3">
             <Button
               onClick={handleAccept}
               disabled={accepting}
-              classNome="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {accepting ? (
                 <>
-                  <Loader2 classNome="size-4 animate-spin" />
+                  <Loader2 className="size-4 animate-spin" />
                   Accepting…
                 </>
               ) : (
                 <>
-                  <CheckCircle classNome="size-4" />
+                  <CheckCircle className="size-4" />
                   Accept invitation
                 </>
               )}
             </Button>
-            <p classNome="text-center text-xs text-slate-500">
+            <p className="text-center text-xs text-slate-500">
               Accepting moves your login into{' '}
-              <span classNome="text-slate-400">{peek.account_name}</span>. Your
+              <span className="text-slate-400">{peek.account_name}</span>. Your
               empty personal account from signup will be cleaned up.
             </p>
           </CardContent>
@@ -355,49 +355,49 @@ export default function JoinPage() {
             they aren't stuck retrying an inevitable failure. */}
         <Dialog
           open={conflictMessage !== null}
-          onAbertoChange={(open) => {
+          onOpenChange={(open) => {
             if (!open) setConflictMessage(null);
           }}
         >
-          <DialogContent classNome="bg-slate-900 border-slate-700 sm:max-w-md">
+          <DialogContent className="bg-slate-900 border-slate-700 sm:max-w-md">
             <DialogHeader>
-              <DialogTitle classNome="flex items-center gap-2 text-white">
-                <AlertTriangle classNome="size-4 text-amber-400" />
+              <DialogTitle className="flex items-center gap-2 text-white">
+                <AlertTriangle className="size-4 text-amber-400" />
                 Can&apos;t join {peek.account_name} with this account
               </DialogTitle>
-              <DialogDescription classNome="text-slate-400">
+              <DialogDescription className="text-slate-400">
                 {conflictMessage}
               </DialogDescription>
             </DialogHeader>
-            <div classNome="space-y-2 py-2 text-xs text-slate-500">
+            <div className="space-y-2 py-2 text-xs text-slate-500">
               <p>
                 To join{' '}
-                <span classNome="text-slate-300">{peek.account_name}</span>,
+                <span className="text-slate-300">{peek.account_name}</span>,
                 sign out and sign up again with a different email address.
                 The invite link stays valid as long as it hasn&apos;t
                 expired.
               </p>
             </div>
-            <DialogFooter classNome="bg-slate-900 border-slate-700">
+            <DialogFooter className="bg-slate-900 border-slate-700">
               <Button
                 variant="outline"
                 onClick={() => setConflictMessage(null)}
-                classNome="border-slate-700 text-slate-300 hover:bg-slate-800"
+                className="border-slate-700 text-slate-300 hover:bg-slate-800"
               >
                 Stay signed in
               </Button>
               <Button
                 onClick={handleSignOutAndRetry}
                 disabled={signingOut}
-                classNome="bg-primary text-primary-foreground hover:bg-primary/90"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 {signingOut ? (
                   <>
-                    <Loader2 classNome="size-4 animate-spin" />
+                    <Loader2 className="size-4 animate-spin" />
                     Signing out…
                   </>
                 ) : (
-                  'Sair & use a different email'
+                  'Sign out & use a different email'
                 )}
               </Button>
             </DialogFooter>
@@ -409,18 +409,18 @@ export default function JoinPage() {
 
   // ----- Not authed: prompt to sign up or sign in -----
   return (
-    <Card classNome="w-full max-w-md border-slate-800 bg-slate-900">
+    <Card className="w-full max-w-md border-slate-800 bg-slate-900">
       {inviteHeader}
-      <CardContent classNome="flex flex-col gap-2">
+      <CardContent className="flex flex-col gap-2">
         <Link href={`/signup?invite=${encodeURIComponent(token!)}`}>
-          <Button classNome="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-            Criar conta &amp; join
+          <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+            Create account &amp; join
           </Button>
         </Link>
         <Link href={`/login?invite=${encodeURIComponent(token!)}`}>
           <Button
             variant="outline"
-            classNome="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+            className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
           >
             I already have an account
           </Button>

@@ -27,16 +27,16 @@ export interface StartNodeConfig {
   next_node_key: string;
 }
 
-export interface EnviarMessageNodeConfig {
+export interface SendMessageNodeConfig {
   /** Plain text sent to the customer; can interpolate {{vars.X}}. */
   text: string;
   /** Auto-advance target after the message lands at Meta. */
   next_node_key: string;
 }
 
-export interface EnviarButtonsNodeConfig {
+export interface SendButtonsNodeConfig {
   text: string;
-  /** Opcional header / footer lines around the buttons. */
+  /** Optional header / footer lines around the buttons. */
   header_text?: string;
   footer_text?: string;
   /** 1-3 buttons; Meta cap enforced in meta-api validation. */
@@ -50,9 +50,9 @@ export interface EnviarButtonsNodeConfig {
   }>;
 }
 
-export interface EnviarListNodeConfig {
+export interface SendListNodeConfig {
   text: string;
-  /** Rótulo of the tap-to-expand button on the message bubble. */
+  /** Label of the tap-to-expand button on the message bubble. */
   button_label: string;
   header_text?: string;
   footer_text?: string;
@@ -69,7 +69,7 @@ export interface EnviarListNodeConfig {
 }
 
 /**
- * Enviars a single image / video / document via WhatsApp, then
+ * Sends a single image / video / document via WhatsApp, then
  * auto-advances. The media file is uploaded to the `flow-media`
  * Supabase Storage bucket by the builder; `media_url` is the public
  * URL Meta fetches at send time.
@@ -81,11 +81,11 @@ export interface EnviarListNodeConfig {
  * the builder forms, engine cases, and add-menu entries for no
  * meaningful behavioural difference.
  */
-export interface EnviarMediaNodeConfig {
+export interface SendMediaNodeConfig {
   media_type: "image" | "video" | "document";
-  /** Public URL Meta will fetch. Enviared via the builder's file picker. */
+  /** Public URL Meta will fetch. Uploaded via the builder's file picker. */
   media_url: string;
-  /** Opcional caption shown under the media (Meta caps at 1024 chars). */
+  /** Optional caption shown under the media (Meta caps at 1024 chars). */
   caption?: string;
   /**
    * Filename shown in the recipient's chat. Documents only — Meta
@@ -98,10 +98,10 @@ export interface EnviarMediaNodeConfig {
 }
 
 export interface HandoffNodeConfig {
-  /** Opcional internal note written to flow_run_events.payload.note. */
+  /** Optional internal note written to flow_run_events.payload.note. */
   note?: string;
   /**
-   * Opcional agent user_id to assign on the conversation when this
+   * Optional agent user_id to assign on the conversation when this
    * node fires. Leave unset to flip the status without assignment.
    */
   assign_to?: string;
@@ -136,28 +136,28 @@ export interface CollectInputNodeConfig {
   next_node_key: string;
 }
 
-export type CondiçãoOperator =
+export type ConditionOperator =
   | "equals"
   | "contains"
   | "present"
   | "absent";
 
-export type CondiçãoSubject = "var" | "tag" | "contact_field";
+export type ConditionSubject = "var" | "tag" | "contact_field";
 
 /**
  * Routes the run based on a predicate over the contact's tags,
  * profile fields, or stored vars. Always auto-advances — no Meta
  * call, no customer-side input.
  */
-export interface CondiçãoNodeConfig {
-  subject: CondiçãoSubject;
+export interface ConditionNodeConfig {
+  subject: ConditionSubject;
   /**
    * For `var`: the key in flow_runs.vars.
    * For `tag`: the tag UUID (matched against contact_tags).
    * For `contact_field`: one of 'name' | 'email' | 'phone' | 'company'.
    */
   subject_key: string;
-  operator: CondiçãoOperator;
+  operator: ConditionOperator;
   /** Compared against `subject` for `equals`/`contains`. Ignored for `present`/`absent`. */
   value?: string;
   /** Node to advance to when the predicate evaluates true. */
@@ -178,7 +178,7 @@ export type EndNodeConfig = Record<string, never>;
 
 /**
  * Total union — every concrete node_type the v1 engine understands.
- * Adicionar new node types here and the engine's switch will flag missing
+ * Add new node types here and the engine's switch will flag missing
  * cases via TypeScript's exhaustiveness check.
  *
  * v1.5+ additions (collect_input, condition, set_tag, http_fetch) will
@@ -186,12 +186,12 @@ export type EndNodeConfig = Record<string, never>;
  */
 export type FlowNodeConfig =
   | { node_type: "start"; config: StartNodeConfig }
-  | { node_type: "send_message"; config: EnviarMessageNodeConfig }
-  | { node_type: "send_buttons"; config: EnviarButtonsNodeConfig }
-  | { node_type: "send_list"; config: EnviarListNodeConfig }
-  | { node_type: "send_media"; config: EnviarMediaNodeConfig }
+  | { node_type: "send_message"; config: SendMessageNodeConfig }
+  | { node_type: "send_buttons"; config: SendButtonsNodeConfig }
+  | { node_type: "send_list"; config: SendListNodeConfig }
+  | { node_type: "send_media"; config: SendMediaNodeConfig }
   | { node_type: "collect_input"; config: CollectInputNodeConfig }
-  | { node_type: "condition"; config: CondiçãoNodeConfig }
+  | { node_type: "condition"; config: ConditionNodeConfig }
   | { node_type: "set_tag"; config: SetTagNodeConfig }
   | { node_type: "handoff"; config: HandoffNodeConfig }
   | { node_type: "end"; config: EndNodeConfig };
@@ -199,10 +199,10 @@ export type FlowNodeConfig =
 export type FlowNodeType = FlowNodeConfig["node_type"];
 
 // ============================================================
-// Gatilhos (matches `flows.trigger_type` + `trigger_config`)
+// Triggers (matches `flows.trigger_type` + `trigger_config`)
 // ============================================================
 
-export interface KeywordGatilhoConfig {
+export interface KeywordTriggerConfig {
   /** One or more keywords. Match is case-insensitive by default. */
   keywords: string[];
   match_type?: "exact" | "contains";
@@ -212,11 +212,11 @@ export interface KeywordGatilhoConfig {
 // No knobs in v1 — the trigger has a single semantic. Kept as a type
 // alias (not an empty interface) for forward compat without tripping
 // the no-empty-object-type lint rule.
-export type FirstInboundGatilhoConfig = Record<string, never>;
+export type FirstInboundTriggerConfig = Record<string, never>;
 
-export type FlowGatilhoConfig =
-  | { trigger_type: "keyword"; config: KeywordGatilhoConfig }
-  | { trigger_type: "first_inbound_message"; config: FirstInboundGatilhoConfig }
+export type FlowTriggerConfig =
+  | { trigger_type: "keyword"; config: KeywordTriggerConfig }
+  | { trigger_type: "first_inbound_message"; config: FirstInboundTriggerConfig }
   | { trigger_type: "manual"; config: Record<string, never> };
 
 // ============================================================
@@ -235,7 +235,7 @@ export interface FlowRow {
   description: string | null;
   status: "draft" | "active" | "archived";
   trigger_type: "keyword" | "first_inbound_message" | "manual";
-  trigger_config: KeywordGatilhoConfig | FirstInboundGatilhoConfig | Record<string, unknown>;
+  trigger_config: KeywordTriggerConfig | FirstInboundTriggerConfig | Record<string, unknown>;
   entry_node_id: string | null;
   fallback_policy: FlowFallbackPolicy;
   execution_count: number;
@@ -333,7 +333,7 @@ export interface DispatchInboundInput {
   /** Account tenancy key. Drives the lookup of active flows and the
    *  idempotency check for previously-seen inbound message_ids. */
   accountId: string;
-  /** Enviarer-of-record for the bot's outbound prompts on engine
+  /** Sender-of-record for the bot's outbound prompts on engine
    *  sends. Set by the webhook to the WhatsApp config owner. */
   userId: string;
   contactId: string;
@@ -370,5 +370,5 @@ export interface DispatchInboundResult {
  * union forgets a case. Used in the engine's node-type switch.
  */
 export function assertNever(x: never): never {
-  throw new Erro(`Unhandled node type: ${JSON.stringify(x)}`);
+  throw new Error(`Unhandled node type: ${JSON.stringify(x)}`);
 }

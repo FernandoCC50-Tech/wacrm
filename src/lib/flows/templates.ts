@@ -21,16 +21,16 @@
 
 import type {
   CollectInputNodeConfig,
-  CondiçãoNodeConfig,
+  ConditionNodeConfig,
   HandoffNodeConfig,
-  KeywordGatilhoConfig,
-  EnviarButtonsNodeConfig,
-  EnviarListNodeConfig,
-  EnviarMessageNodeConfig,
+  KeywordTriggerConfig,
+  SendButtonsNodeConfig,
+  SendListNodeConfig,
+  SendMessageNodeConfig,
   StartNodeConfig,
 } from "./types";
 
-export type FlowModeloNodeType =
+export type FlowTemplateNodeType =
   | "start"
   | "send_message"
   | "send_buttons"
@@ -41,36 +41,36 @@ export type FlowModeloNodeType =
   | "handoff"
   | "end";
 
-export interface FlowModeloNode {
+export interface FlowTemplateNode {
   node_key: string;
-  node_type: FlowModeloNodeType;
+  node_type: FlowTemplateNodeType;
   config:
     | StartNodeConfig
-    | EnviarMessageNodeConfig
-    | EnviarButtonsNodeConfig
-    | EnviarListNodeConfig
+    | SendMessageNodeConfig
+    | SendButtonsNodeConfig
+    | SendListNodeConfig
     | CollectInputNodeConfig
-    | CondiçãoNodeConfig
+    | ConditionNodeConfig
     | HandoffNodeConfig
     | Record<string, unknown>;
 }
 
-export interface FlowModelo {
+export interface FlowTemplate {
   slug: string;
   name: string;
   description: string;
   /** Used by the gallery to surface a relevant icon. lucide-react name. */
   icon: "MessageSquare" | "HelpCircle" | "UserPlus";
   trigger_type: "keyword" | "first_inbound_message" | "manual";
-  trigger_config: KeywordGatilhoConfig | Record<string, unknown>;
+  trigger_config: KeywordTriggerConfig | Record<string, unknown>;
   entry_node_id: string;
-  nodes: FlowModeloNode[];
+  nodes: FlowTemplateNode[];
 }
 
 // ============================================================
 // 1. Welcome menu — the example from the owner's brief
 // ============================================================
-const WELCOME_MENU: FlowModelo = {
+const WELCOME_MENU: FlowTemplate = {
   slug: "welcome_menu",
   name: "Welcome menu",
   description:
@@ -99,11 +99,11 @@ const WELCOME_MENU: FlowModelo = {
           },
           {
             reply_id: "new",
-            title: "Novo customer",
+            title: "New customer",
             next_node_key: "new_handoff",
           },
         ],
-      } as EnviarButtonsNodeConfig,
+      } as SendButtonsNodeConfig,
     },
     {
       node_key: "existing_handoff",
@@ -116,7 +116,7 @@ const WELCOME_MENU: FlowModelo = {
       node_key: "new_handoff",
       node_type: "handoff",
       config: {
-        note: "Novo customer — share pricing + onboarding link.",
+        note: "New customer — share pricing + onboarding link.",
       } as HandoffNodeConfig,
     },
   ],
@@ -125,7 +125,7 @@ const WELCOME_MENU: FlowModelo = {
 // ============================================================
 // 2. FAQ bot — list-message answers, fully automated
 // ============================================================
-const FAQ_BOT: FlowModelo = {
+const FAQ_BOT: FlowTemplate = {
   slug: "faq_bot",
   name: "FAQ bot",
   description:
@@ -155,7 +155,7 @@ const FAQ_BOT: FlowModelo = {
             rows: [
               {
                 reply_id: "hours",
-                title: "Abertoing hours",
+                title: "Opening hours",
                 next_node_key: "answer_hours",
               },
               {
@@ -181,7 +181,7 @@ const FAQ_BOT: FlowModelo = {
             ],
           },
         ],
-      } as EnviarListNodeConfig,
+      } as SendListNodeConfig,
     },
     {
       node_key: "answer_hours",
@@ -189,7 +189,7 @@ const FAQ_BOT: FlowModelo = {
       config: {
         text: "We're open Mon–Fri, 9am–6pm local time. Weekend support is limited to urgent issues.",
         next_node_key: "end",
-      } as EnviarMessageNodeConfig,
+      } as SendMessageNodeConfig,
     },
     {
       node_key: "answer_pricing",
@@ -197,7 +197,7 @@ const FAQ_BOT: FlowModelo = {
       config: {
         text: "Our pricing starts at $9/mo. Visit https://example.com/pricing for the full breakdown.",
         next_node_key: "end",
-      } as EnviarMessageNodeConfig,
+      } as SendMessageNodeConfig,
     },
     {
       node_key: "answer_refunds",
@@ -205,7 +205,7 @@ const FAQ_BOT: FlowModelo = {
       config: {
         text: "Refunds are honored within 30 days of purchase. Reply with your order number and we'll process it.",
         next_node_key: "end",
-      } as EnviarMessageNodeConfig,
+      } as SendMessageNodeConfig,
     },
     {
       node_key: "human_handoff",
@@ -225,7 +225,7 @@ const FAQ_BOT: FlowModelo = {
 // ============================================================
 // 3. Lead capture — collect_input chain, ends in a handoff
 // ============================================================
-const LEAD_CAPTURE: FlowModelo = {
+const LEAD_CAPTURE: FlowTemplate = {
   slug: "lead_capture",
   name: "Lead capture",
   description:
@@ -246,7 +246,7 @@ const LEAD_CAPTURE: FlowModelo = {
       config: {
         text: "Welcome! 👋 I'll ask a few quick questions so we can get you to the right person.",
         next_node_key: "ask_name",
-      } as EnviarMessageNodeConfig,
+      } as SendMessageNodeConfig,
     },
     {
       node_key: "ask_name",
@@ -279,7 +279,7 @@ const LEAD_CAPTURE: FlowModelo = {
       node_key: "handoff",
       node_type: "handoff",
       config: {
-        note: "Novo lead — name={{vars.name}}, email={{vars.email}}, company={{vars.company}}.",
+        note: "New lead — name={{vars.name}}, email={{vars.email}}, company={{vars.company}}.",
       } as HandoffNodeConfig,
     },
   ],
@@ -289,16 +289,16 @@ const LEAD_CAPTURE: FlowModelo = {
 // Registry
 // ============================================================
 
-const TEMPLATES: Record<string, FlowModelo> = {
+const TEMPLATES: Record<string, FlowTemplate> = {
   welcome_menu: WELCOME_MENU,
   faq_bot: FAQ_BOT,
   lead_capture: LEAD_CAPTURE,
 };
 
-export function getFlowModelo(slug: string): FlowModelo | null {
+export function getFlowTemplate(slug: string): FlowTemplate | null {
   return TEMPLATES[slug] ?? null;
 }
 
-export function listFlowModelos(): FlowModelo[] {
+export function listFlowTemplates(): FlowTemplate[] {
   return Object.values(TEMPLATES);
 }

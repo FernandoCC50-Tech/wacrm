@@ -5,7 +5,7 @@
  * What lives here vs in flow-builder.tsx / flow-canvas.tsx:
  *   - Types and metadata that BOTH views need to render a node
  *     consistently (icon, label, color, 1-line summary).
- *   - Editaring-only helpers (defaultConfigFor, slugify, uniqueNodeKey,
+ *   - Editing-only helpers (defaultConfigFor, slugify, uniqueNodeKey,
  *     BuilderState) stay in flow-builder.tsx until the canvas grows
  *     editing affordances — pulled across in the PR that adds them.
  *
@@ -19,7 +19,7 @@
 import {
   Flag,
   GitFork,
-  Caixa de Entrada,
+  Inbox,
   ListChecks,
   ListPlus,
   MessageCircle,
@@ -54,7 +54,7 @@ export interface BuilderNode {
   node_key: string;
   node_type: NodeType;
   config: Record<string, unknown>;
-  /** Opcional in v1 — defaults to 0 in the DB. Canvas view reads it
+  /** Optional in v1 — defaults to 0 in the DB. Canvas view reads it
    *  to position nodes; list view ignores it. */
   position_x?: number;
   position_y?: number;
@@ -71,28 +71,28 @@ export const NODE_META: Record<
 > = {
   start: { label: "Start", icon: PlayCircle, color: "text-emerald-400" },
   send_message: {
-    label: "Enviar message",
+    label: "Send message",
     icon: MessageCircle,
     color: "text-sky-400",
   },
   send_buttons: {
-    label: "Enviar buttons",
+    label: "Send buttons",
     icon: ListChecks,
     color: "text-primary",
   },
   send_list: {
-    label: "Enviar list",
+    label: "Send list",
     icon: ListPlus,
     color: "text-indigo-400",
   },
   send_media: {
-    label: "Enviar media",
+    label: "Send media",
     icon: Paperclip,
     color: "text-cyan-400",
   },
   collect_input: {
     label: "Collect input",
-    icon: Caixa de Entrada,
+    icon: Inbox,
     color: "text-teal-400",
   },
   condition: {
@@ -240,7 +240,7 @@ export function summarizeNode(node: BuilderNode): string | null {
       return subject === "tag" ? subjectStr : `${subjectStr} ${op}${valStr}`;
     }
     case "set_tag": {
-      const mode = cfg.mode === "remove" ? "Remover" : "Adicionar";
+      const mode = cfg.mode === "remove" ? "Remove" : "Add";
       const tagId = typeof cfg.tag_id === "string" ? cfg.tag_id : "";
       // No tag name available without an async lookup here; show a
       // short prefix of the UUID so users can disambiguate between

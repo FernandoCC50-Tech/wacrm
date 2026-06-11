@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Canvas / mind-map view of a flow. Editarable, in parity with the
+ * Canvas / mind-map view of a flow. Editable, in parity with the
  * list view for everything except the trigger / header / fallback
  * panels (those are list-only — they don't fit visually inside a
  * node graph and the user can switch to List for them).
@@ -14,15 +14,15 @@
  *     "true" / "false", list row title) so a branching flow reads
  *     as a real decision tree.
  *   - Click a node → side-sheet opens with the same per-node form
- *     the list view uses, plus "Set as entry" / "Excluir".
+ *     the list view uses, plus "Set as entry" / "Delete".
  *   - Drag from a source handle on one node to a target handle on
  *     another → wires that slot's `next_node_key`. Per-slot handles
  *     for multi-outgoing types (condition, send_buttons, send_list)
  *     so the user picks which branch they're wiring.
- *   - Voltarspace / Excluir on a selected node → removes it AND clears
+ *   - Backspace / Delete on a selected node → removes it AND clears
  *     every inbound `next_node_key` reference (no dangling arrows).
- *   - Excluir on a selected edge → clears just that slot.
- *   - "+ Adicionar node" floating button drops a new node at the visible
+ *   - Delete on a selected edge → clears just that slot.
+ *   - "+ Add node" floating button drops a new node at the visible
  *     viewport center.
  *   - Runs dagre auto-layout once on mount for flows whose
  *     `position_x` / `position_y` are all zero (pre-canvas flows
@@ -31,7 +31,7 @@
  *
  * The toggle in `flow-editor-shell.tsx` swaps this in for
  * `<FlowBuilder>` on the same page. Both views share the same
- * `BuilderState` via `useFlowEditaror()` — toggling never resets
+ * `BuilderState` via `useFlowEditor()` — toggling never resets
  * unsaved edits, and a drag here updates the same nodes array the
  * list view reads.
  */
@@ -39,7 +39,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   applyNodeChanges,
-  Voltarground,
+  Background,
   Controls,
   Handle,
   MiniMap,
@@ -48,7 +48,7 @@ import {
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
-  type Conectarion,
+  type Connection,
   type Node as RfNode,
   type Edge as RfEdge,
   type NodeChange,
@@ -69,7 +69,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
-  applyEdgeConectarion,
+  applyEdgeConnection,
   deriveCanvasEdges,
   outgoingSlots,
 } from "@/lib/flows/edges";
@@ -84,9 +84,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuGatilho,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useFlowEditaror } from "./flow-editor-state";
+import { useFlowEditor } from "./flow-editor-state";
 import { NodeConfigForm } from "./forms/node-config-form";
 
 // React-Flow node `data` payload — the bits our custom renderer needs.
@@ -127,7 +127,7 @@ function FlowNodeCard({ data, selected }: NodeProps) {
   const isMultiSlot = slots.length > 1;
   return (
     <div
-      classNome={cn(
+      className={cn(
         "relative min-w-[220px] max-w-[260px] rounded-lg border bg-slate-900/95 px-3 py-2 text-left shadow-lg backdrop-blur transition-colors",
         selected
           ? "border-primary ring-1 ring-primary/40"
@@ -142,38 +142,38 @@ function FlowNodeCard({ data, selected }: NodeProps) {
         <Handle
           type="target"
           position={Position.Left}
-          classNome="!h-2.5 !w-2.5 !border-slate-600 !bg-slate-700"
+          className="!h-2.5 !w-2.5 !border-slate-600 !bg-slate-700"
         />
       )}
 
-      <div classNome="flex items-center gap-2">
-        <Icon classNome={cn("h-3.5 w-3.5 shrink-0", meta.color)} />
-        <span classNome="truncate text-[11px] font-medium uppercase tracking-wide text-slate-400">
+      <div className="flex items-center gap-2">
+        <Icon className={cn("h-3.5 w-3.5 shrink-0", meta.color)} />
+        <span className="truncate text-[11px] font-medium uppercase tracking-wide text-slate-400">
           {meta.label}
         </span>
         {isEntry && (
-          <span classNome="ml-auto rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-emerald-300">
+          <span className="ml-auto rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-emerald-300">
             Entry
           </span>
         )}
       </div>
-      <div classNome="mt-1 truncate font-mono text-[11px] text-slate-300">
+      <div className="mt-1 truncate font-mono text-[11px] text-slate-300">
         {node.node_key}
       </div>
       {summary && (
-        <div classNome="mt-1 line-clamp-2 text-xs text-slate-400">
+        <div className="mt-1 line-clamp-2 text-xs text-slate-400">
           {summary}
         </div>
       )}
 
       {isMultiSlot && (
-        <div classNome="mt-2 flex flex-col gap-1 border-t border-slate-800 pt-2">
+        <div className="mt-2 flex flex-col gap-1 border-t border-slate-800 pt-2">
           {slots.map((slot) => (
             <div
               key={slot.id}
-              classNome="relative flex items-center justify-between gap-2 rounded px-1 py-0.5 text-[11px] text-slate-300"
+              className="relative flex items-center justify-between gap-2 rounded px-1 py-0.5 text-[11px] text-slate-300"
             >
-              <span classNome="truncate" title={slot.label}>
+              <span className="truncate" title={slot.label}>
                 {slot.label}
               </span>
               <Handle
@@ -184,7 +184,7 @@ function FlowNodeCard({ data, selected }: NodeProps) {
                 // sits flush with the right edge of the card instead
                 // of floating at vertical center. The negative offset
                 // matches the card's px-3 + the handle's own radius.
-                classNome="!relative !right-auto !top-auto !h-2.5 !w-2.5 !translate-x-[12px] !transform-none !border-slate-600 !bg-slate-700"
+                className="!relative !right-auto !top-auto !h-2.5 !w-2.5 !translate-x-[12px] !transform-none !border-slate-600 !bg-slate-700"
               />
             </div>
           ))}
@@ -196,7 +196,7 @@ function FlowNodeCard({ data, selected }: NodeProps) {
           type="source"
           id={slots[0].id}
           position={Position.Right}
-          classNome="!h-2.5 !w-2.5 !border-slate-600 !bg-slate-700"
+          className="!h-2.5 !w-2.5 !border-slate-600 !bg-slate-700"
         />
       )}
     </div>
@@ -232,7 +232,7 @@ function FlowCanvasInner() {
     updateNodePositions,
     removeNode,
     flashKey,
-  } = useFlowEditaror();
+  } = useFlowEditor();
   const reactFlow = useReactFlow();
   const builderNodes = state.nodes;
   const entryNodeId = state.entry_node_id;
@@ -240,7 +240,7 @@ function FlowCanvasInner() {
   // Side-panel state — which node's form is open. Canvas-only UI; the
   // list view's analogue is the per-card expanded set in
   // flow-builder.tsx.
-  const [selectedNodeKey, setSelecionaredNodeKey] = useState<string | null>(null);
+  const [selectedNodeKey, setSelectedNodeKey] = useState<string | null>(null);
   const selectedNode = useMemo(
     () =>
       selectedNodeKey
@@ -367,19 +367,19 @@ function FlowCanvasInner() {
 
   const handleNodeClick = useCallback(
     (_event: React.MouseEvent, node: RfNode<NodeData>) => {
-      setSelecionaredNodeKey(node.id);
+      setSelectedNodeKey(node.id);
     },
     [],
   );
 
-  // Drag-to-connect: React-Flow fires onConectar when the user drops a
+  // Drag-to-connect: React-Flow fires onConnect when the user drops a
   // handle drag onto a target handle. We look up the source node,
-  // compute the right config patch via applyEdgeConectarion (matches
+  // compute the right config patch via applyEdgeConnection (matches
   // the same slot scheme as deriveCanvasEdges), and dispatch via
   // updateNodeConfig. The resulting state change re-derives edges on
   // the next render — no need to maintain a separate edge list.
-  const handleConectar = useCallback(
-    (connection: Conectarion) => {
+  const handleConnect = useCallback(
+    (connection: Connection) => {
       if (!connection.source || !connection.target || !connection.sourceHandle) {
         return;
       }
@@ -391,7 +391,7 @@ function FlowCanvasInner() {
       // node = infinite reprompt). Reject silently — the user can
       // still wire one via the per-node dropdown if they really want.
       if (connection.source === connection.target) return;
-      const patch = applyEdgeConectarion(
+      const patch = applyEdgeConnection(
         sourceNode,
         connection.sourceHandle,
         connection.target,
@@ -401,17 +401,17 @@ function FlowCanvasInner() {
     [builderNodes, updateNodeConfig],
   );
 
-  // Keyboard delete (Voltarspace / Excluir) + drag-to-trash. React-Flow
+  // Keyboard delete (Backspace / Delete) + drag-to-trash. React-Flow
   // fires this with the set of deleted-node objects; we route each
   // through the editor context's removeNode (which now also unlinks
   // inbound references so no dangling arrows survive). Closing the
   // side panel on delete keeps the UI honest if the user deleted the
   // node currently being edited.
-  const handleNodesExcluir = useCallback(
+  const handleNodesDelete = useCallback(
     (deleted: RfNode<NodeData>[]) => {
       for (const n of deleted) {
         removeNode(n.id);
-        if (selectedNodeKey === n.id) setSelecionaredNodeKey(null);
+        if (selectedNodeKey === n.id) setSelectedNodeKey(null);
       }
     },
     [removeNode, selectedNodeKey],
@@ -420,13 +420,13 @@ function FlowCanvasInner() {
   // Edge delete: clear the source node's slot rather than removing
   // anything. Edges are derived from configs, so the only way to
   // "delete" one is to null out its underlying next_node_key.
-  const handleEdgesExcluir = useCallback(
+  const handleEdgesDelete = useCallback(
     (deleted: RfEdge[]) => {
       for (const e of deleted) {
         if (!e.sourceHandle) continue;
         const sourceNode = builderNodes.find((n) => n.node_key === e.source);
         if (!sourceNode) continue;
-        const patch = applyEdgeConectarion(sourceNode, e.sourceHandle, "");
+        const patch = applyEdgeConnection(sourceNode, e.sourceHandle, "");
         if (patch) updateNodeConfig(e.source, patch);
       }
     },
@@ -436,17 +436,17 @@ function FlowCanvasInner() {
   // Wrapped mutators that target the currently-selected node — pass to
   // the form so each keystroke goes through the editor context (which
   // flips `dirty` and feeds the validator).
-  const onSelecionaredUpdateConfig = useCallback(
+  const onSelectedUpdateConfig = useCallback(
     (patch: Record<string, unknown>) => {
       if (selectedNodeKey) updateNodeConfig(selectedNodeKey, patch);
     },
     [selectedNodeKey, updateNodeConfig],
   );
 
-  const handleExcluirSelecionared = useCallback(() => {
+  const handleDeleteSelected = useCallback(() => {
     if (!selectedNodeKey) return;
     removeNode(selectedNodeKey);
-    setSelecionaredNodeKey(null);
+    setSelectedNodeKey(null);
   }, [selectedNodeKey, removeNode]);
 
   const handleSetEntry = useCallback(() => {
@@ -456,16 +456,16 @@ function FlowCanvasInner() {
 
   if (rfNodes.length === 0) {
     return (
-      <div classNome="flex h-[60vh] flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-700 bg-slate-950 text-sm text-slate-500">
+      <div className="flex h-[60vh] flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-700 bg-slate-950 text-sm text-slate-500">
         <p>No nodes yet.</p>
-        <CanvasAdicionarNodeButton />
+        <CanvasAddNodeButton />
       </div>
     );
   }
 
   return (
     <>
-      <div classNome="h-[70vh] w-full overflow-hidden rounded-lg border border-slate-800 bg-slate-950">
+      <div className="h-[70vh] w-full overflow-hidden rounded-lg border border-slate-800 bg-slate-950">
         <ReactFlow
           nodes={rfNodes}
           edges={rfEdges}
@@ -476,46 +476,46 @@ function FlowCanvasInner() {
           onNodesChange={handleNodesChange}
           onNodeDragStop={handleNodeDragStop}
           onNodeClick={handleNodeClick}
-          onConectar={handleConectar}
-          onNodesExcluir={handleNodesExcluir}
-          onEdgesExcluir={handleEdgesExcluir}
-          // Default is "Voltarspace" only — accept both so Mac users
-          // hitting Excluir (Fn+Voltarspace) get the same behavior.
-          deleteKeyCode={["Voltarspace", "Excluir"]}
-          nodesConectarable={true}
+          onConnect={handleConnect}
+          onNodesDelete={handleNodesDelete}
+          onEdgesDelete={handleEdgesDelete}
+          // Default is "Backspace" only — accept both so Mac users
+          // hitting Delete (Fn+Backspace) get the same behavior.
+          deleteKeyCode={["Backspace", "Delete"]}
+          nodesConnectable={true}
           edgesFocusable={true}
-          elementsSelecionarable={true}
+          elementsSelectable={true}
           // Lower default min/max zoom than the lib's defaults; the
           // tiles already truncate their summary at a reasonable
           // size, so we don't need to zoom past 1.5x.
           minZoom={0.2}
           maxZoom={1.5}
         >
-          <Voltarground gap={24} size={1} color="#1e293b" />
+          <Background gap={24} size={1} color="#1e293b" />
           <Controls
-            classNome="!border-slate-700 !bg-slate-900 [&_button]:!border-slate-700 [&_button]:!bg-slate-900 [&_button:hover]:!bg-slate-800"
+            className="!border-slate-700 !bg-slate-900 [&_button]:!border-slate-700 [&_button]:!bg-slate-900 [&_button:hover]:!bg-slate-800"
             showInteractive={false}
           />
           <MiniMap
             pannable
             zoomable
-            nodeCor="#334155"
-            maskCor="rgba(15, 23, 42, 0.7)"
-            classNome="!border !border-slate-700 !bg-slate-900"
+            nodeColor="#334155"
+            maskColor="rgba(15, 23, 42, 0.7)"
+            className="!border !border-slate-700 !bg-slate-900"
           />
-          <Panel position="bottom-right" classNome="!bottom-4 !right-4">
-            <CanvasAdicionarNodeButton />
+          <Panel position="bottom-right" className="!bottom-4 !right-4">
+            <CanvasAddNodeButton />
           </Panel>
         </ReactFlow>
       </div>
 
-      <NodeEditarSheet
+      <NodeEditSheet
         node={selectedNode}
         isEntry={selectedNode?.node_key === entryNodeId}
         allNodes={builderNodes}
-        onFechar={() => setSelecionaredNodeKey(null)}
-        onUpdateConfig={onSelecionaredUpdateConfig}
-        onExcluir={handleExcluirSelecionared}
+        onClose={() => setSelectedNodeKey(null)}
+        onUpdateConfig={onSelectedUpdateConfig}
+        onDelete={handleDeleteSelected}
         onSetEntry={handleSetEntry}
       />
     </>
@@ -528,57 +528,57 @@ function FlowCanvasInner() {
 // identically to the list view's per-card editor.
 // ============================================================
 
-function NodeEditarSheet({
+function NodeEditSheet({
   node,
   isEntry,
   allNodes,
-  onFechar,
+  onClose,
   onUpdateConfig,
-  onExcluir,
+  onDelete,
   onSetEntry,
 }: {
   node: BuilderNode | null;
   isEntry: boolean;
   allNodes: BuilderNode[];
-  onFechar: () => void;
+  onClose: () => void;
   onUpdateConfig: (patch: Record<string, unknown>) => void;
-  onExcluir: () => void;
+  onDelete: () => void;
   onSetEntry: () => void;
 }) {
   // Sheet is controlled — opens when a node is selected, closes via
-  // Esc / overlay / close button (all delegated to onFechar).
+  // Esc / overlay / close button (all delegated to onClose).
   const open = node !== null;
   if (!node) {
     return (
-      <Sheet open={open} onAbertoChange={(v) => !v && onFechar()}>
-        <SheetContent side="right" classNome="w-full sm:max-w-md" />
+      <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+        <SheetContent side="right" className="w-full sm:max-w-md" />
       </Sheet>
     );
   }
   const meta = NODE_META[node.node_type];
   const Icon = meta.icon;
   return (
-    <Sheet open={open} onAbertoChange={(v) => !v && onFechar()}>
+    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent
         side="right"
-        classNome="flex w-full flex-col gap-0 border-l border-slate-800 bg-slate-950 p-0 sm:max-w-md"
+        className="flex w-full flex-col gap-0 border-l border-slate-800 bg-slate-950 p-0 sm:max-w-md"
       >
-        <SheetHeader classNome="border-b border-slate-800 px-5 py-4">
-          <SheetTitle classNome="flex items-center gap-2 text-slate-100">
-            <Icon classNome={cn("h-4 w-4 shrink-0", meta.color)} />
+        <SheetHeader className="border-b border-slate-800 px-5 py-4">
+          <SheetTitle className="flex items-center gap-2 text-slate-100">
+            <Icon className={cn("h-4 w-4 shrink-0", meta.color)} />
             <span>{meta.label}</span>
             {isEntry && (
-              <span classNome="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">
+              <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">
                 Entry
               </span>
             )}
           </SheetTitle>
-          <SheetDescription classNome="font-mono text-[11px] text-slate-400">
+          <SheetDescription className="font-mono text-[11px] text-slate-400">
             {node.node_key}
           </SheetDescription>
         </SheetHeader>
 
-        <div classNome="flex flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
+        <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
           <NodeConfigForm
             node={node}
             allNodes={allNodes}
@@ -587,7 +587,7 @@ function NodeEditarSheet({
           />
         </div>
 
-        <SheetFooter classNome="border-t border-slate-800 px-5 py-3 sm:flex-row sm:justify-between">
+        <SheetFooter className="border-t border-slate-800 px-5 py-3 sm:flex-row sm:justify-between">
           {!isEntry ? (
             <Button variant="ghost" size="sm" onClick={onSetEntry}>
               Set as entry
@@ -598,11 +598,11 @@ function NodeEditarSheet({
           <Button
             variant="ghost"
             size="sm"
-            onClick={onExcluir}
-            classNome="text-red-400 hover:bg-red-500/10 hover:text-red-300"
+            onClick={onDelete}
+            className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
           >
-            <Trash2 classNome="h-3.5 w-3.5" />
-            Excluir node
+            <Trash2 className="h-3.5 w-3.5" />
+            Delete node
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -612,7 +612,7 @@ function NodeEditarSheet({
 
 // ============================================================
 // Floating add-node button — bottom-right of the canvas. Mirrors
-// the list view's AdicionarNodeButton (same dropdown menu, same NodeType
+// the list view's AddNodeButton (same dropdown menu, same NodeType
 // list, same icons via NODE_META) but drops the new node into the
 // center of the visible viewport rather than appending to a list.
 // ============================================================
@@ -630,18 +630,18 @@ const ADD_NODE_TYPES: NodeType[] = [
   "end",
 ];
 
-function CanvasAdicionarNodeButton() {
+function CanvasAddNodeButton() {
   const reactFlow = useReactFlow();
-  const { addNode, updateNodePosition } = useFlowEditaror();
+  const { addNode, updateNodePosition } = useFlowEditor();
 
-  const handleAdicionar = (type: NodeType) => {
+  const handleAdd = (type: NodeType) => {
     const key = addNode(type);
     // Place the new node at the visible canvas center. The Panel's
     // own DOM lives inside ReactFlow so we can climb up to find the
     // .react-flow root and read its bounding rect. If we can't find
     // it (test envs, etc.), addNode's default (0, 0) is the fallback
     // and the user can drag the node into view.
-    const root = document.querySelecionaror(".react-flow") as HTMLElement | null;
+    const root = document.querySelector(".react-flow") as HTMLElement | null;
     if (!root) return;
     const rect = root.getBoundingClientRect();
     const center = reactFlow.screenToFlowPosition({
@@ -656,20 +656,20 @@ function CanvasAdicionarNodeButton() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuGatilho
-        classNome="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-200 shadow-lg transition-colors hover:bg-slate-800"
-        aria-label="Adicionar node"
+      <DropdownMenuTrigger
+        className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-200 shadow-lg transition-colors hover:bg-slate-800"
+        aria-label="Add node"
       >
-        <Plus classNome="h-3.5 w-3.5" />
-        Adicionar node
-      </DropdownMenuGatilho>
-      <DropdownMenuContent align="end" classNome="border-slate-700 bg-slate-900">
+        <Plus className="h-3.5 w-3.5" />
+        Add node
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="border-slate-700 bg-slate-900">
         {ADD_NODE_TYPES.map((t) => {
           const meta = NODE_META[t];
           const Icon = meta.icon;
           return (
-            <DropdownMenuItem key={t} onClick={() => handleAdicionar(t)}>
-              <Icon classNome={cn("h-3.5 w-3.5", meta.color)} />
+            <DropdownMenuItem key={t} onClick={() => handleAdd(t)}>
+              <Icon className={cn("h-3.5 w-3.5", meta.color)} />
               {meta.label}
             </DropdownMenuItem>
           );

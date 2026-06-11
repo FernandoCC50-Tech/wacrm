@@ -12,20 +12,20 @@ interface RealtimeEvent<T> {
 }
 
 interface UseRealtimeOptions {
-  channelNome: string;
+  channelName: string;
   onMessageEvent?: (event: RealtimeEvent<Message>) => void;
   onConversationEvent?: (event: RealtimeEvent<Conversation>) => void;
   enabled?: boolean;
 }
 
 export function useRealtime({
-  channelNome,
+  channelName,
   onMessageEvent,
   onConversationEvent,
   enabled = true,
 }: UseRealtimeOptions) {
   const channelRef = useRef<RealtimeChannel | null>(null);
-  const [isConectared, setIsConectared] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
 
   // Store latest callbacks in refs to avoid re-subscribing when the
   // parent re-renders with fresh closures. Assigned inside an effect
@@ -45,7 +45,7 @@ export function useRealtime({
     const supabase = createClient();
 
     const channel = supabase
-      .channel(channelNome)
+      .channel(channelName)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "messages" },
@@ -69,7 +69,7 @@ export function useRealtime({
         }
       )
       .subscribe((status) => {
-        setIsConectared(status === "SUBSCRIBED");
+        setIsConnected(status === "SUBSCRIBED");
       });
 
     channelRef.current = channel;
@@ -77,18 +77,18 @@ export function useRealtime({
     return () => {
       supabase.removeChannel(channel);
       channelRef.current = null;
-      setIsConectared(false);
+      setIsConnected(false);
     };
-  }, [channelNome, enabled]);
+  }, [channelName, enabled]);
 
   const unsubscribe = useCallback(() => {
     if (channelRef.current) {
       const supabase = createClient();
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
-      setIsConectared(false);
+      setIsConnected(false);
     }
   }, []);
 
-  return { isConectared, unsubscribe };
+  return { isConnected, unsubscribe };
 }

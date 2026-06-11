@@ -12,55 +12,55 @@
 const META_API_VERSION = 'v21.0'
 const META_API_BASE = `https://graph.facebook.com/${META_API_VERSION}`
 
-export interface MetaEnviarResult {
+export interface MetaSendResult {
   messageId: string
 }
 
-export interface MetaTelefoneInfo {
+export interface MetaPhoneInfo {
   id: string
   display_phone_number: string
   verified_name?: string
   quality_rating?: string
 }
 
-interface MetaErroResponse {
+interface MetaErrorResponse {
   error?: { message?: string; code?: number; type?: string }
 }
 
-async function throwMetaErro(response: Response, fallback: string): Promise<never> {
+async function throwMetaError(response: Response, fallback: string): Promise<never> {
   let message = fallback
   try {
-    const data = (await response.json()) as MetaErroResponse
+    const data = (await response.json()) as MetaErrorResponse
     if (data.error?.message) message = data.error.message
   } catch {
     // response body wasn't JSON — keep the fallback
   }
-  throw new Erro(message)
+  throw new Error(message)
 }
 
 // ============================================================
-// Número de telefone / account
+// Phone number / account
 // ============================================================
 
-export interface VerificarTelefoneNumberArgs {
+export interface VerifyPhoneNumberArgs {
   phoneNumberId: string
   accessToken: string
 }
 
 /**
- * Verificar a Meta phone number ID by fetching its public metadata
+ * Verify a Meta phone number ID by fetching its public metadata
  * (display_phone_number, verified_name, quality_rating).
  */
-export async function verifyTelefoneNumber(
-  args: VerificarTelefoneNumberArgs
-): Promise<MetaTelefoneInfo> {
+export async function verifyPhoneNumber(
+  args: VerifyPhoneNumberArgs
+): Promise<MetaPhoneInfo> {
   const { phoneNumberId, accessToken } = args
   const url = `${META_API_BASE}/${phoneNumberId}?fields=id,display_phone_number,verified_name,quality_rating`
   const response = await fetch(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!response.ok) {
-    await throwMetaErro(response, `Meta API error: ${response.status}`)
+    await throwMetaError(response, `Meta API error: ${response.status}`)
   }
   return response.json()
 }
@@ -83,14 +83,14 @@ export async function verifyTelefoneNumber(
 //     every inbound message.
 //
 //   POST /{waba_id}/subscribed_apps
-//     Subscribes the WABA itself to this app. Obrigatório exactly
+//     Subscribes the WABA itself to this app. Required exactly
 //     once per WABA, but idempotent so calling on every save is
 //     safe and cheap.
 //
 // Both calls are no-ops when already done — Meta returns success +
 // the helpers below treat that as success.
 
-export interface RegisterTelefoneNumberArgs {
+export interface RegisterPhoneNumberArgs {
   phoneNumberId: string
   accessToken: string
   /**
@@ -102,7 +102,7 @@ export interface RegisterTelefoneNumberArgs {
   pin: string
 }
 
-export interface RegisterTelefoneNumberResult {
+export interface RegisterPhoneNumberResult {
   success: boolean
   /**
    * True when Meta indicated the number was already registered to
@@ -115,14 +115,14 @@ export interface RegisterTelefoneNumberResult {
 /**
  * Register a phone number for inbound webhook events.
  *
- * Erros that should be surfaced verbatim to the user:
+ * Errors that should be surfaced verbatim to the user:
  *   * Missing / wrong PIN  → "Two-step verification PIN required..."
  *   * No 2FA enabled       → "Two-factor authentication is not on..."
  *   * Number on other app  → "Number is registered to another app..."
  */
-export async function registerTelefoneNumber(
-  args: RegisterTelefoneNumberArgs
-): Promise<RegisterTelefoneNumberResult> {
+export async function registerPhoneNumber(
+  args: RegisterPhoneNumberArgs
+): Promise<RegisterPhoneNumberResult> {
   const { phoneNumberId, accessToken, pin } = args
   const url = `${META_API_BASE}/${phoneNumberId}/register`
   const response = await fetch(url, {
@@ -152,7 +152,7 @@ export async function registerTelefoneNumber(
   if (/already.*registered/i.test(message)) {
     return { success: true, alreadyRegistered: true }
   }
-  throw new Erro(message)
+  throw new Error(message)
 }
 
 export interface SubscribeWabaToAppArgs {
@@ -174,7 +174,7 @@ export async function subscribeWabaToApp(
     headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!response.ok) {
-    await throwMetaErro(response, `Meta API error: ${response.status}`)
+    await throwMetaError(response, `Meta API error: ${response.status}`)
   }
 }
 
@@ -194,7 +194,7 @@ export interface SubscribedApp {
 /**
  * Diagnostic — fetch the list of apps currently subscribed to this
  * WABA. The UI uses this to confirm OUR app is in the list when
- * the user clicks Verificar Registration.
+ * the user clicks Verify Registration.
  */
 export async function getSubscribedApps(
   args: GetSubscribedAppsArgs
@@ -205,33 +205,33 @@ export async function getSubscribedApps(
     headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!response.ok) {
-    await throwMetaErro(response, `Meta API error: ${response.status}`)
+    await throwMetaError(response, `Meta API error: ${response.status}`)
   }
   const data = (await response.json()) as { data?: SubscribedApp[] }
   return data.data ?? []
 }
 
 // ============================================================
-// Enviaring
+// Sending
 // ============================================================
 
-export interface EnviarTextMessageArgs {
+export interface SendTextMessageArgs {
   phoneNumberId: string
   accessToken: string
   to: string
   text: string
-  /** Meta's message_id of the message being replied to. Adicionars a `context` field
+  /** Meta's message_id of the message being replied to. Adds a `context` field
    *  so WhatsApp renders the new message as a reply with a quote preview. */
   contextMessageId?: string
 }
 
 /**
- * Enviar a free-form WhatsApp text message.
+ * Send a free-form WhatsApp text message.
  * Only works inside the 24-hour customer service window.
  */
 export async function sendTextMessage(
-  args: EnviarTextMessageArgs
-): Promise<MetaEnviarResult> {
+  args: SendTextMessageArgs
+): Promise<MetaSendResult> {
   const { phoneNumberId, accessToken, to, text, contextMessageId } = args
   const url = `${META_API_BASE}/${phoneNumberId}/messages`
   const body: Record<string, unknown> = {
@@ -253,7 +253,7 @@ export async function sendTextMessage(
     body: JSON.stringify(body),
   })
   if (!response.ok) {
-    await throwMetaErro(response, `Meta API error: ${response.status}`)
+    await throwMetaError(response, `Meta API error: ${response.status}`)
   }
   const data = await response.json()
   return { messageId: data.messages[0].id }
@@ -261,14 +261,14 @@ export async function sendTextMessage(
 
 export type MediaKind = 'image' | 'video' | 'document'
 
-export interface EnviarMediaMessageArgs {
+export interface SendMediaMessageArgs {
   phoneNumberId: string
   accessToken: string
   to: string
   kind: MediaKind
   /** Public URL Meta fetches at send time. */
   link: string
-  /** Opcional caption — Meta caps at 1024 chars. Documents + images + videos all accept it. */
+  /** Optional caption — Meta caps at 1024 chars. Documents + images + videos all accept it. */
   caption?: string
   /** Document-only. Shown in the recipient's chat as the file name. Ignored for image/video. */
   filename?: string
@@ -276,17 +276,17 @@ export interface EnviarMediaMessageArgs {
 }
 
 /**
- * Enviar an image, video, or document via a public URL.
+ * Send an image, video, or document via a public URL.
  *
  * Used by the Flows engine's `send_media` node. Mirrors
  * `sendTextMessage` — single fetch, throws on non-2xx, returns Meta's
  * message id.
  */
 export async function sendMediaMessage(
-  args: EnviarMediaMessageArgs,
-): Promise<MetaEnviarResult> {
+  args: SendMediaMessageArgs,
+): Promise<MetaSendResult> {
   const { phoneNumberId, accessToken, to, kind, link, caption, filename, contextMessageId } = args
-  if (!link) throw new Erro('sendMediaMessage requires a link.')
+  if (!link) throw new Error('sendMediaMessage requires a link.')
   const url = `${META_API_BASE}/${phoneNumberId}/messages`
 
   const media: Record<string, unknown> = { link }
@@ -311,51 +311,51 @@ export async function sendMediaMessage(
     body: JSON.stringify(body),
   })
   if (!response.ok) {
-    await throwMetaErro(response, `Meta API error: ${response.status}`)
+    await throwMetaError(response, `Meta API error: ${response.status}`)
   }
   const data = await response.json()
   return { messageId: data.messages[0].id }
 }
 
-import type { MessageModelo } from '@/types'
+import type { MessageTemplate } from '@/types'
 import {
-  buildEnviarComponents,
-  type EnviarTimeParams,
+  buildSendComponents,
+  type SendTimeParams,
 } from './template-send-builder'
 
-export interface EnviarModeloMessageArgs {
+export interface SendTemplateMessageArgs {
   phoneNumberId: string
   accessToken: string
   to: string
-  templateNome: string
+  templateName: string
   language?: string
   /**
    * Legacy body-only params. Kept for backward compat with callers
    * that haven't migrated to the structured `template` + `messageParams`
-   * pair below. Novo callers should pass `template` so media headers
+   * pair below. New callers should pass `template` so media headers
    * and URL buttons land on the send.
    */
   params?: string[]
   /**
    * The template row from message_templates. When provided, the helper
    * builds the full components array (header + body + buttons) via
-   * buildEnviarComponents — that's the only way image/video/document
+   * buildSendComponents — that's the only way image/video/document
    * headers and URL-with-variable buttons actually reach the recipient.
    */
-  template?: MessageModelo
+  template?: MessageTemplate
   /**
    * Structured per-send values. Body variables go in `body`; header
    * text variables in `headerText`; media overrides in
    * `headerMediaUrl` / `headerMediaId`; URL/COPY_CODE button values
    * in `buttonParams` keyed by index.
    */
-  messageParams?: EnviarTimeParams
+  messageParams?: SendTimeParams
   /** Meta's message_id of the message being replied to. */
   contextMessageId?: string
 }
 
 /**
- * Enviar a pre-approved WhatsApp message template. Obrigatório outside
+ * Send a pre-approved WhatsApp message template. Required outside
  * the 24-hour window and for any first-touch messaging.
  *
  * Caller paths:
@@ -365,14 +365,14 @@ export interface EnviarModeloMessageArgs {
  *     The full components array is built from the row so media
  *     headers + URL buttons land correctly.
  */
-export async function sendModeloMessage(
-  args: EnviarModeloMessageArgs
-): Promise<MetaEnviarResult> {
+export async function sendTemplateMessage(
+  args: SendTemplateMessageArgs
+): Promise<MetaSendResult> {
   const {
     phoneNumberId,
     accessToken,
     to,
-    templateNome,
+    templateName,
     language = 'en_US',
     params,
     template,
@@ -382,12 +382,12 @@ export async function sendModeloMessage(
   const url = `${META_API_BASE}/${phoneNumberId}/messages`
 
   const templatePayload: Record<string, unknown> = {
-    name: templateNome,
+    name: templateName,
     language: { code: language },
   }
 
   if (template) {
-    const components = buildEnviarComponents(template, {
+    const components = buildSendComponents(template, {
       // Legacy callers pass body values in `params`; fold them into
       // `messageParams.body` so the new path covers them too.
       body: messageParams?.body ?? params,
@@ -429,25 +429,25 @@ export async function sendModeloMessage(
     body: JSON.stringify(body),
   })
   if (!response.ok) {
-    await throwMetaErro(response, `Meta API error: ${response.status}`)
+    await throwMetaError(response, `Meta API error: ${response.status}`)
   }
   const data = await response.json()
   return { messageId: data.messages[0].id }
 }
 
 // ============================================================
-// Modelo submission (Business Management API)
+// Template submission (Business Management API)
 // ============================================================
 
-import type { MetaModeloSubmitPayload } from './template-components'
+import type { MetaTemplateSubmitPayload } from './template-components'
 
-export interface SubmitMessageModeloArgs {
+export interface SubmitMessageTemplateArgs {
   wabaId: string
   accessToken: string
-  payload: MetaModeloSubmitPayload
+  payload: MetaTemplateSubmitPayload
 }
 
-export interface SubmitMessageModeloResult {
+export interface SubmitMessageTemplateResult {
   id: string
   status: string
   category?: string
@@ -463,12 +463,12 @@ export interface SubmitMessageModeloResult {
  * with the same name.
  *
  * 429s from Meta (rate limit: 100 creates/hour/WABA) surface as a
- * regular `Erro('Meta API error: 429')`. The route handler
+ * regular `Error('Meta API error: 429')`. The route handler
  * distinguishes 429 and shows a more actionable toast.
  */
-export async function submitMessageModelo(
-  args: SubmitMessageModeloArgs
-): Promise<SubmitMessageModeloResult> {
+export async function submitMessageTemplate(
+  args: SubmitMessageTemplateArgs
+): Promise<SubmitMessageTemplateResult> {
   const { wabaId, accessToken, payload } = args
   const url = `${META_API_BASE}/${wabaId}/message_templates`
   const response = await fetch(url, {
@@ -480,11 +480,11 @@ export async function submitMessageModelo(
     body: JSON.stringify(payload),
   })
   if (!response.ok) {
-    await throwMetaErro(response, `Meta API error: ${response.status}`)
+    await throwMetaError(response, `Meta API error: ${response.status}`)
   }
   const data = await response.json()
   if (!data?.id) {
-    throw new Erro('Meta accepted the template but returned no id.')
+    throw new Error('Meta accepted the template but returned no id.')
   }
   return {
     id: String(data.id),
@@ -493,37 +493,37 @@ export async function submitMessageModelo(
   }
 }
 
-export interface EditarMessageModeloArgs {
+export interface EditMessageTemplateArgs {
   /** Meta's template id (stored locally as `meta_template_id`). */
-  metaModeloId: string
+  metaTemplateId: string
   accessToken: string
-  /** Enviar the full components array — Meta replaces, not patches. */
-  components: MetaModeloSubmitPayload['components']
-  /** Opcional — only certain category transitions are allowed by Meta. */
-  category?: MetaModeloSubmitPayload['category']
+  /** Send the full components array — Meta replaces, not patches. */
+  components: MetaTemplateSubmitPayload['components']
+  /** Optional — only certain category transitions are allowed by Meta. */
+  category?: MetaTemplateSubmitPayload['category']
 }
 
-export interface EditarMessageModeloResult {
+export interface EditMessageTemplateResult {
   success: boolean
 }
 
 /**
- * Editar an existing (APPROVED or REJECTED) message template.
+ * Edit an existing (APPROVED or REJECTED) message template.
  *
  * Meta caps edits at 10 per 30 days (and 1 per 24h for APPROVED
  * templates). Every edit re-triggers review, so the status flips
  * back to PENDING until Meta approves the new components.
  *
- * Nota: PENDING / DISABLED / IN_APPEAL templates cannot be edited
+ * Note: PENDING / DISABLED / IN_APPEAL templates cannot be edited
  * — the route handler enforces that before calling here.
  */
-export async function editMessageModelo(
-  args: EditarMessageModeloArgs
-): Promise<EditarMessageModeloResult> {
-  const { metaModeloId, accessToken, components, category } = args
+export async function editMessageTemplate(
+  args: EditMessageTemplateArgs
+): Promise<EditMessageTemplateResult> {
+  const { metaTemplateId, accessToken, components, category } = args
   const body: Record<string, unknown> = { components }
   if (category) body.category = category
-  const response = await fetch(`${META_API_BASE}/${metaModeloId}`, {
+  const response = await fetch(`${META_API_BASE}/${metaTemplateId}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -532,13 +532,13 @@ export async function editMessageModelo(
     body: JSON.stringify(body),
   })
   if (!response.ok) {
-    await throwMetaErro(response, `Meta API error: ${response.status}`)
+    await throwMetaError(response, `Meta API error: ${response.status}`)
   }
   const data = await response.json().catch(() => ({}))
   return { success: data?.success !== false }
 }
 
-export interface ExcluirMessageModeloArgs {
+export interface DeleteMessageTemplateArgs {
   wabaId: string
   accessToken: string
   name: string
@@ -547,20 +547,20 @@ export interface ExcluirMessageModeloArgs {
    * template with this `name`. Pass the row's `meta_template_id`
    * to scope to a single variant.
    */
-  metaModeloId?: string
+  metaTemplateId?: string
 }
 
 /**
- * Excluir a message template on Meta. Pass `metaModeloId` to scope
+ * Delete a message template on Meta. Pass `metaTemplateId` to scope
  * to a single language variant — otherwise Meta nukes every variant
  * sharing the same `name`.
  */
-export async function deleteMessageModelo(
-  args: ExcluirMessageModeloArgs
+export async function deleteMessageTemplate(
+  args: DeleteMessageTemplateArgs
 ): Promise<void> {
-  const { wabaId, accessToken, name, metaModeloId } = args
+  const { wabaId, accessToken, name, metaTemplateId } = args
   const params = new URLSearchParams({ name })
-  if (metaModeloId) params.set('hsm_id', metaModeloId)
+  if (metaTemplateId) params.set('hsm_id', metaTemplateId)
   const url = `${META_API_BASE}/${wabaId}/message_templates?${params.toString()}`
   const response = await fetch(url, {
     method: 'DELETE',
@@ -570,7 +570,7 @@ export async function deleteMessageModelo(
   // side, and we still want the local row removed.
   if (response.status === 404) return
   if (!response.ok) {
-    await throwMetaErro(response, `Meta API error: ${response.status}`)
+    await throwMetaError(response, `Meta API error: ${response.status}`)
   }
 }
 
@@ -578,7 +578,7 @@ export async function deleteMessageModelo(
 // Reactions
 // ============================================================
 
-export interface EnviarReactionMessageArgs {
+export interface SendReactionMessageArgs {
   phoneNumberId: string
   accessToken: string
   to: string
@@ -589,12 +589,12 @@ export interface EnviarReactionMessageArgs {
 }
 
 /**
- * Enviar a reaction (or removal) to a previously-exchanged message.
+ * Send a reaction (or removal) to a previously-exchanged message.
  * Empty `emoji` removes the reaction per Meta's spec.
  */
 export async function sendReactionMessage(
-  args: EnviarReactionMessageArgs
-): Promise<MetaEnviarResult> {
+  args: SendReactionMessageArgs
+): Promise<MetaSendResult> {
   const { phoneNumberId, accessToken, to, targetMessageId, emoji } = args
   const url = `${META_API_BASE}/${phoneNumberId}/messages`
   const response = await fetch(url, {
@@ -612,7 +612,7 @@ export async function sendReactionMessage(
     }),
   })
   if (!response.ok) {
-    await throwMetaErro(response, `Meta API error: ${response.status}`)
+    await throwMetaError(response, `Meta API error: ${response.status}`)
   }
   const data = await response.json()
   return { messageId: data.messages[0].id }
@@ -654,15 +654,15 @@ export interface InteractiveButton {
   title: string
 }
 
-export interface EnviarInteractiveButtonsArgs {
+export interface SendInteractiveButtonsArgs {
   phoneNumberId: string
   accessToken: string
   to: string
   /** The body text — what the customer reads above the buttons. */
   bodyText: string
-  /** Opcional plain-text header (≤ 60 chars). */
+  /** Optional plain-text header (≤ 60 chars). */
   headerText?: string
-  /** Opcional grey footer line under the buttons (≤ 60 chars). */
+  /** Optional grey footer line under the buttons (≤ 60 chars). */
   footerText?: string
   /** 1–3 buttons. Validated against Meta's limits before sending. */
   buttons: InteractiveButton[]
@@ -671,7 +671,7 @@ export interface EnviarInteractiveButtonsArgs {
 }
 
 /**
- * Enviar an interactive message with up to 3 inline reply buttons. The
+ * Send an interactive message with up to 3 inline reply buttons. The
  * customer taps one and Meta delivers a webhook with
  * `messages[0].interactive.button_reply.id` set to the matching button.id.
  *
@@ -679,8 +679,8 @@ export interface EnviarInteractiveButtonsArgs {
  * fail at save time, not during a live conversation.
  */
 export async function sendInteractiveButtons(
-  args: EnviarInteractiveButtonsArgs
-): Promise<MetaEnviarResult> {
+  args: SendInteractiveButtonsArgs
+): Promise<MetaSendResult> {
   const {
     phoneNumberId, accessToken, to,
     bodyText, headerText, footerText, buttons, contextMessageId,
@@ -688,15 +688,15 @@ export async function sendInteractiveButtons(
   validateInteractiveBody(bodyText)
   validateInteractiveHeaderFooter(headerText, footerText)
   if (buttons.length < 1 || buttons.length > INTERACTIVE_LIMITS.maxButtons) {
-    throw new Erro(
+    throw new Error(
       `Interactive button message requires 1-${INTERACTIVE_LIMITS.maxButtons} buttons (got ${buttons.length}).`
     )
   }
   for (const btn of buttons) {
-    if (!btn.id) throw new Erro('Interactive button missing id.')
-    if (!btn.title) throw new Erro(`Interactive button "${btn.id}" missing title.`)
+    if (!btn.id) throw new Error('Interactive button missing id.')
+    if (!btn.title) throw new Error(`Interactive button "${btn.id}" missing title.`)
     if (btn.title.length > INTERACTIVE_LIMITS.buttonTitleMaxLength) {
-      throw new Erro(
+      throw new Error(
         `Interactive button title "${btn.title}" exceeds ${INTERACTIVE_LIMITS.buttonTitleMaxLength} chars.`
       )
     }
@@ -734,7 +734,7 @@ export async function sendInteractiveButtons(
     body: JSON.stringify(body),
   })
   if (!response.ok) {
-    await throwMetaErro(response, `Meta API error: ${response.status}`)
+    await throwMetaError(response, `Meta API error: ${response.status}`)
   }
   const data = await response.json()
   return { messageId: data.messages[0].id }
@@ -745,23 +745,23 @@ export interface InteractiveListRow {
   id: string
   /** Visible row title (≤ 24 chars per Meta). */
   title: string
-  /** Opcional secondary line shown under the title (≤ 72 chars). */
+  /** Optional secondary line shown under the title (≤ 72 chars). */
   description?: string
 }
 
 export interface InteractiveListSection {
-  /** Opcional section header shown above its rows. */
+  /** Optional section header shown above its rows. */
   title?: string
   rows: InteractiveListRow[]
 }
 
-export interface EnviarInteractiveListArgs {
+export interface SendInteractiveListArgs {
   phoneNumberId: string
   accessToken: string
   to: string
   bodyText: string
-  /** Rótulo of the tap-to-expand button on the message bubble. */
-  buttonRótulo: string
+  /** Label of the tap-to-expand button on the message bubble. */
+  buttonLabel: string
   headerText?: string
   footerText?: string
   /**
@@ -773,48 +773,48 @@ export interface EnviarInteractiveListArgs {
 }
 
 /**
- * Enviar an interactive message with a tap-to-expand list of selectable
+ * Send an interactive message with a tap-to-expand list of selectable
  * rows. Use when there are more options than the 3-button limit allows.
  * Webhook arrives with `messages[0].interactive.list_reply.id` set to
  * the matching row.id.
  */
 export async function sendInteractiveList(
-  args: EnviarInteractiveListArgs
-): Promise<MetaEnviarResult> {
+  args: SendInteractiveListArgs
+): Promise<MetaSendResult> {
   const {
     phoneNumberId, accessToken, to,
-    bodyText, buttonRótulo, headerText, footerText, sections, contextMessageId,
+    bodyText, buttonLabel, headerText, footerText, sections, contextMessageId,
   } = args
   validateInteractiveBody(bodyText)
   validateInteractiveHeaderFooter(headerText, footerText)
-  if (!buttonRótulo) throw new Erro('Interactive list requires a buttonRótulo.')
-  if (buttonRótulo.length > INTERACTIVE_LIMITS.buttonTitleMaxLength) {
-    throw new Erro(
-      `Interactive list buttonRótulo "${buttonRótulo}" exceeds ${INTERACTIVE_LIMITS.buttonTitleMaxLength} chars.`
+  if (!buttonLabel) throw new Error('Interactive list requires a buttonLabel.')
+  if (buttonLabel.length > INTERACTIVE_LIMITS.buttonTitleMaxLength) {
+    throw new Error(
+      `Interactive list buttonLabel "${buttonLabel}" exceeds ${INTERACTIVE_LIMITS.buttonTitleMaxLength} chars.`
     )
   }
   if (sections.length < 1 || sections.length > INTERACTIVE_LIMITS.maxListSections) {
-    throw new Erro(
+    throw new Error(
       `Interactive list requires 1-${INTERACTIVE_LIMITS.maxListSections} sections (got ${sections.length}).`
     )
   }
   const totalRows = sections.reduce((sum, s) => sum + s.rows.length, 0)
   if (totalRows < 1 || totalRows > INTERACTIVE_LIMITS.maxListRowsTotal) {
-    throw new Erro(
+    throw new Error(
       `Interactive list requires 1-${INTERACTIVE_LIMITS.maxListRowsTotal} rows total across all sections (got ${totalRows}).`
     )
   }
   const seenIds = new Set<string>()
   for (const section of sections) {
     for (const row of section.rows) {
-      if (!row.id) throw new Erro('Interactive list row missing id.')
+      if (!row.id) throw new Error('Interactive list row missing id.')
       if (seenIds.has(row.id)) {
-        throw new Erro(`Interactive list has duplicate row id "${row.id}".`)
+        throw new Error(`Interactive list has duplicate row id "${row.id}".`)
       }
       seenIds.add(row.id)
-      if (!row.title) throw new Erro(`Interactive list row "${row.id}" missing title.`)
+      if (!row.title) throw new Error(`Interactive list row "${row.id}" missing title.`)
       if (row.title.length > INTERACTIVE_LIMITS.listRowTitleMaxLength) {
-        throw new Erro(
+        throw new Error(
           `Interactive list row title "${row.title}" exceeds ${INTERACTIVE_LIMITS.listRowTitleMaxLength} chars.`
         )
       }
@@ -822,7 +822,7 @@ export async function sendInteractiveList(
         row.description &&
         row.description.length > INTERACTIVE_LIMITS.listRowDescriptionMaxLength
       ) {
-        throw new Erro(
+        throw new Error(
           `Interactive list row description for "${row.id}" exceeds ${INTERACTIVE_LIMITS.listRowDescriptionMaxLength} chars.`
         )
       }
@@ -833,7 +833,7 @@ export async function sendInteractiveList(
     type: 'list',
     body: { text: bodyText },
     action: {
-      button: buttonRótulo,
+      button: buttonLabel,
       sections: sections.map((s) => ({
         ...(s.title ? { title: s.title } : {}),
         rows: s.rows.map((r) => ({
@@ -866,16 +866,16 @@ export async function sendInteractiveList(
     body: JSON.stringify(body),
   })
   if (!response.ok) {
-    await throwMetaErro(response, `Meta API error: ${response.status}`)
+    await throwMetaError(response, `Meta API error: ${response.status}`)
   }
   const data = await response.json()
   return { messageId: data.messages[0].id }
 }
 
 function validateInteractiveBody(bodyText: string): void {
-  if (!bodyText) throw new Erro('Interactive message requires bodyText.')
+  if (!bodyText) throw new Error('Interactive message requires bodyText.')
   if (bodyText.length > INTERACTIVE_LIMITS.bodyMaxLength) {
-    throw new Erro(
+    throw new Error(
       `Interactive bodyText exceeds ${INTERACTIVE_LIMITS.bodyMaxLength} chars.`
     )
   }
@@ -886,12 +886,12 @@ function validateInteractiveHeaderFooter(
   footerText: string | undefined,
 ): void {
   if (headerText && headerText.length > INTERACTIVE_LIMITS.headerTextMaxLength) {
-    throw new Erro(
+    throw new Error(
       `Interactive headerText exceeds ${INTERACTIVE_LIMITS.headerTextMaxLength} chars.`
     )
   }
   if (footerText && footerText.length > INTERACTIVE_LIMITS.footerMaxLength) {
-    throw new Erro(
+    throw new Error(
       `Interactive footerText exceeds ${INTERACTIVE_LIMITS.footerMaxLength} chars.`
     )
   }
@@ -907,7 +907,7 @@ export interface GetMediaUrlArgs {
 }
 
 /**
- * Resolver a media ID to Meta's (short-lived, authenticated) CDN URL
+ * Resolve a media ID to Meta's (short-lived, authenticated) CDN URL
  * plus the MIME type. Step one of the media-proxy flow.
  */
 export async function getMediaUrl(
@@ -918,14 +918,14 @@ export async function getMediaUrl(
     headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!response.ok) {
-    await throwMetaErro(response, `Media fetch failed: ${response.status}`)
+    await throwMetaError(response, `Media fetch failed: ${response.status}`)
   }
   const data = await response.json()
-  if (!data.url) throw new Erro('Media URL not found in Meta response')
+  if (!data.url) throw new Error('Media URL not found in Meta response')
   return { url: data.url, mimeType: data.mime_type || 'application/octet-stream' }
 }
 
-export interface BaixarMediaArgs {
+export interface DownloadMediaArgs {
   downloadUrl: string
   accessToken: string
 }
@@ -935,14 +935,14 @@ export interface BaixarMediaArgs {
  * Step two of the media-proxy flow.
  */
 export async function downloadMedia(
-  args: BaixarMediaArgs
+  args: DownloadMediaArgs
 ): Promise<{ buffer: Buffer; contentType: string }> {
   const { downloadUrl, accessToken } = args
   const response = await fetch(downloadUrl, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!response.ok) {
-    throw new Erro(`Media download failed: ${response.status}`)
+    throw new Error(`Media download failed: ${response.status}`)
   }
   const contentType =
     response.headers.get('content-type') || 'application/octet-stream'

@@ -1,15 +1,15 @@
 "use client";
 
 /**
- * Editaror header — flow name / description, status badge, dirty
- * indicator, and the action buttons (Salvar, Activate/Pause, Excluir,
- * View runs, Voltar).
+ * Editor header — flow name / description, status badge, dirty
+ * indicator, and the action buttons (Save, Activate/Pause, Delete,
+ * View runs, Back).
  *
  * Lifted out of flow-builder.tsx so the same header renders above
- * both views in FlowEditarorShell. Without this, canvas users had no
+ * both views in FlowEditorShell. Without this, canvas users had no
  * way to save without toggling to list view.
  *
- * Lidos everything from the editor context (`useFlowEditaror`) so it
+ * Reads everything from the editor context (`useFlowEditor`) so it
  * stays in sync with whichever view is mutating state, and routes
  * router navigation locally (back to /flows, View runs to
  * /flows/[id]/runs) — those don't belong in the hook.
@@ -22,7 +22,7 @@ import {
   Loader2,
   PauseCircle,
   PlayCircle,
-  Salvar,
+  Save,
   Trash2,
   Workflow,
 } from "lucide-react";
@@ -32,11 +32,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
-  useFlowEditaror,
+  useFlowEditor,
   type BuilderState,
 } from "./flow-editor-state";
 
-export function EditarorHeader() {
+export function EditorHeader() {
   const router = useRouter();
   const {
     flow,
@@ -49,60 +49,60 @@ export function EditarorHeader() {
     save,
     setStatus,
     deleteFlow,
-  } = useFlowEditaror();
+  } = useFlowEditor();
 
   return (
-    <div classNome="flex flex-col gap-3">
-      <div classNome="flex items-center gap-2 text-xs text-slate-500">
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2 text-xs text-slate-500">
         <button
           type="button"
           onClick={() => router.push("/flows")}
-          classNome="inline-flex items-center gap-1 hover:text-slate-300"
+          className="inline-flex items-center gap-1 hover:text-slate-300"
         >
-          <ArrowLeft classNome="h-3 w-3" />
+          <ArrowLeft className="h-3 w-3" />
           Flows
         </button>
       </div>
-      <div classNome="flex flex-wrap items-start justify-between gap-3">
-        <div classNome="flex min-w-0 flex-1 items-center gap-3">
-          <Workflow classNome="h-5 w-5 shrink-0 text-primary" />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <Workflow className="h-5 w-5 shrink-0 text-primary" />
           <Input
             value={state.name}
             onChange={(e) =>
               setState((s) => ({ ...s, name: e.target.value }))
             }
             placeholder="Flow name"
-            classNome="max-w-md bg-slate-900 text-lg font-semibold"
+            className="max-w-md bg-slate-900 text-lg font-semibold"
           />
           <StatusBadge status={state.status} />
           {dirty && (
             <span
-              classNome="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-amber-300"
-              title="Unsaved changes — hit Salvar to persist"
+              className="inline-flex shrink-0 items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-amber-300"
+              title="Unsaved changes — hit Save to persist"
               aria-live="polite"
             >
-              <span classNome="h-1.5 w-1.5 rounded-full bg-amber-400" />
-              Editared
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+              Edited
             </span>
           )}
         </div>
-        <div classNome="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.push(`/flows/${flow.id}/runs`)}
           >
-            <History classNome="h-3.5 w-3.5" />
+            <History className="h-3.5 w-3.5" />
             Runs
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => void deleteFlow()}
-            classNome="text-red-400 hover:bg-red-500/10 hover:text-red-300"
+            className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
           >
-            <Trash2 classNome="h-3.5 w-3.5" />
-            Excluir
+            <Trash2 className="h-3.5 w-3.5" />
+            Delete
           </Button>
           {state.status === "active" ? (
             <Button
@@ -112,9 +112,9 @@ export function EditarorHeader() {
               disabled={activating}
             >
               {activating ? (
-                <Loader2 classNome="h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
-                <PauseCircle classNome="h-3.5 w-3.5" />
+                <PauseCircle className="h-3.5 w-3.5" />
               )}
               Pause
             </Button>
@@ -131,20 +131,20 @@ export function EditarorHeader() {
               }
             >
               {activating ? (
-                <Loader2 classNome="h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
-                <PlayCircle classNome="h-3.5 w-3.5" />
+                <PlayCircle className="h-3.5 w-3.5" />
               )}
               Activate
             </Button>
           )}
           <Button onClick={() => void save()} disabled={saving} size="sm">
             {saving ? (
-              <Loader2 classNome="h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <Salvar classNome="h-3.5 w-3.5" />
+              <Save className="h-3.5 w-3.5" />
             )}
-            Salvar
+            Save
           </Button>
         </div>
       </div>
@@ -153,8 +153,8 @@ export function EditarorHeader() {
         onChange={(e) =>
           setState((s) => ({ ...s, description: e.target.value }))
         }
-        placeholder="Opcional description (internal — customers don't see this)"
-        classNome="bg-slate-900 text-sm"
+        placeholder="Optional description (internal — customers don't see this)"
+        className="bg-slate-900 text-sm"
       />
     </div>
   );
@@ -167,7 +167,7 @@ function StatusBadge({ status }: { status: BuilderState["status"] }) {
     archived: "border-slate-700 bg-slate-800/50 text-slate-500",
   }[status];
   return (
-    <Badge variant="outline" classNome={cn("shrink-0", cls)}>
+    <Badge variant="outline" className={cn("shrink-0", cls)}>
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </Badge>
   );

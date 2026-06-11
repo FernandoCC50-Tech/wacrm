@@ -10,7 +10,7 @@ import type {
   Conversation,
   Deal,
   DealStatus,
-  PipelineEtapa,
+  PipelineStage,
   Profile,
 } from "@/types";
 import {
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Rótulo } from "@/components/ui/label";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Check,
@@ -35,44 +35,44 @@ import { toast } from "sonner";
 
 interface DealFormProps {
   open: boolean;
-  onAbertoChange: (open: boolean) => void;
+  onOpenChange: (open: boolean) => void;
   deal?: Deal | null;
   pipelineId: string;
-  stages: PipelineEtapa[];
-  defaultEtapaId?: string;
-  onSalvard: () => void;
+  stages: PipelineStage[];
+  defaultStageId?: string;
+  onSaved: () => void;
 }
 
 export function DealForm({
   open,
-  onAbertoChange,
+  onOpenChange,
   deal,
   pipelineId,
   stages,
-  defaultEtapaId,
-  onSalvard,
+  defaultStageId,
+  onSaved,
 }: DealFormProps) {
   const supabase = createClient();
   const { accountId, defaultCurrency } = useAuth();
 
   const [title, setTitle] = useState("");
-  const [value, setValor] = useState("");
+  const [value, setValue] = useState("");
   const [currency, setCurrency] = useState(defaultCurrency);
   const [contactId, setContactId] = useState("");
-  const [stageId, setEtapaId] = useState("");
+  const [stageId, setStageId] = useState("");
   const [assignedTo, setAssignedTo] = useState("");
-  const [expectedFecharDate, setExpectedFecharDate] = useState("");
-  const [notes, setNotas] = useState("");
+  const [expectedCloseDate, setExpectedCloseDate] = useState("");
+  const [notes, setNotes] = useState("");
 
-  const [contacts, setContatos] = useState<Contact[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [linkedConversation, setLinkedConversation] =
     useState<Conversation | null>(null);
 
   const [saving, setSaving] = useState(false);
-  const [statusAção, setStatusAção] = useState<DealStatus | null>(null);
+  const [statusAction, setStatusAction] = useState<DealStatus | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [confirmExcluir, setConfirmarExcluir] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Reset the form fields every time the sheet opens or its input
   // props change. This is a legitimate prop-driven sync; the rule is
@@ -80,29 +80,29 @@ export function DealForm({
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!open) return;
-    setConfirmarExcluir(false);
+    setConfirmDelete(false);
     if (deal) {
       setTitle(deal.title);
-      setValor(String(deal.value ?? ""));
+      setValue(String(deal.value ?? ""));
       setCurrency(deal.currency || defaultCurrency);
       // contact_id is nullable when the contact has been deleted
       // (migration 004: ON DELETE SET NULL). "" means "no selection".
       setContactId(deal.contact_id ?? "");
-      setEtapaId(deal.stage_id);
+      setStageId(deal.stage_id);
       setAssignedTo(deal.assigned_to ?? "");
-      setExpectedFecharDate(deal.expected_close_date ?? "");
-      setNotas(deal.notes ?? "");
+      setExpectedCloseDate(deal.expected_close_date ?? "");
+      setNotes(deal.notes ?? "");
     } else {
       setTitle("");
-      setValor("");
+      setValue("");
       setCurrency(defaultCurrency);
       setContactId("");
-      setEtapaId(defaultEtapaId || stages[0]?.id || "");
+      setStageId(defaultStageId || stages[0]?.id || "");
       setAssignedTo("");
-      setExpectedFecharDate("");
-      setNotas("");
+      setExpectedCloseDate("");
+      setNotes("");
     }
-  }, [open, deal, defaultEtapaId, stages, defaultCurrency]);
+  }, [open, deal, defaultStageId, stages, defaultCurrency]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Load supporting data once the sheet is open
@@ -115,7 +115,7 @@ export function DealForm({
         supabase.from("profiles").select("*").order("full_name"),
       ]);
       if (cancelled) return;
-      setContatos((c.data ?? []) as Contact[]);
+      setContacts((c.data ?? []) as Contact[]);
       setProfiles((p.data ?? []) as Profile[]);
     })();
     return () => {
@@ -149,7 +149,7 @@ export function DealForm({
     };
   }, [open, contactId, supabase]);
 
-  async function handleSalvar() {
+  async function handleSave() {
     if (!title.trim() || !contactId || !stageId) {
       toast.error("Title, contact, and stage are required");
       return;
@@ -165,7 +165,7 @@ export function DealForm({
       stage_id: stageId,
       assigned_to: assignedTo || null,
       notes: notes.trim() || null,
-      expected_close_date: expectedFecharDate || null,
+      expected_close_date: expectedCloseDate || null,
     };
 
     if (deal) {
@@ -174,7 +174,7 @@ export function DealForm({
         .update(payload)
         .eq("id", deal.id);
       if (error) {
-        toast.error("Falhou to save deal");
+        toast.error("Failed to save deal");
         setSaving(false);
         return;
       }
@@ -197,7 +197,7 @@ export function DealForm({
         .from("deals")
         .insert({ ...payload, user_id: user.id, account_id: accountId, status: "open" });
       if (error) {
-        toast.error("Falhou to create deal");
+        toast.error("Failed to create deal");
         setSaving(false);
         return;
       }
@@ -205,76 +205,76 @@ export function DealForm({
 
     setSaving(false);
     toast.success(deal ? "Deal updated" : "Deal created");
-    onAbertoChange(false);
-    onSalvard();
+    onOpenChange(false);
+    onSaved();
   }
 
   async function handleStatusChange(status: DealStatus) {
     if (!deal) return;
-    setStatusAção(status);
+    setStatusAction(status);
     const { error } = await supabase
       .from("deals")
       .update({ status })
       .eq("id", deal.id);
-    setStatusAção(null);
+    setStatusAction(null);
     if (error) {
-      toast.error("Falhou to update deal status");
+      toast.error("Failed to update deal status");
       return;
     }
     toast.success(
       status === "won" ? "Marked as won" : status === "lost" ? "Marked as lost" : "Deal reopened",
     );
-    onAbertoChange(false);
-    onSalvard();
+    onOpenChange(false);
+    onSaved();
   }
 
-  async function handleExcluir() {
+  async function handleDelete() {
     if (!deal) return;
     setDeleting(true);
     const { error } = await supabase.from("deals").delete().eq("id", deal.id);
     setDeleting(false);
     if (error) {
-      toast.error("Falhou to delete deal");
+      toast.error("Failed to delete deal");
       return;
     }
     toast.success("Deal deleted");
-    setConfirmarExcluir(false);
-    onAbertoChange(false);
-    onSalvard();
+    setConfirmDelete(false);
+    onOpenChange(false);
+    onSaved();
   }
 
   return (
-    <Sheet open={open} onAbertoChange={onAbertoChange}>
+    <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        classNome="bg-slate-900 border-slate-700 text-slate-200 sm:max-w-lg w-full p-0"
+        className="bg-slate-900 border-slate-700 text-slate-200 sm:max-w-lg w-full p-0"
       >
-        <div classNome="flex h-full flex-col">
-          <SheetHeader classNome="border-b border-slate-700/50 p-4">
-            <SheetTitle classNome="text-white">
-              {deal ? "Editar Deal" : "Novo Deal"}
+        <div className="flex h-full flex-col">
+          <SheetHeader className="border-b border-slate-700/50 p-4">
+            <SheetTitle className="text-white">
+              {deal ? "Edit Deal" : "New Deal"}
             </SheetTitle>
           </SheetHeader>
 
-          <div classNome="flex-1 overflow-y-auto p-4 space-y-4">
-            <div classNome="grid gap-2">
-              <Rótulo classNome="text-slate-300">Title</Rótulo>
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="grid gap-2">
+              <Label className="text-slate-300">Title</Label>
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Deal title"
-                classNome="border-slate-700 bg-slate-800 text-white"
+                className="border-slate-700 bg-slate-800 text-white"
               />
             </div>
 
-            <div classNome="grid gap-2">
-              <Rótulo classNome="text-slate-300">Contact</Rótulo>
+            <div className="grid gap-2">
+              <Label className="text-slate-300">Contact</Label>
               <select
                 value={contactId}
                 onChange={(e) => setContactId(e.target.value)}
-                classNome="h-9 w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="h-9 w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               >
-                <option value="">Selecionar a contact</option>
+                <option value="">Select a contact</option>
                 {contacts.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name || c.phone}
@@ -285,34 +285,34 @@ export function DealForm({
               {linkedConversation && (
                 <Link
                   href="/inbox"
-                  classNome="mt-1 inline-flex items-center gap-1.5 self-start rounded-md bg-primary/10 px-2 py-1 text-xs text-primary hover:bg-primary/20"
+                  className="mt-1 inline-flex items-center gap-1.5 self-start rounded-md bg-primary/10 px-2 py-1 text-xs text-primary hover:bg-primary/20"
                 >
-                  <MessageSquare classNome="h-3 w-3" />
+                  <MessageSquare className="h-3 w-3" />
                   Link to Conversation
                 </Link>
               )}
             </div>
 
-            <div classNome="grid grid-cols-[1fr_110px] gap-3">
-              <div classNome="grid gap-2">
-                <Rótulo classNome="text-slate-300">Valor</Rótulo>
-                <div classNome="relative">
-                  <DollarSign classNome="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
+            <div className="grid grid-cols-[1fr_110px] gap-3">
+              <div className="grid gap-2">
+                <Label className="text-slate-300">Value</Label>
+                <div className="relative">
+                  <DollarSign className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
                   <Input
                     type="number"
                     value={value}
-                    onChange={(e) => setValor(e.target.value)}
+                    onChange={(e) => setValue(e.target.value)}
                     placeholder="0"
-                    classNome="border-slate-700 bg-slate-800 pl-7 text-white"
+                    className="border-slate-700 bg-slate-800 pl-7 text-white"
                   />
                 </div>
               </div>
-              <div classNome="grid gap-2">
-                <Rótulo classNome="text-slate-300">Currency</Rótulo>
+              <div className="grid gap-2">
+                <Label className="text-slate-300">Currency</Label>
                 <select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
-                  classNome="h-9 w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 text-sm text-white outline-none focus:border-primary"
+                  className="h-9 w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 text-sm text-white outline-none focus:border-primary"
                 >
                   {CURRENCIES.map((c) => (
                     <option key={c.code} value={c.code}>
@@ -323,22 +323,22 @@ export function DealForm({
               </div>
             </div>
 
-            <div classNome="grid gap-2">
-              <Rótulo classNome="text-slate-300">Expected Fechar Date</Rótulo>
+            <div className="grid gap-2">
+              <Label className="text-slate-300">Expected Close Date</Label>
               <Input
                 type="date"
-                value={expectedFecharDate}
-                onChange={(e) => setExpectedFecharDate(e.target.value)}
-                classNome="border-slate-700 bg-slate-800 text-white"
+                value={expectedCloseDate}
+                onChange={(e) => setExpectedCloseDate(e.target.value)}
+                className="border-slate-700 bg-slate-800 text-white"
               />
             </div>
 
-            <div classNome="grid gap-2">
-              <Rótulo classNome="text-slate-300">Etapa</Rótulo>
+            <div className="grid gap-2">
+              <Label className="text-slate-300">Stage</Label>
               <select
                 value={stageId}
-                onChange={(e) => setEtapaId(e.target.value)}
-                classNome="h-9 w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 text-sm text-white outline-none focus:border-primary"
+                onChange={(e) => setStageId(e.target.value)}
+                className="h-9 w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 text-sm text-white outline-none focus:border-primary"
               >
                 {stages.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -348,14 +348,14 @@ export function DealForm({
               </select>
             </div>
 
-            <div classNome="grid gap-2">
-              <Rótulo classNome="text-slate-300">Assigned To</Rótulo>
+            <div className="grid gap-2">
+              <Label className="text-slate-300">Assigned To</Label>
               <select
                 value={assignedTo}
                 onChange={(e) => setAssignedTo(e.target.value)}
-                classNome="h-9 w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 text-sm text-white outline-none focus:border-primary"
+                className="h-9 w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 text-sm text-white outline-none focus:border-primary"
               >
-                <option value="">Não atribuído</option>
+                <option value="">Unassigned</option>
                 {profiles.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.full_name || p.email}
@@ -364,49 +364,49 @@ export function DealForm({
               </select>
             </div>
 
-            <div classNome="grid gap-2">
-              <Rótulo classNome="text-slate-300">Notas</Rótulo>
+            <div className="grid gap-2">
+              <Label className="text-slate-300">Notes</Label>
               <Textarea
                 value={notes}
-                onChange={(e) => setNotas(e.target.value)}
-                placeholder="Adicionar notas..."
-                classNome="min-h-[100px] border-slate-700 bg-slate-800 text-white"
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Add notes..."
+                className="min-h-[100px] border-slate-700 bg-slate-800 text-white"
               />
             </div>
 
             {deal && (
-              <div classNome="space-y-2 rounded-lg border border-slate-700 bg-slate-900/50 p-3">
-                <p classNome="text-xs font-medium uppercase tracking-wider text-slate-400">
+              <div className="space-y-2 rounded-lg border border-slate-700 bg-slate-900/50 p-3">
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
                   Status
                 </p>
-                <div classNome="flex gap-2">
+                <div className="flex gap-2">
                   <Button
                     type="button"
                     onClick={() => handleStatusChange("won")}
-                    disabled={!!statusAção || deal.status === "won"}
-                    classNome="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                    disabled={!!statusAction || deal.status === "won"}
+                    className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                   >
-                    {statusAção === "won" ? (
-                      <Loader2 classNome="h-4 w-4 animate-spin" />
+                    {statusAction === "won" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <>
-                        <Check classNome="mr-1 h-4 w-4" />
-                        Mark as Ganho
+                        <Check className="mr-1 h-4 w-4" />
+                        Mark as Won
                       </>
                     )}
                   </Button>
                   <Button
                     type="button"
                     onClick={() => handleStatusChange("lost")}
-                    disabled={!!statusAção || deal.status === "lost"}
-                    classNome="flex-1 bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                    disabled={!!statusAction || deal.status === "lost"}
+                    className="flex-1 bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
                   >
-                    {statusAção === "lost" ? (
-                      <Loader2 classNome="h-4 w-4 animate-spin" />
+                    {statusAction === "lost" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <>
-                        <X classNome="mr-1 h-4 w-4" />
-                        Mark as Perdido
+                        <X className="mr-1 h-4 w-4" />
+                        Mark as Lost
                       </>
                     )}
                   </Button>
@@ -416,65 +416,65 @@ export function DealForm({
                     type="button"
                     variant="ghost"
                     onClick={() => handleStatusChange("open")}
-                    disabled={!!statusAção}
-                    classNome="w-full text-slate-400 hover:text-white"
+                    disabled={!!statusAction}
+                    className="w-full text-slate-400 hover:text-white"
                   >
-                    Reabrir deal
+                    Reopen deal
                   </Button>
                 )}
               </div>
             )}
           </div>
 
-          <div classNome="border-t border-slate-700/50 bg-slate-900/80 p-4">
-            <div classNome="flex gap-2">
+          <div className="border-t border-slate-700/50 bg-slate-900/80 p-4">
+            <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={() => onAbertoChange(false)}
-                classNome="flex-1 border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800"
+                onClick={() => onOpenChange(false)}
+                className="flex-1 border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800"
               >
-                Cancelar
+                Cancel
               </Button>
               <Button
-                onClick={handleSalvar}
+                onClick={handleSave}
                 disabled={saving || !title.trim() || !contactId || !stageId}
-                classNome="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
               >
-                {saving ? "Salvando..." : deal ? "Salvar Changes" : "Criar Deal"}
+                {saving ? "Saving..." : deal ? "Save Changes" : "Create Deal"}
               </Button>
             </div>
 
             {deal &&
-              (confirmExcluir ? (
-                <div classNome="mt-3 flex items-center justify-between gap-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs">
-                  <span classNome="text-red-300">Excluir this deal?</span>
-                  <div classNome="flex gap-1">
+              (confirmDelete ? (
+                <div className="mt-3 flex items-center justify-between gap-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs">
+                  <span className="text-red-300">Delete this deal?</span>
+                  <div className="flex gap-1">
                     <button
                       type="button"
-                      onClick={() => setConfirmarExcluir(false)}
+                      onClick={() => setConfirmDelete(false)}
                       disabled={deleting}
-                      classNome="rounded px-2 py-1 text-slate-300 hover:bg-slate-800"
+                      className="rounded px-2 py-1 text-slate-300 hover:bg-slate-800"
                     >
-                      Cancelar
+                      Cancel
                     </button>
                     <button
                       type="button"
-                      onClick={handleExcluir}
+                      onClick={handleDelete}
                       disabled={deleting}
-                      classNome="rounded bg-red-600 px-2 py-1 font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                      className="rounded bg-red-600 px-2 py-1 font-medium text-white hover:bg-red-700 disabled:opacity-50"
                     >
-                      {deleting ? "Deleting..." : "Confirmar"}
+                      {deleting ? "Deleting..." : "Confirm"}
                     </button>
                   </div>
                 </div>
               ) : (
                 <button
                   type="button"
-                  onClick={() => setConfirmarExcluir(true)}
-                  classNome="mt-3 flex w-full items-center justify-center gap-1 text-xs text-red-400 hover:text-red-300"
+                  onClick={() => setConfirmDelete(true)}
+                  className="mt-3 flex w-full items-center justify-center gap-1 text-xs text-red-400 hover:text-red-300"
                 >
-                  <Trash2 classNome="h-3 w-3" />
-                  Excluir Deal
+                  <Trash2 className="h-3 w-3" />
+                  Delete Deal
                 </button>
               ))}
           </div>
