@@ -103,7 +103,7 @@ function LoginPageInner() {
                 type="email"
                 placeholder="you@example.com"
                 value={email}
-                onChange={(e) => setE-mail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 className="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500 focus-visible:border-primary focus-visible:ring-primary/20"
               />
