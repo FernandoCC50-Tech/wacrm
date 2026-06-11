@@ -2,7 +2,7 @@
 // GET /api/invitations/[token]/peek
 //
 // Public — no auth required. Lets the /join/<token> page render
-// "You're being invited to <Account> as <Função>" before the
+// "You're being invited to <Account> as <Role>" before the
 // visitor signs up or signs in.
 //
 // Security model
@@ -21,7 +21,7 @@
 //     theoretical, but rate limiting is cheap insurance.
 // ============================================================
 
-import { PróximoResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 import { hashInviteToken } from "@/lib/auth/invitations";
 import {
@@ -62,7 +62,7 @@ export async function GET(
 
   const { token } = await params;
   if (!token || typeof token !== "string") {
-    return PróximoResponse.json(
+    return NextResponse.json(
       { ok: false, reason: "not_found" },
       { status: 404 },
     );
@@ -75,7 +75,7 @@ export async function GET(
 
   if (error) {
     console.error("[peek] rpc error:", error);
-    return PróximoResponse.json(
+    return NextResponse.json(
       { ok: false, reason: "server_error" },
       { status: 500 },
     );
@@ -83,5 +83,5 @@ export async function GET(
 
   // The RPC always returns a json object — either ok:true with
   // metadata or ok:false with a reason. Forward verbatim.
-  return PróximoResponse.json(data);
+  return NextResponse.json(data);
 }

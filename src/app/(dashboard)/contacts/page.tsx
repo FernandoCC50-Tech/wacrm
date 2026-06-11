@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/table';
 import {
   DropdownMenu,
-  DropdownMenuGatilho,
+  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
@@ -32,7 +32,7 @@ import {
 import {
   Search,
   Plus,
-  Enviar,
+  Upload,
   MoreHorizontal,
   Pencil,
   Trash2,
@@ -43,50 +43,50 @@ import {
 } from 'lucide-react';
 import { ContactForm } from '@/components/contacts/contact-form';
 import { ContactDetailView } from '@/components/contacts/contact-detail-view';
-import { ImportarModal } from '@/components/contacts/import-modal';
+import { ImportModal } from '@/components/contacts/import-modal';
 import { useCan } from '@/hooks/use-can';
 import { GatedButton } from '@/components/ui/gated-button';
 
 const PAGE_SIZE = 25;
 
-interface ContactWithEtiquetas extends Contact {
+interface ContactWithTags extends Contact {
   tags?: Tag[];
 }
 
-export default function ContatosPage() {
+export default function ContactsPage() {
   const supabase = createClient();
-  const canEditar = useCan('send-messages');
+  const canEdit = useCan('send-messages');
 
-  const [contacts, setContatos] = useState<ContactWithEtiquetas[]>([]);
+  const [contacts, setContacts] = useState<ContactWithTags[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
 
   // Modals
-  const [formAberto, setFormAberto] = useState(false);
-  const [editContact, setEditarContact] = useState<Contact | null>(null);
-  const [editContactEtiquetas, setEditarContactEtiquetas] = useState<ContactTag[]>([]);
-  const [detailAberto, setDetailAberto] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editContact, setEditContact] = useState<Contact | null>(null);
+  const [editContactTags, setEditContactTags] = useState<ContactTag[]>([]);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [detailContactId, setDetailContactId] = useState<string | null>(null);
-  const [importAberto, setImportarAberto] = useState(false);
-  const [deleteConfirmarAberto, setExcluirConfirmarAberto] = useState(false);
-  const [deleteTarget, setExcluirTarget] = useState<Contact | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Contact | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Todos tags for display
-  const [tagsMap, setEtiquetasMap] = useState<Record<string, Tag>>({});
+  // All tags for display
+  const [tagsMap, setTagsMap] = useState<Record<string, Tag>>({});
 
-  const fetchEtiquetas = useCallback(async () => {
+  const fetchTags = useCallback(async () => {
     const { data } = await supabase.from('tags').select('*');
     if (data) {
       const map: Record<string, Tag> = {};
       data.forEach((t) => (map[t.id] = t));
-      setEtiquetasMap(map);
+      setTagsMap(map);
     }
   }, [supabase]);
 
-  const fetchContatos = useCallback(async () => {
+  const fetchContacts = useCallback(async () => {
     setLoading(true);
 
     const from = page * PAGE_SIZE;
@@ -106,7 +106,7 @@ export default function ContatosPage() {
     const { data, count, error } = await query;
 
     if (error) {
-      toast.error('Falhou to load contacts');
+      toast.error('Failed to load contacts');
       setLoading(false);
       return;
     }
@@ -114,32 +114,32 @@ export default function ContatosPage() {
     setTotalCount(count ?? 0);
 
     if (!data || data.length === 0) {
-      setContatos([]);
+      setContacts([]);
       setLoading(false);
       return;
     }
 
     // Fetch tags for these contacts
     const contactIds = data.map((c) => c.id);
-    const { data: contactEtiquetas } = await supabase
+    const { data: contactTags } = await supabase
       .from('contact_tags')
       .select('contact_id, tag_id')
       .in('contact_id', contactIds);
 
     const tagsByContact: Record<string, string[]> = {};
-    contactEtiquetas?.forEach((ct) => {
+    contactTags?.forEach((ct) => {
       if (!tagsByContact[ct.contact_id]) tagsByContact[ct.contact_id] = [];
       tagsByContact[ct.contact_id].push(ct.tag_id);
     });
 
-    const enriched: ContactWithEtiquetas[] = data.map((c) => ({
+    const enriched: ContactWithTags[] = data.map((c) => ({
       ...c,
       tags: (tagsByContact[c.id] ?? [])
         .map((tid) => tagsMap[tid])
         .filter(Boolean),
     }));
 
-    setContatos(enriched);
+    setContacts(enriched);
     setLoading(false);
   }, [supabase, page, search, tagsMap]);
 
@@ -149,41 +149,41 @@ export default function ContatosPage() {
   // warns about doesn't apply here.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchEtiquetas();
-  }, [fetchEtiquetas]);
+    fetchTags();
+  }, [fetchTags]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchContatos();
-  }, [fetchContatos]);
+    fetchContacts();
+  }, [fetchContacts]);
 
-  function openAdicionarForm() {
-    setEditarContact(null);
-    setEditarContactEtiquetas([]);
-    setFormAberto(true);
+  function openAddForm() {
+    setEditContact(null);
+    setEditContactTags([]);
+    setFormOpen(true);
   }
 
-  async function openEditarForm(contact: Contact) {
+  async function openEditForm(contact: Contact) {
     const { data } = await supabase
       .from('contact_tags')
       .select('*')
       .eq('contact_id', contact.id);
-    setEditarContact(contact);
-    setEditarContactEtiquetas(data ?? []);
-    setFormAberto(true);
+    setEditContact(contact);
+    setEditContactTags(data ?? []);
+    setFormOpen(true);
   }
 
   function openDetail(contactId: string) {
     setDetailContactId(contactId);
-    setDetailAberto(true);
+    setDetailOpen(true);
   }
 
-  function confirmExcluir(contact: Contact) {
-    setExcluirTarget(contact);
-    setExcluirConfirmarAberto(true);
+  function confirmDelete(contact: Contact) {
+    setDeleteTarget(contact);
+    setDeleteConfirmOpen(true);
   }
 
-  async function handleExcluir() {
+  async function handleDelete() {
     if (!deleteTarget) return;
     setDeleting(true);
 
@@ -193,57 +193,57 @@ export default function ContatosPage() {
       .eq('id', deleteTarget.id);
 
     if (error) {
-      toast.error('Falhou to delete contact');
+      toast.error('Failed to delete contact');
     } else {
       toast.success('Contact deleted');
-      fetchContatos();
+      fetchContacts();
     }
 
     setDeleting(false);
-    setExcluirConfirmarAberto(false);
-    setExcluirTarget(null);
+    setDeleteConfirmOpen(false);
+    setDeleteTarget(null);
   }
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-  const hasPróximo = page < totalPages - 1;
+  const hasNext = page < totalPages - 1;
   const hasPrev = page > 0;
 
   return (
-    <div classNome="space-y-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div classNome="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 classNome="text-2xl font-bold text-white">Contatos</h1>
-          <p classNome="text-sm text-slate-400 mt-1">
+          <h1 className="text-2xl font-bold text-white">Contacts</h1>
+          <p className="text-sm text-slate-400 mt-1">
             Manage your contact list. {totalCount > 0 && `${totalCount} total contacts.`}
           </p>
         </div>
-        <div classNome="flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <GatedButton
             variant="outline"
-            canAct={canEditar}
+            canAct={canEdit}
             gateReason="add or import contacts"
-            onClick={() => setImportarAberto(true)}
-            classNome="border-slate-700 text-slate-300 hover:bg-slate-800"
+            onClick={() => setImportOpen(true)}
+            className="border-slate-700 text-slate-300 hover:bg-slate-800"
           >
-            <Enviar classNome="size-4" />
-            Importar
+            <Upload className="size-4" />
+            Import
           </GatedButton>
           <GatedButton
-            canAct={canEditar}
+            canAct={canEdit}
             gateReason="add or import contacts"
-            onClick={openAdicionarForm}
-            classNome="bg-primary hover:bg-primary/90 text-primary-foreground"
+            onClick={openAddForm}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
           >
-            <Plus classNome="size-4" />
-            Adicionar Contact
+            <Plus className="size-4" />
+            Add Contact
           </GatedButton>
         </div>
       </div>
 
       {/* Search */}
-      <div classNome="relative max-w-sm">
-        <Search classNome="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-slate-500" />
+      <div className="relative max-w-sm">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-slate-500" />
         <Input
           value={search}
           onChange={(e) => {
@@ -253,51 +253,51 @@ export default function ContatosPage() {
             setPage(0);
           }}
           placeholder="Search by name, phone, or email..."
-          classNome="pl-8 bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
+          className="pl-8 bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
         />
       </div>
 
       {/* Table */}
-      <div classNome="rounded-lg border border-slate-800 overflow-hidden">
+      <div className="rounded-lg border border-slate-800 overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow classNome="border-slate-800 hover:bg-transparent">
-              <TableHead classNome="text-slate-400">Nome</TableHead>
-              <TableHead classNome="text-slate-400">Telefone</TableHead>
-              <TableHead classNome="text-slate-400 hidden md:table-cell">E-mail</TableHead>
-              <TableHead classNome="text-slate-400 hidden lg:table-cell">Company</TableHead>
-              <TableHead classNome="text-slate-400 hidden md:table-cell">Etiquetas</TableHead>
-              <TableHead classNome="text-slate-400 hidden lg:table-cell">Criard</TableHead>
-              <TableHead classNome="text-slate-400 w-12" />
+            <TableRow className="border-slate-800 hover:bg-transparent">
+              <TableHead className="text-slate-400">Name</TableHead>
+              <TableHead className="text-slate-400">Phone</TableHead>
+              <TableHead className="text-slate-400 hidden md:table-cell">Email</TableHead>
+              <TableHead className="text-slate-400 hidden lg:table-cell">Company</TableHead>
+              <TableHead className="text-slate-400 hidden md:table-cell">Tags</TableHead>
+              <TableHead className="text-slate-400 hidden lg:table-cell">Created</TableHead>
+              <TableHead className="text-slate-400 w-12" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow classNome="border-slate-800">
-                <TableCell colSpan={7} classNome="text-center py-12">
-                  <div classNome="flex flex-col items-center gap-2">
-                    <Loader2 classNome="size-6 animate-spin text-primary" />
-                    <p classNome="text-sm text-slate-500">Loading contacts...</p>
+              <TableRow className="border-slate-800">
+                <TableCell colSpan={7} className="text-center py-12">
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="size-6 animate-spin text-primary" />
+                    <p className="text-sm text-slate-500">Loading contacts...</p>
                   </div>
                 </TableCell>
               </TableRow>
             ) : contacts.length === 0 ? (
-              <TableRow classNome="border-slate-800">
-                <TableCell colSpan={7} classNome="text-center py-12">
-                  <div classNome="flex flex-col items-center gap-2">
-                    <Users classNome="size-8 text-slate-600" />
-                    <p classNome="text-sm text-slate-500">
+              <TableRow className="border-slate-800">
+                <TableCell colSpan={7} className="text-center py-12">
+                  <div className="flex flex-col items-center gap-2">
+                    <Users className="size-8 text-slate-600" />
+                    <p className="text-sm text-slate-500">
                       {search ? 'No contacts match your search.' : 'No contacts yet.'}
                     </p>
                     {!search && (
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={openAdicionarForm}
-                        classNome="mt-2 border-slate-700 text-slate-300 hover:bg-slate-800"
+                        onClick={openAddForm}
+                        className="mt-2 border-slate-700 text-slate-300 hover:bg-slate-800"
                       >
-                        <Plus classNome="size-3.5" />
-                        Adicionar your first contact
+                        <Plus className="size-3.5" />
+                        Add your first contact
                       </Button>
                     )}
                   </div>
@@ -307,30 +307,30 @@ export default function ContatosPage() {
               contacts.map((contact) => (
                 <TableRow
                   key={contact.id}
-                  classNome="border-slate-800 hover:bg-slate-900/50 cursor-pointer"
+                  className="border-slate-800 hover:bg-slate-900/50 cursor-pointer"
                   onClick={() => openDetail(contact.id)}
                 >
-                  <TableCell classNome="text-white font-medium">
-                    {contact.name || <span classNome="text-slate-500 italic">Unnamed</span>}
+                  <TableCell className="text-white font-medium">
+                    {contact.name || <span className="text-slate-500 italic">Unnamed</span>}
                   </TableCell>
-                  <TableCell classNome="text-slate-300 font-mono text-xs">
+                  <TableCell className="text-slate-300 font-mono text-xs">
                     {contact.phone}
                   </TableCell>
-                  <TableCell classNome="text-slate-400 hidden md:table-cell text-sm">
-                    {contact.email || <span classNome="text-slate-600">-</span>}
+                  <TableCell className="text-slate-400 hidden md:table-cell text-sm">
+                    {contact.email || <span className="text-slate-600">-</span>}
                   </TableCell>
-                  <TableCell classNome="text-slate-400 hidden lg:table-cell text-sm">
-                    {contact.company || <span classNome="text-slate-600">-</span>}
+                  <TableCell className="text-slate-400 hidden lg:table-cell text-sm">
+                    {contact.company || <span className="text-slate-600">-</span>}
                   </TableCell>
-                  <TableCell classNome="hidden md:table-cell">
-                    <div classNome="flex flex-wrap gap-1">
+                  <TableCell className="hidden md:table-cell">
+                    <div className="flex flex-wrap gap-1">
                       {contact.tags && contact.tags.length > 0 ? (
                         contact.tags.slice(0, 3).map((tag) => (
                           <span
                             key={tag.id}
-                            classNome="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
+                            className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
                             style={{
-                              backgroundCor: tag.color + '20',
+                              backgroundColor: tag.color + '20',
                               color: tag.color,
                             }}
                           >
@@ -338,16 +338,16 @@ export default function ContatosPage() {
                           </span>
                         ))
                       ) : (
-                        <span classNome="text-slate-600 text-xs">-</span>
+                        <span className="text-slate-600 text-xs">-</span>
                       )}
                       {contact.tags && contact.tags.length > 3 && (
-                        <span classNome="text-[10px] text-slate-500">
+                        <span className="text-[10px] text-slate-500">
                           +{contact.tags.length - 3}
                         </span>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell classNome="text-slate-500 text-xs hidden lg:table-cell">
+                  <TableCell className="text-slate-500 text-xs hidden lg:table-cell">
                     {new Date(contact.created_at).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric',
@@ -356,42 +356,42 @@ export default function ContatosPage() {
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
-                      <DropdownMenuGatilho
+                      <DropdownMenuTrigger
                         render={
                           <Button
                             variant="ghost"
                             size="icon-sm"
-                            classNome="text-slate-400 hover:text-white"
+                            className="text-slate-400 hover:text-white"
                             onClick={(e) => e.stopPropagation()}
                           />
                         }
                       >
-                        <MoreHorizontal classNome="size-4" />
-                      </DropdownMenuGatilho>
+                        <MoreHorizontal className="size-4" />
+                      </DropdownMenuTrigger>
                       <DropdownMenuContent
                         align="end"
-                        classNome="bg-slate-900 border-slate-700"
+                        className="bg-slate-900 border-slate-700"
                       >
                         <DropdownMenuItem
                           onClick={(e) => {
                             e.stopPropagation();
-                            openEditarForm(contact);
+                            openEditForm(contact);
                           }}
-                          classNome="text-slate-300 focus:bg-slate-800 focus:text-white"
+                          className="text-slate-300 focus:bg-slate-800 focus:text-white"
                         >
-                          <Pencil classNome="size-4" />
-                          Editar
+                          <Pencil className="size-4" />
+                          Edit
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator classNome="bg-slate-700" />
+                        <DropdownMenuSeparator className="bg-slate-700" />
                         <DropdownMenuItem
                           variant="destructive"
                           onClick={(e) => {
                             e.stopPropagation();
-                            confirmExcluir(contact);
+                            confirmDelete(contact);
                           }}
                         >
-                          <Trash2 classNome="size-4" />
-                          Excluir
+                          <Trash2 className="size-4" />
+                          Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -405,32 +405,32 @@ export default function ContatosPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div classNome="flex items-center justify-between">
-          <p classNome="text-xs text-slate-500">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-slate-500">
             Showing {page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, totalCount)} of{' '}
             {totalCount}
           </p>
-          <div classNome="flex items-center gap-1">
+          <div className="flex items-center gap-1">
             <Button
               variant="outline"
               size="icon-sm"
               disabled={!hasPrev}
               onClick={() => setPage((p) => p - 1)}
-              classNome="border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white disabled:opacity-30"
+              className="border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white disabled:opacity-30"
             >
-              <ChevronLeft classNome="size-4" />
+              <ChevronLeft className="size-4" />
             </Button>
-            <span classNome="text-xs text-slate-400 px-2">
+            <span className="text-xs text-slate-400 px-2">
               Page {page + 1} of {totalPages}
             </span>
             <Button
               variant="outline"
               size="icon-sm"
-              disabled={!hasPróximo}
+              disabled={!hasNext}
               onClick={() => setPage((p) => p + 1)}
-              classNome="border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white disabled:opacity-30"
+              className="border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white disabled:opacity-30"
             >
-              <ChevronRight classNome="size-4" />
+              <ChevronRight className="size-4" />
             </Button>
           </div>
         </div>
@@ -438,63 +438,63 @@ export default function ContatosPage() {
 
       {/* Contact Form Dialog */}
       <ContactForm
-        open={formAberto}
-        onAbertoChange={setFormAberto}
+        open={formOpen}
+        onOpenChange={setFormOpen}
         contact={editContact}
-        contactEtiquetas={editContactEtiquetas}
-        onSalvard={() => {
-          fetchContatos();
-          fetchEtiquetas();
+        contactTags={editContactTags}
+        onSaved={() => {
+          fetchContacts();
+          fetchTags();
         }}
         onViewExisting={(id) => {
-          setFormAberto(false);
+          setFormOpen(false);
           openDetail(id);
         }}
       />
 
       {/* Contact Detail Sheet */}
       <ContactDetailView
-        open={detailAberto}
-        onAbertoChange={setDetailAberto}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
         contactId={detailContactId}
-        onUpdated={fetchContatos}
+        onUpdated={fetchContacts}
       />
 
-      {/* Importar Modal */}
-      <ImportarModal
-        open={importAberto}
-        onAbertoChange={setImportarAberto}
-        onImportared={fetchContatos}
+      {/* Import Modal */}
+      <ImportModal
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImported={fetchContacts}
       />
 
-      {/* Excluir Confirmaration */}
-      <Dialog open={deleteConfirmarAberto} onAbertoChange={setExcluirConfirmarAberto}>
-        <DialogContent classNome="bg-slate-900 border-slate-700 text-slate-200 sm:max-w-sm">
+      {/* Delete Confirmation */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="bg-slate-900 border-slate-700 text-slate-200 sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle classNome="text-white">Excluir Contact</DialogTitle>
-            <DialogDescription classNome="text-slate-400">
+            <DialogTitle className="text-white">Delete Contact</DialogTitle>
+            <DialogDescription className="text-slate-400">
               Are you sure you want to delete{' '}
-              <span classNome="text-slate-200 font-medium">
+              <span className="text-slate-200 font-medium">
                 {deleteTarget?.name || deleteTarget?.phone}
               </span>
-              ? Esta ação não pode ser desfeita.
+              ? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter classNome="bg-slate-900 border-slate-700">
+          <DialogFooter className="bg-slate-900 border-slate-700">
             <Button
               variant="outline"
-              onClick={() => setExcluirConfirmarAberto(false)}
-              classNome="border-slate-700 text-slate-300 hover:bg-slate-800"
+              onClick={() => setDeleteConfirmOpen(false)}
+              className="border-slate-700 text-slate-300 hover:bg-slate-800"
             >
-              Cancelar
+              Cancel
             </Button>
             <Button
               variant="destructive"
-              onClick={handleExcluir}
+              onClick={handleDelete}
               disabled={deleting}
             >
-              {deleting && <Loader2 classNome="size-4 animate-spin" />}
-              Excluir
+              {deleting && <Loader2 className="size-4 animate-spin" />}
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>

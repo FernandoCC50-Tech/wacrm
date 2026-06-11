@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   validateStepsForActivation,
-  validateGatilhoForActivation,
+  validateTriggerForActivation,
 } from "./validate";
 
 describe("validateStepsForActivation", () => {
@@ -176,10 +176,10 @@ describe("validateStepsForActivation", () => {
   });
 });
 
-describe("validateGatilhoForActivation", () => {
+describe("validateTriggerForActivation", () => {
   it("accepts a valid keyword_match config", () => {
     expect(
-      validateGatilhoForActivation("keyword_match", {
+      validateTriggerForActivation("keyword_match", {
         keywords: ["hello", "hi"],
         match_type: "exact",
       }),
@@ -187,7 +187,7 @@ describe("validateGatilhoForActivation", () => {
   });
 
   it("rejects keyword_match with empty keyword array", () => {
-    const issues = validateGatilhoForActivation("keyword_match", {
+    const issues = validateTriggerForActivation("keyword_match", {
       keywords: [],
       match_type: "exact",
     });
@@ -195,7 +195,7 @@ describe("validateGatilhoForActivation", () => {
   });
 
   it("rejects keyword_match with whitespace-only entries", () => {
-    const issues = validateGatilhoForActivation("keyword_match", {
+    const issues = validateTriggerForActivation("keyword_match", {
       keywords: ["hi", "   "],
       match_type: "contains",
     });
@@ -205,7 +205,7 @@ describe("validateGatilhoForActivation", () => {
   });
 
   it("rejects keyword_match with an unknown match_type", () => {
-    const issues = validateGatilhoForActivation("keyword_match", {
+    const issues = validateTriggerForActivation("keyword_match", {
       keywords: ["hi"],
       match_type: "fuzzy",
     });
@@ -213,24 +213,24 @@ describe("validateGatilhoForActivation", () => {
   });
 
   it("requires schedule on time_based triggers", () => {
-    expect(validateGatilhoForActivation("time_based", {})).toEqual([
+    expect(validateTriggerForActivation("time_based", {})).toEqual([
       { path: "trigger.schedule", message: "schedule is required" },
     ]);
     expect(
-      validateGatilhoForActivation("time_based", { schedule: "0 9 * * *" }),
+      validateTriggerForActivation("time_based", { schedule: "0 9 * * *" }),
     ).toEqual([]);
   });
 
   it("requires tag_id on tag_added triggers", () => {
-    expect(validateGatilhoForActivation("tag_added", {})).toEqual([
+    expect(validateTriggerForActivation("tag_added", {})).toEqual([
       { path: "trigger.tag_id", message: "tag is required" },
     ]);
     expect(
-      validateGatilhoForActivation("tag_added", { tag_id: "tag-uuid" }),
+      validateTriggerForActivation("tag_added", { tag_id: "tag-uuid" }),
     ).toEqual([]);
   });
 
   it("does not flag unknown trigger types (handled elsewhere)", () => {
-    expect(validateGatilhoForActivation("some_future_trigger", {})).toEqual([]);
+    expect(validateTriggerForActivation("some_future_trigger", {})).toEqual([]);
   });
 });

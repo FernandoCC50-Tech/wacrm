@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { buildMetaModeloPayload } from './template-components';
-import type { ModeloPayload } from './template-validators';
+import { buildMetaTemplatePayload } from './template-components';
+import type { TemplatePayload } from './template-validators';
 
-const base: ModeloPayload = {
+const base: TemplatePayload = {
   name: 'order_confirmation',
   category: 'Utility',
   language: 'en_US',
   body_text: 'Your order is on its way.',
 };
 
-describe('buildMetaModeloPayload', () => {
+describe('buildMetaTemplatePayload', () => {
   it('upcases category and produces minimal components (body only)', () => {
-    const payload = buildMetaModeloPayload(base);
+    const payload = buildMetaTemplatePayload(base);
     expect(payload).toEqual({
       name: 'order_confirmation',
       category: 'UTILITY',
@@ -23,7 +23,7 @@ describe('buildMetaModeloPayload', () => {
   });
 
   it('includes body_text example as a 2D array (Meta spec)', () => {
-    const payload = buildMetaModeloPayload({
+    const payload = buildMetaTemplatePayload({
       ...base,
       body_text: 'Hi {{1}}, order {{2}}.',
       sample_values: { body: ['John', 'ORD-42'] },
@@ -33,7 +33,7 @@ describe('buildMetaModeloPayload', () => {
   });
 
   it('emits TEXT header in canonical first position', () => {
-    const payload = buildMetaModeloPayload({
+    const payload = buildMetaTemplatePayload({
       ...base,
       header_type: 'text',
       header_content: 'Hello {{1}}',
@@ -48,7 +48,7 @@ describe('buildMetaModeloPayload', () => {
   });
 
   it('uses header_url for media headers when no handle is set', () => {
-    const payload = buildMetaModeloPayload({
+    const payload = buildMetaTemplatePayload({
       ...base,
       header_type: 'image',
       header_media_url: 'https://example.com/img.jpg',
@@ -61,7 +61,7 @@ describe('buildMetaModeloPayload', () => {
   });
 
   it('prefers header_handle over header_media_url', () => {
-    const payload = buildMetaModeloPayload({
+    const payload = buildMetaTemplatePayload({
       ...base,
       header_type: 'video',
       header_handle: '4::aW1...',
@@ -75,7 +75,7 @@ describe('buildMetaModeloPayload', () => {
   });
 
   it('emits footer when present, skips when empty', () => {
-    const withFooter = buildMetaModeloPayload({
+    const withFooter = buildMetaTemplatePayload({
       ...base,
       footer_text: 'Reply STOP to opt out',
     });
@@ -85,18 +85,18 @@ describe('buildMetaModeloPayload', () => {
       ),
     ).toBe(true);
 
-    const withoutFooter = buildMetaModeloPayload({ ...base, footer_text: '' });
+    const withoutFooter = buildMetaTemplatePayload({ ...base, footer_text: '' });
     expect(withoutFooter.components.some((c) => c.type === 'FOOTER')).toBe(false);
   });
 
   it('emits the buttons component with correct per-type fields', () => {
-    const payload = buildMetaModeloPayload({
+    const payload = buildMetaTemplatePayload({
       ...base,
       buttons: [
         { type: 'QUICK_REPLY', text: 'Yes' },
         { type: 'URL', text: 'Track', url: 'https://x/{{1}}', example: 'abc' },
         { type: 'PHONE_NUMBER', text: 'Call', phone_number: '+15551234567' },
-        { type: 'COPY_CODE', text: 'Copiar', example: 'SUMMER20' },
+        { type: 'COPY_CODE', text: 'Copy', example: 'SUMMER20' },
       ],
     });
     const buttons = payload.components.find((c) => c.type === 'BUTTONS');
@@ -104,12 +104,12 @@ describe('buildMetaModeloPayload', () => {
       { type: 'QUICK_REPLY', text: 'Yes' },
       { type: 'URL', text: 'Track', url: 'https://x/{{1}}', example: ['abc'] },
       { type: 'PHONE_NUMBER', text: 'Call', phone_number: '+15551234567' },
-      { type: 'COPY_CODE', text: 'Copiar', example: ['SUMMER20'] },
+      { type: 'COPY_CODE', text: 'Copy', example: ['SUMMER20'] },
     ]);
   });
 
   it('orders components HEADER → BODY → FOOTER → BUTTONS', () => {
-    const payload = buildMetaModeloPayload({
+    const payload = buildMetaTemplatePayload({
       ...base,
       header_type: 'text',
       header_content: 'Hi',

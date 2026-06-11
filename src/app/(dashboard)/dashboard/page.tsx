@@ -8,7 +8,7 @@ import {
   MessageSquare,
   UserPlus,
   DollarSign,
-  Enviar,
+  Send,
 } from 'lucide-react'
 
 import {
@@ -28,7 +28,7 @@ import type {
 
 import { MetricCard } from '@/components/dashboard/metric-card'
 import { SkeletonCard } from '@/components/dashboard/skeleton'
-import { QuickAçãos } from '@/components/dashboard/quick-actions'
+import { QuickActions } from '@/components/dashboard/quick-actions'
 import { ConversationsChart } from '@/components/dashboard/conversations-chart'
 import { PipelineDonut } from '@/components/dashboard/pipeline-donut'
 import { ResponseTimeChart } from '@/components/dashboard/response-time-chart'
@@ -36,7 +36,7 @@ import { ActivityFeed } from '@/components/dashboard/activity-feed'
 
 type RangeDays = 7 | 30 | 90
 
-export default function PainelPage() {
+export default function DashboardPage() {
   const { defaultCurrency } = useAuth()
   const [metrics, setMetrics] = useState<MetricsBundle | null>(null)
   const [metricsLoading, setMetricsLoading] = useState(true)
@@ -61,7 +61,7 @@ export default function PainelPage() {
   const [activity, setActivity] = useState<ActivityItem[] | null>(null)
   const [activityLoading, setActivityLoading] = useState(true)
 
-  const loadTodos = useCallback(() => {
+  const loadAll = useCallback(() => {
     const db = createClient()
 
     // Kick everything off in parallel. Each block has its own
@@ -97,8 +97,8 @@ export default function PainelPage() {
   }, [])
 
   useEffect(() => {
-    loadTodos()
-  }, [loadTodos])
+    loadAll()
+  }, [loadAll])
 
   // Range switch handler — kept in an event callback (not an effect)
   // so the setState calls stay out of the react-hooks/set-state-in-effect
@@ -119,58 +119,58 @@ export default function PainelPage() {
   )
 
   return (
-    <div classNome="space-y-5">
+    <div className="space-y-5">
       {/* Header */}
       <div>
-        <h1 classNome="text-2xl font-bold text-white">Painel</h1>
-        <p classNome="mt-1 text-sm text-slate-400">
+        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+        <p className="mt-1 text-sm text-slate-400">
           Live analytics across conversations, contacts, deals, broadcasts, and automations.
         </p>
       </div>
 
       {/* Metric cards */}
-      <div classNome="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {metricsLoading || !metrics ? (
           Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
         ) : (
           <>
             <MetricCard
-              title="Ativo Conversations"
+              title="Active Conversations"
               value={metrics.activeConversations.current.toLocaleString()}
               icon={MessageSquare}
               delta={{
                 sign: metrics.activeConversations.previous,
-                label: deltaRótulo(metrics.activeConversations.previous, 'new today vs yesterday'),
+                label: deltaLabel(metrics.activeConversations.previous, 'new today vs yesterday'),
               }}
             />
             <MetricCard
-              title="Novo Contatos Hoje"
-              value={metrics.newContatosHoje.current.toLocaleString()}
+              title="New Contacts Today"
+              value={metrics.newContactsToday.current.toLocaleString()}
               icon={UserPlus}
               delta={{
                 sign:
-                  metrics.newContatosHoje.current - metrics.newContatosHoje.previous,
-                label: deltaRótulo(
-                  metrics.newContatosHoje.current - metrics.newContatosHoje.previous,
+                  metrics.newContactsToday.current - metrics.newContactsToday.previous,
+                label: deltaLabel(
+                  metrics.newContactsToday.current - metrics.newContactsToday.previous,
                   'vs yesterday',
                 ),
               }}
             />
             <MetricCard
-              title="Aberto Deals Valor"
-              value={formatCurrency(metrics.openDealsValor, defaultCurrency)}
+              title="Open Deals Value"
+              value={formatCurrency(metrics.openDealsValue, defaultCurrency)}
               icon={DollarSign}
               subtitle={`${metrics.openDealsCount} open deal${metrics.openDealsCount === 1 ? '' : 's'}`}
             />
             <MetricCard
-              title="Messages Enviado Hoje"
-              value={metrics.messagesEnviadoHoje.current.toLocaleString()}
-              icon={Enviar}
+              title="Messages Sent Today"
+              value={metrics.messagesSentToday.current.toLocaleString()}
+              icon={Send}
               delta={{
                 sign:
-                  metrics.messagesEnviadoHoje.current - metrics.messagesEnviadoHoje.previous,
-                label: deltaRótulo(
-                  metrics.messagesEnviadoHoje.current - metrics.messagesEnviadoHoje.previous,
+                  metrics.messagesSentToday.current - metrics.messagesSentToday.previous,
+                label: deltaLabel(
+                  metrics.messagesSentToday.current - metrics.messagesSentToday.previous,
                   'vs yesterday',
                 ),
               }}
@@ -180,7 +180,7 @@ export default function PainelPage() {
       </div>
 
       {/* Quick actions */}
-      <QuickAçãos />
+      <QuickActions />
 
       {/* Charts row */}
       {/* items-stretch (the grid default) stretches the two columns to
@@ -189,8 +189,8 @@ export default function PainelPage() {
           stretched height so their rounded borders line up. Without
           this, the pipeline card rendered at its natural (shorter)
           height while the line chart drove the row height. */}
-      <div classNome="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <div classNome="h-full lg:col-span-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        <div className="h-full lg:col-span-3">
           <ConversationsChart
             series={series}
             loading={seriesLoading}
@@ -198,7 +198,7 @@ export default function PainelPage() {
             onRangeChange={handleRangeChange}
           />
         </div>
-        <div classNome="h-full lg:col-span-2">
+        <div className="h-full lg:col-span-2">
           <PipelineDonut
             data={pipeline}
             loading={pipelineLoading}
@@ -210,7 +210,7 @@ export default function PainelPage() {
       {/* Response time */}
       <ResponseTimeChart data={responseTime} loading={responseTimeLoading} />
 
-      {/* Feed de atividades */}
+      {/* Activity feed */}
       <ActivityFeed items={activity} loading={activityLoading} />
     </div>
   )
@@ -218,7 +218,7 @@ export default function PainelPage() {
 
 // ------------------------------------------------------------
 
-function deltaRótulo(delta: number, suffix: string): string {
+function deltaLabel(delta: number, suffix: string): string {
   if (delta === 0) return `No change ${suffix}`
   const sign = delta > 0 ? '+' : ''
   return `${sign}${delta.toLocaleString()} ${suffix}`

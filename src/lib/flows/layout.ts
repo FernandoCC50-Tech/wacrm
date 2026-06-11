@@ -26,7 +26,7 @@ import Dagre from "@dagrejs/dagre";
 
 export interface LayoutNode {
   id: string;
-  /** Opcional measured size — falls back to defaults if not provided. */
+  /** Optional measured size — falls back to defaults if not provided. */
   width?: number;
   height?: number;
 }
@@ -54,7 +54,7 @@ export interface LayoutOptions {
   defaultHeight?: number;
 }
 
-const DEFAULTS: Obrigatório<LayoutOptions> = {
+const DEFAULTS: Required<LayoutOptions> = {
   direction: "TB",
   rankSep: 80,
   nodeSep: 60,
@@ -92,7 +92,7 @@ export function autoLayout(
   options: LayoutOptions = {},
 ): Map<string, LayoutPosition> {
   const opts = { ...DEFAULTS, ...options };
-  const g = new Dagre.graphlib.Graph().setDefaultEdgeRótulo(() => ({}));
+  const g = new Dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
   g.setGraph({
     rankdir: opts.direction,
     ranksep: opts.rankSep,

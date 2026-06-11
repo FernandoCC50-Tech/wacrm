@@ -1,13 +1,13 @@
-import { PróximoResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/whatsapp/encryption'
-import { submitMessageModelo } from '@/lib/whatsapp/meta-api'
+import { submitMessageTemplate } from '@/lib/whatsapp/meta-api'
 import {
-  validateModeloPayload,
-  type ModeloPayload,
+  validateTemplatePayload,
+  type TemplatePayload,
 } from '@/lib/whatsapp/template-validators'
-import { buildMetaModeloPayload } from '@/lib/whatsapp/template-components'
+import { buildMetaTemplatePayload } from '@/lib/whatsapp/template-components'
 import { normalizeStatus } from '@/lib/whatsapp/template-status-normalize'
 
 /**
@@ -18,11 +18,11 @@ import { normalizeStatus } from '@/lib/whatsapp/template-status-normalize'
 function buildUpsertRow(
   accountId: string,
   userId: string,
-  payload: ModeloPayload,
+  payload: TemplatePayload,
   extras: {
     status: 'DRAFT' | string
-    metaModeloId: string | null
-    submissionErro: string | null
+    metaTemplateId: string | null
+    submissionError: string | null
   },
 ) {
   return {
@@ -46,16 +46,16 @@ function buildUpsertRow(
     buttons: payload.buttons ?? null,
     sample_values: payload.sample_values ?? null,
     status: extras.status,
-    meta_template_id: extras.metaModeloId,
-    submission_error: extras.submissionErro,
+    meta_template_id: extras.metaTemplateId,
+    submission_error: extras.submissionError,
     // Clear stale rejection_reason whenever we re-submit; the
     // webhook will set it again if Meta still rejects.
-    rejection_reason: extras.submissionErro ? null : null,
+    rejection_reason: extras.submissionError ? null : null,
     last_submitted_at: new Date().toISOString(),
   }
 }
 
-async function upsertModeloRow(
+async function upsertTemplateRow(
   supabase: SupabaseClient,
   row: ReturnType<typeof buildUpsertRow>,
 ) {
@@ -90,13 +90,13 @@ export async function POST(request: Request) {
     const supabase = await createClient()
     const {
       data: { user },
-      error: authErro,
+      error: authError,
     } = await supabase.auth.getUser()
-    if (authErro || !user) {
-      return PróximoResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Resolver the caller's account_id — whatsapp_config + the
+    // Resolve the caller's account_id — whatsapp_config + the
     // message_templates row are account-scoped post-multi-user.
     const { data: profile } = await supabase
       .from('profiles')
@@ -105,21 +105,21 @@ export async function POST(request: Request) {
       .maybeSingle()
     const accountId = profile?.account_id as string | undefined
     if (!accountId) {
-      return PróximoResponse.json(
+      return NextResponse.json(
         { error: 'Your profile is not linked to an account.' },
         { status: 403 },
       )
     }
 
-    let payload: ModeloPayload
+    let payload: TemplatePayload
     try {
-      payload = (await request.json()) as ModeloPayload
+      payload = (await request.json()) as TemplatePayload
     } catch {
-      return PróximoResponse.json({ error: 'Invalid JSON body.' }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 })
     }
 
     if (payload.category === 'Authentication') {
-      return PróximoResponse.json(
+      return NextResponse.json(
         {
           error:
             'AUTHENTICATION templates are not yet supported here — create them in Meta WhatsApp Manager and use "Sync from Meta".',
@@ -129,43 +129,43 @@ export async function POST(request: Request) {
     }
 
     try {
-      validateModeloPayload(payload)
+      validateTemplatePayload(payload)
     } catch (e) {
-      return PróximoResponse.json(
-        { error: e instanceof Erro ? e.message : 'Validation failed.' },
+      return NextResponse.json(
+        { error: e instanceof Error ? e.message : 'Validation failed.' },
         { status: 400 },
       )
     }
 
-    const metaPayload = buildMetaModeloPayload(payload)
+    const metaPayload = buildMetaTemplatePayload(payload)
 
     const dryRun =
       process.env.WHATSAPP_TEMPLATES_DRY_RUN === 'true' ||
       process.env.WHATSAPP_TEMPLATES_DRY_RUN === '1'
 
-    let metaModeloId: string
+    let metaTemplateId: string
     let metaStatus: string
 
     if (dryRun) {
-      metaModeloId = `dry-run-${crypto.randomUUID()}`
+      metaTemplateId = `dry-run-${crypto.randomUUID()}`
       metaStatus = 'PENDING'
     } else {
-      const { data: config, error: configErro } = await supabase
+      const { data: config, error: configError } = await supabase
         .from('whatsapp_config')
         .select('*')
         .eq('account_id', accountId)
         .single()
-      if (configErro || !config) {
-        return PróximoResponse.json(
+      if (configError || !config) {
+        return NextResponse.json(
           {
             error:
-              'WhatsApp not configured. Conectar your WhatsApp Business account in Settings first.',
+              'WhatsApp not configured. Connect your WhatsApp Business account in Settings first.',
           },
           { status: 400 },
         )
       }
       if (!config.waba_id) {
-        return PróximoResponse.json(
+        return NextResponse.json(
           {
             error:
               'WABA (WhatsApp Business Account) ID missing. Re-connect your account in Settings.',
@@ -176,30 +176,30 @@ export async function POST(request: Request) {
 
       const accessToken = decrypt(config.access_token)
       try {
-        const meta = await submitMessageModelo({
+        const meta = await submitMessageTemplate({
           wabaId: config.waba_id,
           accessToken,
           payload: metaPayload,
         })
-        metaModeloId = meta.id
+        metaTemplateId = meta.id
         metaStatus = meta.status
       } catch (e) {
-        const message = e instanceof Erro ? e.message : 'Meta submit failed.'
+        const message = e instanceof Error ? e.message : 'Meta submit failed.'
         // Persist the failure so the user can retry; row stays DRAFT
         // until they fix and re-submit.
-        await upsertModeloRow(
+        await upsertTemplateRow(
           supabase,
           buildUpsertRow(accountId, user.id, payload, {
             status: 'DRAFT',
-            metaModeloId: null,
-            submissionErro: message,
+            metaTemplateId: null,
+            submissionError: message,
           }),
         )
         const isRateLimit = /\b429\b/.test(message)
-        return PróximoResponse.json(
+        return NextResponse.json(
           {
             error: isRateLimit
-              ? 'Meta rate limit hit (100 template creates per hour). Tentar novamente later.'
+              ? 'Meta rate limit hit (100 template creates per hour). Try again later.'
               : message,
           },
           { status: isRateLimit ? 429 : 502 },
@@ -207,12 +207,12 @@ export async function POST(request: Request) {
       }
     }
 
-    const { data: row, error: upsertErr } = await upsertModeloRow(
+    const { data: row, error: upsertErr } = await upsertTemplateRow(
       supabase,
       buildUpsertRow(accountId, user.id, payload, {
         status: normalizeStatus(metaStatus),
-        metaModeloId,
-        submissionErro: null,
+        metaTemplateId,
+        submissionError: null,
       }),
     )
 
@@ -220,26 +220,26 @@ export async function POST(request: Request) {
       // The submit succeeded on Meta's side but we failed to persist
       // locally. That's a data-drift state — surface the meta_template_id
       // so the user can recover via "Sync from Meta".
-      return PróximoResponse.json(
+      return NextResponse.json(
         {
           error: `Submitted to Meta but failed to save locally: ${upsertErr.message}. Run "Sync from Meta" to recover.`,
-          meta_template_id: metaModeloId,
+          meta_template_id: metaTemplateId,
         },
         { status: 500 },
       )
     }
 
-    return PróximoResponse.json({
+    return NextResponse.json({
       success: true,
       template: row,
       dry_run: dryRun,
     })
   } catch (error) {
-    console.error('Erro submitting template:', error)
-    return PróximoResponse.json(
+    console.error('Error submitting template:', error)
+    return NextResponse.json(
       {
         error:
-          error instanceof Erro ? error.message : 'Falhou to submit template.',
+          error instanceof Error ? error.message : 'Failed to submit template.',
       },
       { status: 500 },
     )

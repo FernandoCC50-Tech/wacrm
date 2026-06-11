@@ -5,8 +5,8 @@
 //
 // Two-step modal:
 //   1. Form  — role + expiry + optional label → POST creates the invite.
-//   2. Result — the share URL, returned ONCE. Copiar-to-clipboard, plus a
-//              "Enviar via WhatsApp" deep link that pre-fills wa.me with
+//   2. Result — the share URL, returned ONCE. Copy-to-clipboard, plus a
+//              "Send via WhatsApp" deep link that pre-fills wa.me with
 //              a friendly message containing the URL.
 //
 // The plaintext token is server-stored only as a SHA-256 hash, so once
@@ -16,7 +16,7 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Copiar, Loader2, MessageCircle, Sparkles } from 'lucide-react';
+import { Copy, Loader2, MessageCircle, Sparkles } from 'lucide-react';
 
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
@@ -28,24 +28,24 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Rótulo } from '@/components/ui/label';
+import { Label } from '@/components/ui/label';
 import {
-  Selecionar,
-  SelecionarContent,
-  SelecionarItem,
-  SelecionarGatilho,
-  SelecionarValor,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/hooks/use-auth';
 
-type InviteFunção = 'admin' | 'agent' | 'viewer';
+type InviteRole = 'admin' | 'agent' | 'viewer';
 
 interface InviteMemberDialogProps {
   open: boolean;
-  onAbertoChange: (open: boolean) => void;
+  onOpenChange: (open: boolean) => void;
   /** Called after a successful create so the parent re-fetches the
    *  pending-invitations list. */
-  onCriard: () => void;
+  onCreated: () => void;
 }
 
 const EXPIRY_OPTIONS: { value: string; label: string }[] = [
@@ -54,12 +54,12 @@ const EXPIRY_OPTIONS: { value: string; label: string }[] = [
   { value: '30', label: '30 days' },
 ];
 
-const ROLE_DESCRIPTIONS: Record<InviteFunção, string> = {
+const ROLE_DESCRIPTIONS: Record<InviteRole, string> = {
   admin:
     'Can invite teammates, manage settings, send messages, and edit data.',
   agent:
     'Can use the inbox, contacts, broadcasts, automations, and flows. No settings or member access.',
-  viewer: 'Lido-only access across every page. Cannot send or edit anything.',
+  viewer: 'Read-only access across every page. Cannot send or edit anything.',
 };
 
 // Server caps label at 80 chars (see src/app/api/account/invitations/route.ts).
@@ -67,45 +67,45 @@ const ROLE_DESCRIPTIONS: Record<InviteFunção, string> = {
 // rather than letting the user submit and bounce off a 400.
 const MAX_LABEL_LEN = 80;
 
-interface CriardInvite {
+interface CreatedInvite {
   url: string;
-  role: InviteFunção;
+  role: InviteRole;
   expiresInDays: number;
   /** Snapshotted at creation time so a later account rename can't
    *  retroactively change the wa.me message text on the result step. */
-  accountNome: string;
+  accountName: string;
 }
 
 export function InviteMemberDialog({
   open,
-  onAbertoChange,
-  onCriard,
+  onOpenChange,
+  onCreated,
 }: InviteMemberDialogProps) {
   const { account } = useAuth();
-  const [role, setFunção] = useState<InviteFunção>('agent');
+  const [role, setRole] = useState<InviteRole>('agent');
   const [expiry, setExpiry] = useState<string>('7');
-  const [label, setRótulo] = useState('');
+  const [label, setLabel] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<CriardInvite | null>(null);
+  const [result, setResult] = useState<CreatedInvite | null>(null);
 
   function reset() {
-    setFunção('agent');
+    setRole('agent');
     setExpiry('7');
-    setRótulo('');
+    setLabel('');
     setResult(null);
     setSubmitting(false);
   }
 
-  async function handleCriar() {
+  async function handleCreate() {
     // Mirror the server's max-length check so we don't ship an
     // obviously-too-long label across the wire just to bounce off
     // a 400. The Input also has a `maxLength={MAX_LABEL_LEN}` cap
     // but a paste can land an over-limit string into state before
     // the limit kicks in on the next keystroke — this is the safety
     // net for that path.
-    const trimmedRótulo = label.trim();
-    if (trimmedRótulo.length > MAX_LABEL_LEN) {
-      toast.error(`Rótulo must be ${MAX_LABEL_LEN} characters or fewer`);
+    const trimmedLabel = label.trim();
+    if (trimmedLabel.length > MAX_LABEL_LEN) {
+      toast.error(`Label must be ${MAX_LABEL_LEN} characters or fewer`);
       return;
     }
     setSubmitting(true);
@@ -116,13 +116,13 @@ export function InviteMemberDialog({
         body: JSON.stringify({
           role,
           expiresInDays: Number(expiry),
-          label: trimmedRótulo || undefined,
+          label: trimmedLabel || undefined,
         }),
       });
 
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
-        toast.error(payload.error || 'Falhou to create invitation');
+        toast.error(payload.error || 'Failed to create invitation');
         return;
       }
 
@@ -140,12 +140,12 @@ export function InviteMemberDialog({
         // string if `account` hasn't loaded yet (shouldn't happen
         // — the dialog requires admin+ which requires a loaded
         // profile — but stay safe).
-        accountNome: account?.name ?? 'our wacrm account',
+        accountName: account?.name ?? 'our wacrm account',
       });
-      onCriard();
+      onCreated();
     } catch (err) {
       console.error('[InviteMemberDialog] create error:', err);
-      toast.error('Could not reach the server. Tentar novamente?');
+      toast.error('Could not reach the server. Try again?');
     } finally {
       setSubmitting(false);
     }
@@ -169,58 +169,58 @@ export function InviteMemberDialog({
     // they're being invited to before clicking through. This matters
     // for users in multi-team contexts where "our wacrm account"
     // wouldn't be enough to disambiguate.
-    const accountNome = result?.accountNome ?? 'our wacrm account';
-    const message = `Join ${accountNome} on wacrm using this link (valid for ${result?.expiresInDays} days): ${url}`;
+    const accountName = result?.accountName ?? 'our wacrm account';
+    const message = `Join ${accountName} on wacrm using this link (valid for ${result?.expiresInDays} days): ${url}`;
     return `https://wa.me/?text=${encodeURIComponent(message)}`;
   }
 
   return (
     <Dialog
       open={open}
-      onAbertoChange={(next) => {
+      onOpenChange={(next) => {
         // Reset state when the dialog closes — both for cancel and
         // for dismissal after a successful create. The plaintext URL
         // is intentionally NOT preserved across opens.
         if (!next) reset();
-        onAbertoChange(next);
+        onOpenChange(next);
       }}
     >
-      <DialogContent classNome="bg-slate-900 border-slate-700 sm:max-w-md">
+      <DialogContent className="bg-slate-900 border-slate-700 sm:max-w-md">
         {result ? (
           <>
             <DialogHeader>
-              <DialogTitle classNome="flex items-center gap-2 text-white">
-                <Sparkles classNome="size-4 text-primary" />
+              <DialogTitle className="flex items-center gap-2 text-white">
+                <Sparkles className="size-4 text-primary" />
                 Invite created
               </DialogTitle>
-              <DialogDescription classNome="text-slate-400">
+              <DialogDescription className="text-slate-400">
                 Share this link with your new teammate. They&apos;ll be able
                 to sign up (or sign in) and join the account as{' '}
-                <span classNome="font-medium text-slate-300">{result.role}</span>
+                <span className="font-medium text-slate-300">{result.role}</span>
                 . The link is valid for{' '}
-                <span classNome="font-medium text-slate-300">
+                <span className="font-medium text-slate-300">
                   {result.expiresInDays} day{result.expiresInDays === 1 ? '' : 's'}
                 </span>
                 .
               </DialogDescription>
             </DialogHeader>
 
-            <div classNome="space-y-3 py-2">
-              <Rótulo classNome="text-slate-300">Invite link</Rótulo>
-              <div classNome="flex gap-2">
+            <div className="space-y-3 py-2">
+              <Label className="text-slate-300">Invite link</Label>
+              <div className="flex gap-2">
                 <Input
                   readOnly
                   value={result.url}
-                  classNome="bg-slate-800 border-slate-700 text-white font-mono text-xs"
+                  className="bg-slate-800 border-slate-700 text-white font-mono text-xs"
                   onFocus={(e) => e.currentTarget.select()}
                 />
                 <Button
                   type="button"
                   onClick={copyToClipboard}
-                  classNome="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0"
                 >
-                  <Copiar classNome="size-4" />
-                  Copiar
+                  <Copy className="size-4" />
+                  Copy
                 </Button>
               </div>
 
@@ -229,9 +229,9 @@ export function InviteMemberDialog({
                   text (target ratio 7:1). Border bumped to /50, bg to
                   /15, foreground promoted to amber-100 for the strong
                   intro, amber-200 for the body. */}
-              <div classNome="rounded-md border border-amber-500/50 bg-amber-500/15 px-3 py-2 text-xs text-amber-200">
-                <strong classNome="font-semibold text-amber-100">
-                  Salvar this link now.
+              <div className="rounded-md border border-amber-500/50 bg-amber-500/15 px-3 py-2 text-xs text-amber-200">
+                <strong className="font-semibold text-amber-100">
+                  Save this link now.
                 </strong>{' '}
                 We never store the plaintext — once you close this dialog
                 the URL is gone. To re-share, revoke this invite and create
@@ -241,27 +241,27 @@ export function InviteMemberDialog({
               {/* Anchor styled with `buttonVariants` rather than wrapping
                   in <Button asChild>. The wacrm Button is the Base UI
                   ButtonPrimitive — it has no Radix-style asChild slot.
-                  Direct anchor preserves right-click "Aberto in new tab"
+                  Direct anchor preserves right-click "Open in new tab"
                   behaviour too. */}
               <a
                 href={whatsappShareUrl(result.url)}
                 target="_blank"
                 rel="noreferrer noopener"
-                classNome={buttonVariants({
+                className={buttonVariants({
                   variant: 'outline',
-                  classNome:
+                  className:
                     'w-full border-slate-700 text-slate-300 hover:bg-slate-800',
                 })}
               >
-                <MessageCircle classNome="size-4" />
-                Enviar via WhatsApp
+                <MessageCircle className="size-4" />
+                Send via WhatsApp
               </a>
             </div>
 
-            <DialogFooter classNome="bg-slate-900 border-slate-700">
+            <DialogFooter className="bg-slate-900 border-slate-700">
               <Button
-                onClick={() => onAbertoChange(false)}
-                classNome="bg-primary hover:bg-primary/90 text-primary-foreground"
+                onClick={() => onOpenChange(false)}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 Done
               </Button>
@@ -270,88 +270,88 @@ export function InviteMemberDialog({
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle classNome="text-white">Invite a teammate</DialogTitle>
-              <DialogDescription classNome="text-slate-400">
+              <DialogTitle className="text-white">Invite a teammate</DialogTitle>
+              <DialogDescription className="text-slate-400">
                 Generate a one-time invite link. Share it via WhatsApp,
                 Slack, or any channel you like — no email service required.
               </DialogDescription>
             </DialogHeader>
 
-            <div classNome="space-y-4 py-2">
-              <div classNome="space-y-2">
-                <Rótulo classNome="text-slate-300">Função</Rótulo>
-                <Selecionar
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label className="text-slate-300">Role</Label>
+                <Select
                   value={role}
-                  onValorChange={(v) => v && setFunção(v as InviteFunção)}
+                  onValueChange={(v) => v && setRole(v as InviteRole)}
                 >
-                  <SelecionarGatilho classNome="w-full bg-slate-800 border-slate-700 text-white">
-                    <SelecionarValor />
-                  </SelecionarGatilho>
-                  <SelecionarContent>
-                    <SelecionarItem value="admin">Admin</SelecionarItem>
-                    <SelecionarItem value="agent">Agent</SelecionarItem>
-                    <SelecionarItem value="viewer">Viewer</SelecionarItem>
-                  </SelecionarContent>
-                </Selecionar>
-                <p classNome="text-xs text-slate-500">
+                  <SelectTrigger className="w-full bg-slate-800 border-slate-700 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="agent">Agent</SelectItem>
+                    <SelectItem value="viewer">Viewer</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-slate-500">
                   {ROLE_DESCRIPTIONS[role]}
                 </p>
               </div>
 
-              <div classNome="space-y-2">
-                <Rótulo classNome="text-slate-300">Link valid for</Rótulo>
-                <Selecionar
+              <div className="space-y-2">
+                <Label className="text-slate-300">Link valid for</Label>
+                <Select
                   value={expiry}
-                  onValorChange={(v) => v && setExpiry(v)}
+                  onValueChange={(v) => v && setExpiry(v)}
                 >
-                  <SelecionarGatilho classNome="w-full bg-slate-800 border-slate-700 text-white">
-                    <SelecionarValor />
-                  </SelecionarGatilho>
-                  <SelecionarContent>
+                  <SelectTrigger className="w-full bg-slate-800 border-slate-700 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
                     {EXPIRY_OPTIONS.map((opt) => (
-                      <SelecionarItem key={opt.value} value={opt.value}>
+                      <SelectItem key={opt.value} value={opt.value}>
                         {opt.label}
-                      </SelecionarItem>
+                      </SelectItem>
                     ))}
-                  </SelecionarContent>
-                </Selecionar>
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div classNome="space-y-2">
-                <Rótulo classNome="text-slate-300">
-                  Rótulo{' '}
-                  <span classNome="text-xs text-slate-500">(optional)</span>
-                </Rótulo>
+              <div className="space-y-2">
+                <Label className="text-slate-300">
+                  Label{' '}
+                  <span className="text-xs text-slate-500">(optional)</span>
+                </Label>
                 <Input
                   placeholder="e.g. Sara — support team"
                   value={label}
-                  onChange={(e) => setRótulo(e.target.value)}
+                  onChange={(e) => setLabel(e.target.value)}
                   maxLength={MAX_LABEL_LEN}
-                  classNome="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                  className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
                 />
-                <p classNome="text-xs text-slate-500">
+                <p className="text-xs text-slate-500">
                   Helps you remember who you sent the link to in the pending
                   list below.
                 </p>
               </div>
             </div>
 
-            <DialogFooter classNome="bg-slate-900 border-slate-700">
+            <DialogFooter className="bg-slate-900 border-slate-700">
               <Button
                 variant="outline"
-                onClick={() => onAbertoChange(false)}
-                classNome="border-slate-700 text-slate-300 hover:bg-slate-800"
+                onClick={() => onOpenChange(false)}
+                className="border-slate-700 text-slate-300 hover:bg-slate-800"
               >
-                Cancelar
+                Cancel
               </Button>
               <Button
-                onClick={handleCriar}
+                onClick={handleCreate}
                 disabled={submitting}
-                classNome="bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 {submitting ? (
                   <>
-                    <Loader2 classNome="size-4 animate-spin" />
+                    <Loader2 className="size-4 animate-spin" />
                     Creating...
                   </>
                 ) : (

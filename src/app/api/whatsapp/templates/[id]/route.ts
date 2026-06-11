@@ -1,21 +1,21 @@
-import { PróximoResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/whatsapp/encryption'
 import {
-  deleteMessageModelo,
-  editMessageModelo,
+  deleteMessageTemplate,
+  editMessageTemplate,
 } from '@/lib/whatsapp/meta-api'
 import {
-  validateModeloPayload,
-  type ModeloPayload,
+  validateTemplatePayload,
+  type TemplatePayload,
 } from '@/lib/whatsapp/template-validators'
-import { buildMetaModeloPayload } from '@/lib/whatsapp/template-components'
+import { buildMetaTemplatePayload } from '@/lib/whatsapp/template-components'
 
 /**
  * Per-template lifecycle endpoint.
  *
  * PATCH  — edit an existing Meta-side template (and re-submit). Used
- *          by the "Editar" action on APPROVED rows and the "Resubmit"
+ *          by the "Edit" action on APPROVED rows and the "Resubmit"
  *          action on REJECTED / PAUSED rows. Meta replaces components
  *          wholesale on edit and bumps status back to PENDING.
  *
@@ -50,7 +50,7 @@ export async function PATCH(
   try {
     const { id } = await context.params
     if (!UUID_RE.test(id)) {
-      return PróximoResponse.json(
+      return NextResponse.json(
         { error: 'Invalid template id.' },
         { status: 400 },
       )
@@ -58,13 +58,13 @@ export async function PATCH(
     const supabase = await createClient()
     const {
       data: { user },
-      error: authErro,
+      error: authError,
     } = await supabase.auth.getUser()
-    if (authErro || !user) {
-      return PróximoResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Resolver the caller's account_id so template + whatsapp_config
+    // Resolve the caller's account_id so template + whatsapp_config
     // lookups work for teammates who didn't author the row.
     const { data: profile } = await supabase
       .from('profiles')
@@ -73,17 +73,17 @@ export async function PATCH(
       .maybeSingle()
     const accountId = profile?.account_id as string | undefined
     if (!accountId) {
-      return PróximoResponse.json(
+      return NextResponse.json(
         { error: 'Your profile is not linked to an account.' },
         { status: 403 },
       )
     }
 
-    let payload: ModeloPayload
+    let payload: TemplatePayload
     try {
-      payload = (await request.json()) as ModeloPayload
+      payload = (await request.json()) as TemplatePayload
     } catch {
-      return PróximoResponse.json({ error: 'Invalid JSON body.' }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 })
     }
 
     // RLS handles ownership, but we need the existing row to read
@@ -95,30 +95,30 @@ export async function PATCH(
       .eq('account_id', accountId)
       .maybeSingle()
     if (lookupErr || !existing) {
-      return PróximoResponse.json({ error: 'Modelo not found.' }, { status: 404 })
+      return NextResponse.json({ error: 'Template not found.' }, { status: 404 })
     }
 
     if (!existing.meta_template_id) {
-      return PróximoResponse.json(
+      return NextResponse.json(
         {
           error:
-            'This template was never submitted to Meta — use Novo Modelo to submit it instead.',
+            'This template was never submitted to Meta — use New Template to submit it instead.',
         },
         { status: 400 },
       )
     }
 
     if (!EDITABLE_STATUSES.has(existing.status)) {
-      return PróximoResponse.json(
+      return NextResponse.json(
         {
-          error: `Modelos in status ${existing.status} cannot be edited. Todosowed: APPROVED, REJECTED, PAUSED.`,
+          error: `Templates in status ${existing.status} cannot be edited. Allowed: APPROVED, REJECTED, PAUSED.`,
         },
         { status: 400 },
       )
     }
 
     if (payload.category === 'Authentication') {
-      return PróximoResponse.json(
+      return NextResponse.json(
         {
           error:
             'AUTHENTICATION templates are not editable here — manage them in Meta WhatsApp Manager.',
@@ -128,37 +128,37 @@ export async function PATCH(
     }
 
     try {
-      validateModeloPayload(payload)
+      validateTemplatePayload(payload)
     } catch (e) {
-      return PróximoResponse.json(
-        { error: e instanceof Erro ? e.message : 'Validation failed.' },
+      return NextResponse.json(
+        { error: e instanceof Error ? e.message : 'Validation failed.' },
         { status: 400 },
       )
     }
 
-    const metaPayload = buildMetaModeloPayload(payload)
+    const metaPayload = buildMetaTemplatePayload(payload)
 
     if (!isDryRun()) {
-      const { data: config, error: configErro } = await supabase
+      const { data: config, error: configError } = await supabase
         .from('whatsapp_config')
         .select('*')
         .eq('account_id', accountId)
         .single()
-      if (configErro || !config) {
-        return PróximoResponse.json(
+      if (configError || !config) {
+        return NextResponse.json(
           { error: 'WhatsApp not configured.' },
           { status: 400 },
         )
       }
       const accessToken = decrypt(config.access_token)
       try {
-        await editMessageModelo({
-          metaModeloId: existing.meta_template_id,
+        await editMessageTemplate({
+          metaTemplateId: existing.meta_template_id,
           accessToken,
           components: metaPayload.components,
         })
       } catch (e) {
-        const message = e instanceof Erro ? e.message : 'Meta edit failed.'
+        const message = e instanceof Error ? e.message : 'Meta edit failed.'
         await supabase
           .from('message_templates')
           .update({
@@ -166,7 +166,7 @@ export async function PATCH(
             last_submitted_at: new Date().toISOString(),
           })
           .eq('id', id)
-        return PróximoResponse.json({ error: message }, { status: 502 })
+        return NextResponse.json({ error: message }, { status: 502 })
       }
     }
 
@@ -193,25 +193,25 @@ export async function PATCH(
       .single()
 
     if (updErr) {
-      return PróximoResponse.json(
+      return NextResponse.json(
         {
-          error: `Editared on Meta but failed to save locally: ${updErr.message}. Run "Sync from Meta" to recover.`,
+          error: `Edited on Meta but failed to save locally: ${updErr.message}. Run "Sync from Meta" to recover.`,
         },
         { status: 500 },
       )
     }
 
-    return PróximoResponse.json({
+    return NextResponse.json({
       success: true,
       template: row,
       dry_run: isDryRun(),
     })
   } catch (error) {
-    console.error('Erro editing template:', error)
-    return PróximoResponse.json(
+    console.error('Error editing template:', error)
+    return NextResponse.json(
       {
         error:
-          error instanceof Erro ? error.message : 'Falhou to edit template.',
+          error instanceof Error ? error.message : 'Failed to edit template.',
       },
       { status: 500 },
     )
@@ -225,7 +225,7 @@ export async function DELETE(
   try {
     const { id } = await context.params
     if (!UUID_RE.test(id)) {
-      return PróximoResponse.json(
+      return NextResponse.json(
         { error: 'Invalid template id.' },
         { status: 400 },
       )
@@ -233,10 +233,10 @@ export async function DELETE(
     const supabase = await createClient()
     const {
       data: { user },
-      error: authErro,
+      error: authError,
     } = await supabase.auth.getUser()
-    if (authErro || !user) {
-      return PróximoResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Same account-scoping rationale as the PATCH handler above —
@@ -249,7 +249,7 @@ export async function DELETE(
       .maybeSingle()
     const accountId = profile?.account_id as string | undefined
     if (!accountId) {
-      return PróximoResponse.json(
+      return NextResponse.json(
         { error: 'Your profile is not linked to an account.' },
         { status: 403 },
       )
@@ -262,32 +262,32 @@ export async function DELETE(
       .eq('account_id', accountId)
       .maybeSingle()
     if (lookupErr || !existing) {
-      return PróximoResponse.json({ error: 'Modelo not found.' }, { status: 404 })
+      return NextResponse.json({ error: 'Template not found.' }, { status: 404 })
     }
 
     if (existing.meta_template_id && !isDryRun()) {
-      const { data: config, error: configErro } = await supabase
+      const { data: config, error: configError } = await supabase
         .from('whatsapp_config')
         .select('*')
         .eq('account_id', accountId)
         .single()
-      if (configErro || !config || !config.waba_id) {
-        return PróximoResponse.json(
+      if (configError || !config || !config.waba_id) {
+        return NextResponse.json(
           { error: 'WhatsApp not configured — cannot delete on Meta.' },
           { status: 400 },
         )
       }
       const accessToken = decrypt(config.access_token)
       try {
-        await deleteMessageModelo({
+        await deleteMessageTemplate({
           wabaId: config.waba_id,
           accessToken,
           name: existing.name,
-          metaModeloId: existing.meta_template_id,
+          metaTemplateId: existing.meta_template_id,
         })
       } catch (e) {
-        const message = e instanceof Erro ? e.message : 'Meta delete failed.'
-        return PróximoResponse.json({ error: message }, { status: 502 })
+        const message = e instanceof Error ? e.message : 'Meta delete failed.'
+        return NextResponse.json({ error: message }, { status: 502 })
       }
     }
 
@@ -296,21 +296,21 @@ export async function DELETE(
       .delete()
       .eq('id', id)
     if (delErr) {
-      return PróximoResponse.json(
+      return NextResponse.json(
         {
-          error: `Excluird on Meta but failed to delete locally: ${delErr.message}.`,
+          error: `Deleted on Meta but failed to delete locally: ${delErr.message}.`,
         },
         { status: 500 },
       )
     }
 
-    return PróximoResponse.json({ success: true, dry_run: isDryRun() })
+    return NextResponse.json({ success: true, dry_run: isDryRun() })
   } catch (error) {
-    console.error('Erro deleting template:', error)
-    return PróximoResponse.json(
+    console.error('Error deleting template:', error)
+    return NextResponse.json(
       {
         error:
-          error instanceof Erro ? error.message : 'Falhou to delete template.',
+          error instanceof Error ? error.message : 'Failed to delete template.',
       },
       { status: 500 },
     )

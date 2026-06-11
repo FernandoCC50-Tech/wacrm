@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export default function Caixa de EntradaPage() {
+export default function InboxPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   /**
@@ -23,11 +23,11 @@ export default function Caixa de EntradaPage() {
   const deepLinkConvId = searchParams.get("c");
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConversation, setAtivoConversation] =
+  const [activeConversation, setActiveConversation] =
     useState<Conversation | null>(null);
-  const [activeContact, setAtivoContact] = useState<Contact | null>(null);
+  const [activeContact, setActiveContact] = useState<Contact | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [whatsappConectared, setWhatsappConectared] = useState<boolean | null>(
+  const [whatsappConnected, setWhatsappConnected] = useState<boolean | null>(
     null
   );
   /**
@@ -43,7 +43,7 @@ export default function Caixa de EntradaPage() {
   // list refreshes (realtime, manual refetch) must not snap the user
   // back to the deep-linked conversation if they've already clicked
   // elsewhere.
-  const autoSelecionaredForDeepLinkRef = useRef<string | null>(null);
+  const autoSelectedForDeepLinkRef = useRef<string | null>(null);
 
   // Tracks conversations whose hydrate fetch is currently in flight. The
   // conv-INSERT and the first-message-INSERT events both call into
@@ -74,7 +74,7 @@ export default function Caixa de EntradaPage() {
   // row's own columns — a brand-new conversation arrives without a
   // contact, which surfaced as "Unknown" names, empty avatars, and
   // (when the conv-INSERT event was delayed past the message-INSERT)
-  // conversations stuck on "Nenhuma mensagem ainda" until the user reloaded.
+  // conversations stuck on "No messages yet" until the user reloaded.
   // Also self-heals if a realtime event was missed: callers can invoke
   // this whenever they reference a conversation id they don't recognise.
   const hydrateConversation = useCallback(async (convId: string) => {
@@ -90,7 +90,7 @@ export default function Caixa de EntradaPage() {
       if (error) {
         // Supabase errors have non-enumerable properties — log fields
         // explicitly so the console message isn't just `{}`.
-        console.error("Falhou to hydrate conversation:", {
+        console.error("Failed to hydrate conversation:", {
           message: error.message,
           details: error.details,
           hint: error.hint,
@@ -123,7 +123,7 @@ export default function Caixa de EntradaPage() {
 
   // Check WhatsApp connection status on mount
   useEffect(() => {
-    const checkConectarion = async () => {
+    const checkConnection = async () => {
       const supabase = createClient();
       const {
         data: { session },
@@ -137,7 +137,7 @@ export default function Caixa de EntradaPage() {
       // for any teammate who didn't personally save the config —
       // the "WhatsApp not connected" banner would show in the
       // shared inbox even though the admin had it configured.
-      // Resolver account_id via the profile and query by that.
+      // Resolve account_id via the profile and query by that.
       const { data: profile } = await supabase
         .from("profiles")
         .select("account_id")
@@ -145,7 +145,7 @@ export default function Caixa de EntradaPage() {
         .maybeSingle();
       const accountId = profile?.account_id as string | undefined;
       if (!accountId) {
-        setWhatsappConectared(false);
+        setWhatsappConnected(false);
         return;
       }
 
@@ -155,10 +155,10 @@ export default function Caixa de EntradaPage() {
         .eq("account_id", accountId)
         .maybeSingle();
 
-      setWhatsappConectared(data?.status === "connected");
+      setWhatsappConnected(data?.status === "connected");
     };
 
-    checkConectarion();
+    checkConnection();
   }, []);
 
   // Handle realtime message events
@@ -167,7 +167,7 @@ export default function Caixa de EntradaPage() {
       const newMsg = event.new;
 
       if (event.eventType === "INSERT") {
-        // Adicionar to messages if it belongs to active conversation
+        // Add to messages if it belongs to active conversation
         if (
           activeConversation &&
           newMsg.conversation_id === activeConversation.id
@@ -255,14 +255,14 @@ export default function Caixa de EntradaPage() {
           // RIGHT NOW, so any positive value would just flicker the badge
           // back on for the ~100ms it takes for the reset effect's server
           // UPDATE to round-trip. Non-active convs take the value as-is.
-          const isAtivo = activeConversation?.id === conv.id;
+          const isActive = activeConversation?.id === conv.id;
           setConversations((prev) =>
             prev.map((c) =>
               c.id === conv.id
                 ? {
                     ...c,
                     ...conv,
-                    unread_count: isAtivo ? 0 : conv.unread_count,
+                    unread_count: isActive ? 0 : conv.unread_count,
                   }
                 : c,
             ),
@@ -277,7 +277,7 @@ export default function Caixa de EntradaPage() {
 
         // Update active conversation if it changed
         if (activeConversation && conv.id === activeConversation.id) {
-          setAtivoConversation((prev) =>
+          setActiveConversation((prev) =>
             prev ? { ...prev, ...conv } : prev
           );
         }
@@ -286,12 +286,12 @@ export default function Caixa de EntradaPage() {
     [activeConversation, hydrateConversation]
   );
 
-  // Subscribe to realtime. The `isConectared` flag below feeds the
+  // Subscribe to realtime. The `isConnected` flag below feeds the
   // reconnect resync: realtime is best-effort and events sent while the
   // WS was disconnected (laptop sleep, network blip, background-tab
   // throttle) are simply lost. We need a way to catch up.
-  const { isConectared } = useRealtime({
-    channelNome: "inbox-realtime",
+  const { isConnected } = useRealtime({
+    channelName: "inbox-realtime",
     onMessageEvent: handleMessageEvent,
     onConversationEvent: handleConversationEvent,
     enabled: true,
@@ -307,19 +307,19 @@ export default function Caixa de EntradaPage() {
    * strict-mode's dev-only effect double-fire doesn't read as a
    * reconnect.
    */
-  const wasConectaredRef = useRef(false);
-  const initialConectarDoneRef = useRef(false);
+  const wasConnectedRef = useRef(false);
+  const initialConnectDoneRef = useRef(false);
   useEffect(() => {
-    if (isConectared && !wasConectaredRef.current) {
+    if (isConnected && !wasConnectedRef.current) {
       // false → true transition
-      if (initialConectarDoneRef.current) {
+      if (initialConnectDoneRef.current) {
         setResyncToken((n) => n + 1);
       } else {
-        initialConectarDoneRef.current = true;
+        initialConnectDoneRef.current = true;
       }
     }
-    wasConectaredRef.current = isConectared;
-  }, [isConectared]);
+    wasConnectedRef.current = isConnected;
+  }, [isConnected]);
 
   /**
    * Refetch when the tab regains focus. Background tabs may have their
@@ -345,24 +345,24 @@ export default function Caixa de EntradaPage() {
    * so it goes through the existing dedupe & refetch plumbing — no
    * separate code path to keep in sync.
    */
-  const handleManualAtualizar = useCallback(() => {
+  const handleManualRefresh = useCallback(() => {
     setResyncToken((n) => n + 1);
   }, []);
 
   const handleConversationsLoaded = useCallback(
     (loaded: Conversation[]) => {
       setConversations(loaded);
-      // Resolver a pending deep-link here rather than in an effect — this
+      // Resolve a pending deep-link here rather than in an effect — this
       // is an event handler, so the setState calls below are allowed by
       // react-hooks/set-state-in-effect. Runs once per ?c=<id> URL value
       // via the ref, so realtime refreshes of the list can't snap the
       // user back to the deep-linked thread after they've navigated.
       if (
         deepLinkConvId &&
-        autoSelecionaredForDeepLinkRef.current !== deepLinkConvId &&
+        autoSelectedForDeepLinkRef.current !== deepLinkConvId &&
         loaded.length > 0
       ) {
-        autoSelecionaredForDeepLinkRef.current = deepLinkConvId;
+        autoSelectedForDeepLinkRef.current = deepLinkConvId;
         // If the deep-linked conversation is already the active one
         // (e.g. because the user clicked it in the list and we
         // router.replace()'d the URL, which made the ConversationList
@@ -370,15 +370,15 @@ export default function Caixa de EntradaPage() {
         // would setMessages([]) on a thread whose messages have
         // already been loaded by MessageThread — and because
         // conversationId didn't change, MessageThread wouldn't
-        // refetch. The thread would read "Nenhuma mensagem ainda" until a
+        // refetch. The thread would read "No messages yet" until a
         // full page reload rehydrated state from scratch.
         if (activeConversation?.id === deepLinkConvId) return;
         const match = loaded.find((c) => c.id === deepLinkConvId);
         if (match) {
-          setAtivoConversation(match);
-          setAtivoContact(match.contact ?? null);
+          setActiveConversation(match);
+          setActiveContact(match.contact ?? null);
           setMessages([]);
-          // Mirror the optimistic unread reset that handleSelecionarConversation
+          // Mirror the optimistic unread reset that handleSelectConversation
           // does — the user just deep-linked into this conv, treat that the
           // same as a click. Leaves activeConversation.unread_count alone so
           // the MessageThread reset effect still fires the server UPDATE.
@@ -395,15 +395,15 @@ export default function Caixa de EntradaPage() {
     [deepLinkConvId, activeConversation?.id]
   );
 
-  const handleSelecionarConversation = useCallback(
+  const handleSelectConversation = useCallback(
     (conv: Conversation) => {
       // Re-clicking the already-active conversation would clear the
       // messages array, but the fetch effect in MessageThread only re-runs
       // when conversationId changes — so messages would stay empty until
       // the user navigated away and back. Bail out early instead.
       if (activeConversation?.id === conv.id) return;
-      setAtivoConversation(conv);
-      setAtivoContact(conv.contact ?? null);
+      setActiveConversation(conv);
+      setActiveContact(conv.contact ?? null);
       setMessages([]);
       // Optimistically clear the unread badge for this conv. The
       // server-side reset is fired by the unread-reset effect inside
@@ -428,7 +428,7 @@ export default function Caixa de EntradaPage() {
       // still points at the previous value, the auto-select block
       // sees `ref !== deepLinkConvId`, fires a second time, and
       // clobbers the messages MessageThread just fetched.
-      autoSelecionaredForDeepLinkRef.current = conv.id;
+      autoSelectedForDeepLinkRef.current = conv.id;
       // Reflect the selection in the URL so a refresh lands the user
       // back in the same thread, and so copy-paste links work. Use
       // replace() to avoid polluting browser history with every click.
@@ -440,13 +440,13 @@ export default function Caixa de EntradaPage() {
   // Mobile "back" — deselect the conversation so the list pane comes
   // back. Also clears the ?c= param so a refresh lands on the list
   // instead of re-opening the thread the user just backed out of.
-  const handleFecharConversation = useCallback(() => {
-    setAtivoConversation(null);
-    setAtivoContact(null);
+  const handleCloseConversation = useCallback(() => {
+    setActiveConversation(null);
+    setActiveContact(null);
     setMessages([]);
     // Clearing the ref lets the deep-link auto-selector fire again if
     // the user later visits /inbox?c=<same-id> — desirable UX.
-    autoSelecionaredForDeepLinkRef.current = null;
+    autoSelectedForDeepLinkRef.current = null;
     router.replace("/inbox", { scroll: false });
   }, [router]);
 
@@ -455,7 +455,7 @@ export default function Caixa de EntradaPage() {
     setMessages(loaded);
   }, []);
 
-  const handleNovoMessage = useCallback((msg: Message) => {
+  const handleNewMessage = useCallback((msg: Message) => {
     setMessages((prev) => {
       if (prev.some((m) => m.id === msg.id)) return prev;
       return [...prev, msg];
@@ -477,7 +477,7 @@ export default function Caixa de EntradaPage() {
         prev.map((c) => (c.id === conversationId ? { ...c, status } : c))
       );
       if (activeConversation?.id === conversationId) {
-        setAtivoConversation((prev) => (prev ? { ...prev, status } : prev));
+        setActiveConversation((prev) => (prev ? { ...prev, status } : prev));
       }
     },
     [activeConversation]
@@ -493,7 +493,7 @@ export default function Caixa de EntradaPage() {
         )
       );
       if (activeConversation?.id === conversationId) {
-        setAtivoConversation((prev) =>
+        setActiveConversation((prev) =>
           prev
             ? { ...prev, assigned_agent_id: assignedAgentId ?? undefined }
             : prev
@@ -504,38 +504,38 @@ export default function Caixa de EntradaPage() {
   );
 
   // On mobile (<lg) we show a SINGLE pane — either the list or the
-  // thread — rather than cramming both side-by-side. Selecionaring a
+  // thread — rather than cramming both side-by-side. Selecting a
   // conversation slides the thread in; the thread's back button pops
   // it back to the list. On lg+ both panes render side-by-side as
   // before, unchanged.
-  const hasAtivoConv = !!activeConversation;
+  const hasActiveConv = !!activeConversation;
 
   return (
-    <div classNome="-m-4 flex h-[calc(100vh-3.5rem)] flex-col overflow-hidden sm:-m-6">
+    <div className="-m-4 flex h-[calc(100vh-3.5rem)] flex-col overflow-hidden sm:-m-6">
       {/* WhatsApp connection banner — in the flex column, not absolute,
           so it pushes the panels down instead of overlapping them. */}
-      {whatsappConectared === false && (
-        <div classNome="flex shrink-0 items-center justify-center gap-2 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2">
-          <WifiOff classNome="h-4 w-4 text-amber-400" />
-          <p classNome="text-xs text-amber-400">
+      {whatsappConnected === false && (
+        <div className="flex shrink-0 items-center justify-center gap-2 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2">
+          <WifiOff className="h-4 w-4 text-amber-400" />
+          <p className="text-xs text-amber-400">
             WhatsApp® is not connected. Go to Settings to connect your account.
           </p>
         </div>
       )}
 
-      <div classNome="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden">
         {/* Left panel: Conversation list.
             Hidden on mobile when a conversation is selected so the
             thread can occupy the full width. Always visible on lg+. */}
         <div
-          classNome={cn(
+          className={cn(
             "flex h-full flex-1 lg:flex-none",
-            hasAtivoConv ? "hidden lg:flex" : "flex",
+            hasActiveConv ? "hidden lg:flex" : "flex",
           )}
         >
           <ConversationList
             activeConversationId={activeConversation?.id ?? null}
-            onSelecionar={handleSelecionarConversation}
+            onSelect={handleSelectConversation}
             conversations={conversations}
             onConversationsLoaded={handleConversationsLoaded}
             resyncToken={resyncToken}
@@ -553,9 +553,9 @@ export default function Caixa de EntradaPage() {
             its share and pushes the contact-sidebar panel off-screen
             on the right. Issue #165. */}
         <div
-          classNome={cn(
+          className={cn(
             "flex h-full min-w-0 flex-1 lg:flex",
-            hasAtivoConv ? "flex" : "hidden lg:flex",
+            hasActiveConv ? "flex" : "hidden lg:flex",
           )}
         >
           <MessageThread
@@ -563,18 +563,18 @@ export default function Caixa de EntradaPage() {
             contact={activeContact}
             messages={messages}
             onMessagesLoaded={handleMessagesLoaded}
-            onNovoMessage={handleNovoMessage}
+            onNewMessage={handleNewMessage}
             onUpdateMessage={handleUpdateMessage}
             onStatusChange={handleStatusChange}
             onAssignChange={handleAssignChange}
-            onVoltar={handleFecharConversation}
+            onBack={handleCloseConversation}
             resyncToken={resyncToken}
-            onAtualizar={handleManualAtualizar}
+            onRefresh={handleManualRefresh}
           />
         </div>
 
         {/* Right panel: Contact sidebar — desktop only. */}
-        <div classNome="hidden lg:block">
+        <div className="hidden lg:block">
           <ContactSidebar contact={activeContact} />
         </div>
       </div>

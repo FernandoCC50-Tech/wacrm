@@ -4,87 +4,87 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Table({ classNome, ...props }: React.ComponentProps<"table">) {
+function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div
       data-slot="table-container"
-      classNome="relative w-full overflow-x-auto"
+      className="relative w-full overflow-x-auto"
     >
       <table
         data-slot="table"
-        classNome={cn("w-full caption-bottom text-sm", classNome)}
+        className={cn("w-full caption-bottom text-sm", className)}
         {...props}
       />
     </div>
   )
 }
 
-function TableHeader({ classNome, ...props }: React.ComponentProps<"thead">) {
+function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
-      classNome={cn("[&_tr]:border-b", classNome)}
+      className={cn("[&_tr]:border-b", className)}
       {...props}
     />
   )
 }
 
-function TableBody({ classNome, ...props }: React.ComponentProps<"tbody">) {
+function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
   return (
     <tbody
       data-slot="table-body"
-      classNome={cn("[&_tr:last-child]:border-0", classNome)}
+      className={cn("[&_tr:last-child]:border-0", className)}
       {...props}
     />
   )
 }
 
-function TableFooter({ classNome, ...props }: React.ComponentProps<"tfoot">) {
+function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
   return (
     <tfoot
       data-slot="table-footer"
-      classNome={cn(
+      className={cn(
         "border-t bg-muted/50 font-medium [&>tr]:last:border-b-0",
-        classNome
+        className
       )}
       {...props}
     />
   )
 }
 
-function TableRow({ classNome, ...props }: React.ComponentProps<"tr">) {
+function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   return (
     <tr
       data-slot="table-row"
-      classNome={cn(
+      className={cn(
         "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted",
-        classNome
+        className
       )}
       {...props}
     />
   )
 }
 
-function TableHead({ classNome, ...props }: React.ComponentProps<"th">) {
+function TableHead({ className, ...props }: React.ComponentProps<"th">) {
   return (
     <th
       data-slot="table-head"
-      classNome={cn(
+      className={cn(
         "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0",
-        classNome
+        className
       )}
       {...props}
     />
   )
 }
 
-function TableCell({ classNome, ...props }: React.ComponentProps<"td">) {
+function TableCell({ className, ...props }: React.ComponentProps<"td">) {
   return (
     <td
       data-slot="table-cell"
-      classNome={cn(
+      className={cn(
         "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0",
-        classNome
+        className
       )}
       {...props}
     />
@@ -92,13 +92,13 @@ function TableCell({ classNome, ...props }: React.ComponentProps<"td">) {
 }
 
 function TableCaption({
-  classNome,
+  className,
   ...props
 }: React.ComponentProps<"caption">) {
   return (
     <caption
       data-slot="table-caption"
-      classNome={cn("mt-4 text-sm text-muted-foreground", classNome)}
+      className={cn("mt-4 text-sm text-muted-foreground", className)}
       {...props}
     />
   )

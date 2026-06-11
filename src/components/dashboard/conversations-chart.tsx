@@ -46,19 +46,19 @@ export function ConversationsChart({ series, loading, range, onRangeChange }: Co
   }, [data])
 
   return (
-    <section classNome="flex h-full flex-col rounded-xl border border-slate-800 bg-slate-900">
-      <header classNome="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+    <section className="flex h-full flex-col rounded-xl border border-slate-800 bg-slate-900">
+      <header className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
         <div>
-          <h2 classNome="text-sm font-semibold text-white">Conversations Over Time</h2>
-          <p classNome="mt-0.5 text-xs text-slate-500">Daily message volume by direction</p>
+          <h2 className="text-sm font-semibold text-white">Conversations Over Time</h2>
+          <p className="mt-0.5 text-xs text-slate-500">Daily message volume by direction</p>
         </div>
-        <div classNome="flex items-center gap-1 rounded-lg bg-slate-800/60 p-1">
+        <div className="flex items-center gap-1 rounded-lg bg-slate-800/60 p-1">
           {[7, 30, 90].map((r) => (
             <button
               key={r}
               type="button"
               onClick={() => onRangeChange(r as RangeDays)}
-              classNome={cn(
+              className={cn(
                 'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
                 range === r
                   ? 'bg-slate-700 text-white'
@@ -71,23 +71,23 @@ export function ConversationsChart({ series, loading, range, onRangeChange }: Co
         </div>
       </header>
 
-      <div classNome="p-5">
+      <div className="p-5">
         {loading || !data ? (
-          <Skeleton classNome="h-[240px] w-full" />
+          <Skeleton className="h-[240px] w-full" />
         ) : data.every((p) => p.incoming === 0 && p.outgoing === 0) ? (
           <EmptyState
             icon={MessageSquare}
             title="No message activity in this range"
-            hint="Enviar or receive messages to start populating this chart."
+            hint="Send or receive messages to start populating this chart."
           />
         ) : (
           <LineSvg data={data} maxY={maxY} ticks={niceTicks} />
         )}
       </div>
 
-      <footer classNome="flex items-center gap-4 border-t border-slate-800 px-5 py-3 text-xs text-slate-400">
-        <LegendDot color="#3b82f6" label="Recebidas" />
-        <LegendDot color="#7c3aed" label="Enviadas" />
+      <footer className="flex items-center gap-4 border-t border-slate-800 px-5 py-3 text-xs text-slate-400">
+        <LegendDot color="#3b82f6" label="Incoming" />
+        <LegendDot color="#7c3aed" label="Outgoing" />
       </footer>
     </section>
   )
@@ -189,11 +189,11 @@ function LineSvg({
   const labelStride = Math.max(1, Math.ceil(data.length / 6))
 
   return (
-    <div ref={wrapRef} classNome="relative w-full">
+    <div ref={wrapRef} className="relative w-full">
       <svg
         ref={svgRef}
         viewBox={`0 0 ${VB_W} ${VB_H}`}
-        classNome="h-[240px] w-full"
+        className="h-[240px] w-full"
         role="img"
         aria-label="Conversations per day"
       >
@@ -215,7 +215,7 @@ function LineSvg({
                 y={y}
                 textAnchor="end"
                 dominantBaseline="middle"
-                classNome="fill-slate-500 text-[10px]"
+                className="fill-slate-500 text-[10px]"
               >
                 {t}
               </text>
@@ -231,14 +231,14 @@ function LineSvg({
               x={xFor(i)}
               y={VB_H - 8}
               textAnchor="middle"
-              classNome="fill-slate-500 text-[10px]"
+              className="fill-slate-500 text-[10px]"
             >
-              {shortDayRótulo(p.day)}
+              {shortDayLabel(p.day)}
             </text>
           ) : null,
         )}
 
-        {/* Enviadas polyline (violet) */}
+        {/* Outgoing polyline (violet) */}
         <path
           d={outgoingPath}
           fill="none"
@@ -247,7 +247,7 @@ function LineSvg({
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        {/* Recebidas polyline (blue) */}
+        {/* Incoming polyline (blue) */}
         <path
           d={incomingPath}
           fill="none"
@@ -280,17 +280,17 @@ function LineSvg({
           letterboxed viewBox percentage. */}
       {hovered && hover !== null && (
         <div
-          classNome="pointer-events-none absolute top-0 z-10 -translate-x-1/2 rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-[11px] shadow-lg"
+          className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-[11px] shadow-lg"
           style={{ left: `${hover.tooltipLeftPx}px` }}
         >
-          <div classNome="font-medium text-white">{longDayRótulo(hovered.day)}</div>
-          <div classNome="mt-1 flex flex-col gap-0.5">
-            <span classNome="flex items-center gap-1.5 text-blue-300">
-              <span classNome="inline-block h-1.5 w-1.5 rounded-full bg-blue-500" />
+          <div className="font-medium text-white">{longDayLabel(hovered.day)}</div>
+          <div className="mt-1 flex flex-col gap-0.5">
+            <span className="flex items-center gap-1.5 text-blue-300">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-500" />
               {hovered.incoming} incoming
             </span>
-            <span classNome="flex items-center gap-1.5 text-primary">
-              <span classNome="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
+            <span className="flex items-center gap-1.5 text-primary">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
               {hovered.outgoing} outgoing
             </span>
           </div>
@@ -302,14 +302,14 @@ function LineSvg({
 
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
-    <span classNome="flex items-center gap-1.5">
-      <span classNome="inline-block h-1.5 w-1.5 rounded-full" style={{ background: color }} />
+    <span className="flex items-center gap-1.5">
+      <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: color }} />
       {label}
     </span>
   )
 }
 
-function shortDayRótulo(key: string): string {
+function shortDayLabel(key: string): string {
   // key is YYYY-MM-DD; return "Apr 17"-style. Using Date with an
   // appended time avoids timezone-shift surprises across midnight.
   const [y, m, d] = key.split('-').map(Number)
@@ -317,7 +317,7 @@ function shortDayRótulo(key: string): string {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
-function longDayRótulo(key: string): string {
+function longDayLabel(key: string): string {
   const [y, m, d] = key.split('-').map(Number)
   const date = new Date(y, m - 1, d)
   return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })

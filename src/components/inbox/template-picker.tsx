@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { MessageModelo } from "@/types";
+import type { MessageTemplate } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Rótulo } from "@/components/ui/label";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -18,21 +18,21 @@ import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
   ChevronRight,
-  LayoutModelo,
+  LayoutTemplate,
   Loader2,
 } from "lucide-react";
 import { extractVariableIndices } from "@/lib/whatsapp/template-validators";
 
-export interface ModeloEnviarValors {
+export interface TemplateSendValues {
   body: string[];
   headerText?: string;
   buttonParams?: Record<number, string>;
 }
 
-interface ModeloPickerProps {
+interface TemplatePickerProps {
   open: boolean;
-  onAbertoChange: (open: boolean) => void;
-  onSelecionar: (template: MessageModelo, values: ModeloEnviarValors) => void;
+  onOpenChange: (open: boolean) => void;
+  onSelect: (template: MessageTemplate, values: TemplateSendValues) => void;
 }
 
 function renderBodyPreview(body: string, params: string[]): string {
@@ -50,11 +50,11 @@ interface UrlButtonSlot {
 }
 
 /**
- * Modelos may need values for: body variables, a text-header
+ * Templates may need values for: body variables, a text-header
  * variable, and per-URL-button suffixes. Collect them all so the
  * send-message path doesn't 400 on missing parameters.
  */
-function collectVariableSlots(template: MessageModelo): {
+function collectVariableSlots(template: MessageTemplate): {
   bodyVars: number[];
   headerVarCount: number;
   urlButtonSlots: UrlButtonSlot[];
@@ -73,14 +73,14 @@ function collectVariableSlots(template: MessageModelo): {
   return { bodyVars, headerVarCount, urlButtonSlots };
 }
 
-export function ModeloPicker({
+export function TemplatePicker({
   open,
-  onAbertoChange,
-  onSelecionar,
-}: ModeloPickerProps) {
-  const [templates, setModelos] = useState<MessageModelo[]>([]);
+  onOpenChange,
+  onSelect,
+}: TemplatePickerProps) {
+  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelecionared] = useState<MessageModelo | null>(null);
+  const [selected, setSelected] = useState<MessageTemplate | null>(null);
   const [params, setParams] = useState<string[]>([]);
   const [headerText, setHeaderText] = useState<string>("");
   const [buttonParams, setButtonParams] = useState<Record<number, string>>({});
@@ -98,7 +98,7 @@ export function ModeloPicker({
 
       if (!user) {
         if (!cancelled) {
-          setModelos([]);
+          setTemplates([]);
           setLoading(false);
         }
         return;
@@ -113,10 +113,10 @@ export function ModeloPicker({
 
       if (cancelled) return;
       if (error) {
-        console.error("Falhou to fetch templates:", error);
-        setModelos([]);
+        console.error("Failed to fetch templates:", error);
+        setTemplates([]);
       } else {
-        setModelos((data as MessageModelo[]) ?? []);
+        setTemplates((data as MessageTemplate[]) ?? []);
       }
       setLoading(false);
     })();
@@ -126,30 +126,30 @@ export function ModeloPicker({
     };
   }, [open]);
 
-  function resetSelecionarion() {
-    setSelecionared(null);
+  function resetSelection() {
+    setSelected(null);
     setParams([]);
     setHeaderText("");
     setButtonParams({});
   }
 
-  function handleAbertoChange(next: boolean) {
-    if (!next) resetSelecionarion();
-    onAbertoChange(next);
+  function handleOpenChange(next: boolean) {
+    if (!next) resetSelection();
+    onOpenChange(next);
   }
 
-  function pickModelo(template: MessageModelo) {
+  function pickTemplate(template: MessageTemplate) {
     const slots = collectVariableSlots(template);
     const noInputsNeeded =
       slots.bodyVars.length === 0 &&
       slots.headerVarCount === 0 &&
       slots.urlButtonSlots.length === 0;
     if (noInputsNeeded) {
-      onSelecionar(template, { body: [] });
-      handleAbertoChange(false);
+      onSelect(template, { body: [] });
+      handleOpenChange(false);
       return;
     }
-    setSelecionared(template);
+    setSelected(template);
     setParams(new Array(slots.bodyVars.length).fill(""));
     setHeaderText("");
     setButtonParams({});
@@ -157,22 +157,22 @@ export function ModeloPicker({
 
   function confirm() {
     if (!selected) return;
-    const values: ModeloEnviarValors = { body: params };
+    const values: TemplateSendValues = { body: params };
     if (headerText.trim()) values.headerText = headerText.trim();
     if (Object.keys(buttonParams).length > 0) {
       values.buttonParams = Object.fromEntries(
         Object.entries(buttonParams).map(([k, v]) => [Number(k), v.trim()]),
       );
     }
-    onSelecionar(selected, values);
-    handleAbertoChange(false);
+    onSelect(selected, values);
+    handleOpenChange(false);
   }
 
   const slots = useMemo(
     () => (selected ? collectVariableSlots(selected) : null),
     [selected],
   );
-  const canConfirmar =
+  const canConfirm =
     !!selected &&
     !!slots &&
     slots.bodyVars.every((_, i) => (params[i] ?? "").trim().length > 0) &&
@@ -182,14 +182,14 @@ export function ModeloPicker({
     );
 
   return (
-    <Dialog open={open} onAbertoChange={handleAbertoChange}>
-      <DialogContent classNome="border-slate-700 bg-slate-900 sm:max-w-lg">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="border-slate-700 bg-slate-900 sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle classNome="flex items-center gap-2 text-white">
-            <LayoutModelo classNome="h-4 w-4 text-primary" />
-            {selected ? selected.name : "Enviar template"}
+          <DialogTitle className="flex items-center gap-2 text-white">
+            <LayoutTemplate className="h-4 w-4 text-primary" />
+            {selected ? selected.name : "Send template"}
           </DialogTitle>
-          <DialogDescription classNome="text-slate-400">
+          <DialogDescription className="text-slate-400">
             {selected
               ? "Fill in the placeholders to render this template. Meta requires every variable to be set."
               : "Pick an approved WhatsApp template to send to this contact."}
@@ -197,17 +197,17 @@ export function ModeloPicker({
         </DialogHeader>
 
         {!selected ? (
-          <div classNome="max-h-[60vh] space-y-2 overflow-y-auto">
+          <div className="max-h-[60vh] space-y-2 overflow-y-auto">
             {loading ? (
-              <div classNome="flex items-center justify-center py-8">
-                <Loader2 classNome="h-5 w-5 animate-spin text-primary" />
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
               </div>
             ) : templates.length === 0 ? (
-              <div classNome="rounded-md border border-slate-800 bg-slate-950/50 p-6 text-center">
-                <p classNome="text-sm text-slate-300">No approved templates</p>
-                <p classNome="mt-1 text-xs text-slate-500">
+              <div className="rounded-md border border-slate-800 bg-slate-950/50 p-6 text-center">
+                <p className="text-sm text-slate-300">No approved templates</p>
+                <p className="mt-1 text-xs text-slate-500">
                   Approve a template in Meta WhatsApp Manager, then sync it
-                  from Settings → Modelos.
+                  from Settings → Templates.
                 </p>
               </div>
             ) : (
@@ -215,63 +215,63 @@ export function ModeloPicker({
                 <button
                   key={t.id}
                   type="button"
-                  onClick={() => pickModelo(t)}
-                  classNome="w-full rounded-md border border-slate-800 bg-slate-950/50 p-3 text-left transition-colors hover:border-primary/40 hover:bg-slate-900"
+                  onClick={() => pickTemplate(t)}
+                  className="w-full rounded-md border border-slate-800 bg-slate-950/50 p-3 text-left transition-colors hover:border-primary/40 hover:bg-slate-900"
                 >
-                  <div classNome="flex items-start gap-2">
-                    <div classNome="min-w-0 flex-1">
-                      <div classNome="flex flex-wrap items-center gap-2">
-                        <p classNome="truncate text-sm font-medium text-white">
+                  <div className="flex items-start gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate text-sm font-medium text-white">
                           {t.name}
                         </p>
-                        <Badge classNome="border border-primary/30 bg-primary/20 text-[10px] text-primary">
+                        <Badge className="border border-primary/30 bg-primary/20 text-[10px] text-primary">
                           {t.category}
                         </Badge>
                         {t.language && (
-                          <span classNome="text-[10px] uppercase text-slate-500">
+                          <span className="text-[10px] uppercase text-slate-500">
                             {t.language}
                           </span>
                         )}
                       </div>
-                      <p classNome="mt-1 line-clamp-2 text-xs text-slate-400">
+                      <p className="mt-1 line-clamp-2 text-xs text-slate-400">
                         {t.body_text}
                       </p>
                     </div>
-                    <ChevronRight classNome="h-4 w-4 flex-shrink-0 text-slate-500" />
+                    <ChevronRight className="h-4 w-4 flex-shrink-0 text-slate-500" />
                   </div>
                 </button>
               ))
             )}
           </div>
         ) : (
-          <div classNome="space-y-3">
-            <div classNome="rounded-md border border-slate-800 bg-slate-950/50 p-3">
-              <p classNome="mb-1 text-xs text-slate-400">Preview</p>
-              <p classNome="whitespace-pre-wrap text-sm text-slate-200">
+          <div className="space-y-3">
+            <div className="rounded-md border border-slate-800 bg-slate-950/50 p-3">
+              <p className="mb-1 text-xs text-slate-400">Preview</p>
+              <p className="whitespace-pre-wrap text-sm text-slate-200">
                 {renderBodyPreview(selected.body_text, params)}
               </p>
               {selected.footer_text && (
-                <p classNome="mt-2 text-xs italic text-slate-500">
+                <p className="mt-2 text-xs italic text-slate-500">
                   {selected.footer_text}
                 </p>
               )}
             </div>
             {slots && slots.headerVarCount > 0 && (
-              <div classNome="space-y-1">
-                <Rótulo classNome="text-xs text-slate-300">
+              <div className="space-y-1">
+                <Label className="text-xs text-slate-300">
                   {`Header {{1}}`}
-                </Rótulo>
+                </Label>
                 <Input
                   value={headerText}
                   onChange={(e) => setHeaderText(e.target.value)}
-                  placeholder="Valor for the header variable"
-                  classNome="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500"
+                  placeholder="Value for the header variable"
+                  className="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500"
                 />
               </div>
             )}
             {slots?.bodyVars.map((v, i) => (
-              <div key={v} classNome="space-y-1">
-                <Rótulo classNome="text-xs text-slate-300">{`Body {{${v}}}`}</Rótulo>
+              <div key={v} className="space-y-1">
+                <Label className="text-xs text-slate-300">{`Body {{${v}}}`}</Label>
                 <Input
                   value={params[i] ?? ""}
                   onChange={(e) => {
@@ -279,16 +279,16 @@ export function ModeloPicker({
                     next[i] = e.target.value;
                     setParams(next);
                   }}
-                  placeholder={`Valor for {{${v}}}`}
-                  classNome="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500"
+                  placeholder={`Value for {{${v}}}`}
+                  className="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500"
                 />
               </div>
             ))}
             {slots?.urlButtonSlots.map((slot) => (
-              <div key={slot.index} classNome="space-y-1">
-                <Rótulo classNome="text-xs text-slate-300">
+              <div key={slot.index} className="space-y-1">
+                <Label className="text-xs text-slate-300">
                   {`URL button "${slot.text}" — value for `}{`{{1}}`}
-                </Rótulo>
+                </Label>
                 <Input
                   value={buttonParams[slot.index] ?? ""}
                   onChange={(e) =>
@@ -298,9 +298,9 @@ export function ModeloPicker({
                     }))
                   }
                   placeholder="URL suffix value"
-                  classNome="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500"
+                  className="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500"
                 />
-                <p classNome="text-[10px] text-slate-500 break-all">
+                <p className="text-[10px] text-slate-500 break-all">
                   Final URL: {slot.url.replace(/\{\{1\}\}/g, buttonParams[slot.index] || "{{1}}")}
                 </p>
               </div>
@@ -308,32 +308,32 @@ export function ModeloPicker({
           </div>
         )}
 
-        <DialogFooter classNome="gap-2">
+        <DialogFooter className="gap-2">
           {selected ? (
             <>
               <Button
                 variant="outline"
-                onClick={resetSelecionarion}
-                classNome="border-slate-700 text-slate-300 hover:bg-slate-800"
+                onClick={resetSelection}
+                className="border-slate-700 text-slate-300 hover:bg-slate-800"
               >
-                <ArrowLeft classNome="h-4 w-4" />
-                Voltar
+                <ArrowLeft className="h-4 w-4" />
+                Back
               </Button>
               <Button
-                disabled={!canConfirmar}
+                disabled={!canConfirm}
                 onClick={confirm}
-                classNome="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >
-                Enviar template
+                Send template
               </Button>
             </>
           ) : (
             <Button
               variant="outline"
-              onClick={() => handleAbertoChange(false)}
-              classNome="border-slate-700 text-slate-300 hover:bg-slate-800"
+              onClick={() => handleOpenChange(false)}
+              className="border-slate-700 text-slate-300 hover:bg-slate-800"
             >
-              Cancelar
+              Cancel
             </Button>
           )}
         </DialogFooter>

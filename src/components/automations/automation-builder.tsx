@@ -40,14 +40,14 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuGatilho,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import type {
   AccountMember,
   AutomationStepType,
-  AutomationGatilhoType,
-  KeywordMatchGatilhoConfig,
-  MessageModelo,
+  AutomationTriggerType,
+  KeywordMatchTriggerConfig,
+  MessageTemplate,
   Tag as TagRecord,
 } from "@/types"
 import { createClient } from "@/lib/supabase/client"
@@ -69,7 +69,7 @@ export interface BuilderInitial {
   id?: string
   name: string
   description: string
-  trigger_type: AutomationGatilhoType
+  trigger_type: AutomationTriggerType
   trigger_config: Record<string, unknown>
   is_active: boolean
   steps: BuilderStep[]
@@ -87,17 +87,17 @@ interface StepMeta {
 }
 
 const STEP_META: Record<AutomationStepType, StepMeta> = {
-  send_message: { label: "Enviar Message", icon: MessageSquare, border: "border-l-primary" },
-  send_template: { label: "Enviar Modelo", icon: FileText, border: "border-l-primary" },
-  add_tag: { label: "Adicionar Tag", icon: Tag, border: "border-l-primary" },
-  remove_tag: { label: "Remover Tag", icon: TagIcon, border: "border-l-primary" },
+  send_message: { label: "Send Message", icon: MessageSquare, border: "border-l-primary" },
+  send_template: { label: "Send Template", icon: FileText, border: "border-l-primary" },
+  add_tag: { label: "Add Tag", icon: Tag, border: "border-l-primary" },
+  remove_tag: { label: "Remove Tag", icon: TagIcon, border: "border-l-primary" },
   assign_conversation: { label: "Assign Conversation", icon: UserCheck, border: "border-l-primary" },
   update_contact_field: { label: "Update Contact Field", icon: PencilLine, border: "border-l-primary" },
-  create_deal: { label: "Criar Deal", icon: Briefcase, border: "border-l-primary" },
+  create_deal: { label: "Create Deal", icon: Briefcase, border: "border-l-primary" },
   wait: { label: "Wait", icon: Hourglass, border: "border-l-slate-500" },
-  condition: { label: "Condição (If/Else)", icon: GitBranch, border: "border-l-amber-500" },
-  send_webhook: { label: "Enviar Webhook", icon: Webhook, border: "border-l-primary" },
-  close_conversation: { label: "Fechar Conversation", icon: CircleSlash, border: "border-l-primary" },
+  condition: { label: "Condition (If/Else)", icon: GitBranch, border: "border-l-amber-500" },
+  send_webhook: { label: "Send Webhook", icon: Webhook, border: "border-l-primary" },
+  close_conversation: { label: "Close Conversation", icon: CircleSlash, border: "border-l-primary" },
 }
 
 const ADDABLE_STEPS: AutomationStepType[] = [
@@ -114,17 +114,17 @@ const ADDABLE_STEPS: AutomationStepType[] = [
   "close_conversation",
 ]
 
-const TRIGGER_OPTIONS: { value: AutomationGatilhoType; label: string; hint: string }[] = [
-  { value: "new_message_received", label: "Novo Message Received", hint: "Any incoming message" },
+const TRIGGER_OPTIONS: { value: AutomationTriggerType; label: string; hint: string }[] = [
+  { value: "new_message_received", label: "New Message Received", hint: "Any incoming message" },
   {
     value: "first_inbound_message",
     label: "First Message from Contact",
     hint: "First time this contact ever messages you (works for manually-added contacts too)",
   },
   { value: "keyword_match", label: "Keyword Match", hint: "Message contains specific keyword(s)" },
-  { value: "new_contact_created", label: "Novo Contact Criard", hint: "When a contact is auto-created from an incoming message" },
+  { value: "new_contact_created", label: "New Contact Created", hint: "When a contact is auto-created from an incoming message" },
   { value: "conversation_assigned", label: "Conversation Assigned", hint: "When assigned to an agent" },
-  { value: "tag_added", label: "Tag Adicionared", hint: "When a tag is added to a contact" },
+  { value: "tag_added", label: "Tag Added", hint: "When a tag is added to a contact" },
   { value: "time_based", label: "Time-Based", hint: "On a recurring schedule" },
 ]
 
@@ -178,7 +178,7 @@ function blankConfig(type: AutomationStepType): Record<string, unknown> {
 interface AutomationResources {
   tags: TagRecord[]
   members: AccountMember[]
-  templates: MessageModelo[]
+  templates: MessageTemplate[]
 }
 
 const ResourcesContext = createContext<AutomationResources>({
@@ -192,15 +192,15 @@ function useResources(): AutomationResources {
 }
 
 function ResourcesProvider({ children }: { children: ReactNode }) {
-  const [tags, setEtiquetas] = useState<TagRecord[]>([])
-  const [members, setMembros] = useState<AccountMember[]>([])
-  const [templates, setModelos] = useState<MessageModelo[]>([])
+  const [tags, setTags] = useState<TagRecord[]>([])
+  const [members, setMembers] = useState<AccountMember[]>([])
+  const [templates, setTemplates] = useState<MessageTemplate[]>([])
 
   useEffect(() => {
     let cancelled = false
     const supabase = createClient()
 
-    // Etiquetas and templates come straight from the DB — RLS scopes both
+    // Tags and templates come straight from the DB — RLS scopes both
     // to the caller's account. Only APPROVED templates can actually be
     // sent (anything else 400s at send time), matching the broadcast
     // picker.
@@ -214,11 +214,11 @@ function ResourcesProvider({ children }: { children: ReactNode }) {
           .order("name"),
       ])
       if (cancelled) return
-      setEtiquetas((tagsRes.data as TagRecord[] | null) ?? [])
-      setModelos((templatesRes.data as MessageModelo[] | null) ?? [])
+      setTags((tagsRes.data as TagRecord[] | null) ?? [])
+      setTemplates((templatesRes.data as MessageTemplate[] | null) ?? [])
     })()
 
-    // Membros go through the API so we inherit its email-visibility
+    // Members go through the API so we inherit its email-visibility
     // rules (agents/viewers don't see emails). Unreachable on older
     // deployments → pickers fall back to a raw agent-id input.
     void (async () => {
@@ -226,9 +226,9 @@ function ResourcesProvider({ children }: { children: ReactNode }) {
         const res = await fetch("/api/account/members", { cache: "no-store" })
         if (!res.ok) return
         const json = (await res.json()) as { members?: AccountMember[] }
-        if (!cancelled) setMembros(json.members ?? [])
+        if (!cancelled) setMembers(json.members ?? [])
       } catch {
-        // Membros endpoint absent — caller falls back to raw input.
+        // Members endpoint absent — caller falls back to raw input.
       }
     })()
 
@@ -249,7 +249,7 @@ const SELECT_CLASS =
 
 /** Tag dropdown by name + color, storing the tag's id. Falls back to a
  *  raw id input when no tags exist yet. */
-function TagSelecionar({
+function TagSelect({
   value,
   onChange,
 }: {
@@ -263,24 +263,24 @@ function TagSelecionar({
         placeholder="Tag id"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        classNome="bg-slate-800 text-white"
+        className="bg-slate-800 text-white"
       />
     )
   }
   const selected = tags.find((t) => t.id === value)
   return (
-    <div classNome="flex items-center gap-2">
+    <div className="flex items-center gap-2">
       <span
-        classNome="h-3 w-3 shrink-0 rounded-full border border-slate-600"
-        style={{ backgroundCor: selected?.color ?? "transparent" }}
+        className="h-3 w-3 shrink-0 rounded-full border border-slate-600"
+        style={{ backgroundColor: selected?.color ?? "transparent" }}
         aria-hidden
       />
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        classNome={SELECT_CLASS}
+        className={SELECT_CLASS}
       >
-        <option value="">Selecionar a tag…</option>
+        <option value="">Select a tag…</option>
         {tags.map((t) => (
           <option key={t.id} value={t.id}>
             {t.name}
@@ -298,7 +298,7 @@ function TagSelecionar({
 
 /** Agent dropdown by name, storing the member's user_id. Falls back to
  *  a raw id input when the member list is unavailable. */
-function AgentSelecionar({
+function AgentSelect({
   value,
   onChange,
 }: {
@@ -312,7 +312,7 @@ function AgentSelecionar({
         placeholder="Agent id"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        classNome="bg-slate-800 text-white"
+        className="bg-slate-800 text-white"
       />
     )
   }
@@ -321,9 +321,9 @@ function AgentSelecionar({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      classNome={SELECT_CLASS}
+      className={SELECT_CLASS}
     >
-      <option value="">Selecionar an agent…</option>
+      <option value="">Select an agent…</option>
       {members.map((m) => (
         <option key={m.user_id} value={m.user_id}>
           {m.full_name || m.email || m.user_id}
@@ -336,15 +336,15 @@ function AgentSelecionar({
   )
 }
 
-/** Modelo dropdown showing approved templates by name + language,
+/** Template dropdown showing approved templates by name + language,
  *  storing both template_name and language. Falls back to manual name +
  *  language inputs when no approved templates are synced yet. */
-function EnviarModeloFields({
-  templateNome,
+function SendTemplateFields({
+  templateName,
   language,
   onChange,
 }: {
-  templateNome: string
+  templateName: string
   language: string
   onChange: (patch: { template_name: string; language: string }) => void
 }) {
@@ -353,22 +353,22 @@ function EnviarModeloFields({
   if (templates.length === 0) {
     return (
       <>
-        <FieldBlock label="Modelo name">
+        <FieldBlock label="Template name">
           <Input
-            value={templateNome}
+            value={templateName}
             onChange={(e) =>
               onChange({ template_name: e.target.value, language })
             }
-            classNome="bg-slate-800 text-white"
+            className="bg-slate-800 text-white"
           />
         </FieldBlock>
         <FieldBlock label="Language">
           <Input
             value={language}
             onChange={(e) =>
-              onChange({ template_name: templateNome, language: e.target.value })
+              onChange({ template_name: templateName, language: e.target.value })
             }
-            classNome="bg-slate-800 text-white"
+            className="bg-slate-800 text-white"
           />
         </FieldBlock>
       </>
@@ -377,34 +377,34 @@ function EnviarModeloFields({
 
   // Encode name + language in the option value so two templates that
   // share a name across languages stay distinct.
-  const toValor = (name: string, lang: string) => `${name}::${lang}`
-  const current = templateNome ? toValor(templateNome, language) : ""
+  const toValue = (name: string, lang: string) => `${name}::${lang}`
+  const current = templateName ? toValue(templateName, language) : ""
   const hasMatch = templates.some(
-    (t) => toValor(t.name, t.language ?? "en_US") === current,
+    (t) => toValue(t.name, t.language ?? "en_US") === current,
   )
 
   return (
-    <FieldBlock label="Modelo">
+    <FieldBlock label="Template">
       <select
         value={current}
         onChange={(e) => {
           const [name, lang] = e.target.value.split("::")
           onChange({ template_name: name ?? "", language: lang ?? "" })
         }}
-        classNome={SELECT_CLASS}
+        className={SELECT_CLASS}
       >
-        <option value="">Selecionar a template…</option>
+        <option value="">Select a template…</option>
         {templates.map((t) => {
           const lang = t.language ?? "en_US"
           return (
-            <option key={t.id} value={toValor(t.name, lang)}>
+            <option key={t.id} value={toValue(t.name, lang)}>
               {t.name} ({lang})
             </option>
           )
         })}
         {current && !hasMatch && (
           <option value={current}>
-            {templateNome} ({language || "unknown"}) — not in approved list
+            {templateName} ({language || "unknown"}) — not in approved list
           </option>
         )}
       </select>
@@ -418,7 +418,7 @@ function EnviarModeloFields({
 
 export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
   const router = useRouter()
-  const isEditaring = !!initial.id
+  const isEditing = !!initial.id
   const [state, setState] = useState<BuilderInitial>(initial)
   const [saving, setSaving] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -464,7 +464,7 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
         steps: toApiSteps(state.steps),
       }
 
-      const res = isEditaring
+      const res = isEditing
         ? await fetch(`/api/automations/${initial.id}`, {
             method: "PATCH",
             headers: { "content-type": "application/json" },
@@ -488,12 +488,12 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
             description: firstIssue.path ? `at ${firstIssue.path}` : undefined,
           })
         } else {
-          toast.error(body?.error ?? "Salvar failed")
+          toast.error(body?.error ?? "Save failed")
         }
         return
       }
-      toast.success(isEditaring ? "Automation saved" : "Automation created")
-      if (!isEditaring && body?.automation?.id) {
+      toast.success(isEditing ? "Automation saved" : "Automation created")
+      if (!isEditing && body?.automation?.id) {
         router.replace(`/automations/${body.automation.id}/edit`)
       }
     } finally {
@@ -502,49 +502,49 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
   }
 
   return (
-    <div classNome="fixed inset-0 flex flex-col bg-slate-950">
-      {/* Top bar. At sub-sm widths the "Ativo" label is hidden and the
+    <div className="fixed inset-0 flex flex-col bg-slate-950">
+      {/* Top bar. At sub-sm widths the "Active" label is hidden and the
           switch moves to the right of the save button, so the name input
           gets maximum width. */}
-      <header classNome="flex flex-shrink-0 items-center gap-2 border-b border-slate-800 bg-slate-900/80 px-3 py-3 sm:gap-3 sm:px-4">
+      <header className="flex flex-shrink-0 items-center gap-2 border-b border-slate-800 bg-slate-900/80 px-3 py-3 sm:gap-3 sm:px-4">
         <button
           type="button"
           onClick={() => router.push("/automations")}
-          classNome="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
-          aria-label="Voltar to automations"
+          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+          aria-label="Back to automations"
         >
-          <ArrowLeft classNome="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4" />
         </button>
         <input
           value={state.name}
           onChange={(e) => patchTop("name", e.target.value)}
           placeholder="Untitled automation"
-          classNome="min-w-0 flex-1 rounded-md bg-transparent px-2 py-1 text-sm font-semibold text-white placeholder:text-slate-500 focus:bg-slate-800 focus:outline-none sm:text-base"
+          className="min-w-0 flex-1 rounded-md bg-transparent px-2 py-1 text-sm font-semibold text-white placeholder:text-slate-500 focus:bg-slate-800 focus:outline-none sm:text-base"
         />
-        <div classNome="flex items-center gap-2 text-xs text-slate-400">
-          <span classNome="hidden sm:inline">Ativo</span>
+        <div className="flex items-center gap-2 text-xs text-slate-400">
+          <span className="hidden sm:inline">Active</span>
           <Switch
             checked={state.is_active}
             onCheckedChange={(v) => patchTop("is_active", !!v)}
-            aria-label="Ativo"
+            aria-label="Active"
           />
         </div>
         <Button
           onClick={save}
           disabled={saving}
-          classNome="bg-primary text-primary-foreground hover:bg-primary/90"
+          className="bg-primary text-primary-foreground hover:bg-primary/90"
         >
-          {saving ? <Loader2 classNome="h-4 w-4 animate-spin" /> : null}
-          {isEditaring ? "Salvar" : "Salvar Rascunho"}
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          {isEditing ? "Save" : "Save Draft"}
         </Button>
       </header>
 
       {/* Canvas */}
-      <div classNome="relative flex-1 overflow-y-auto">
-        <div classNome="absolute inset-0 bg-[radial-gradient(circle,#1e293b_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none" />
-        <div classNome="relative mx-auto flex max-w-2xl flex-col items-center gap-0 px-4 py-10">
+      <div className="relative flex-1 overflow-y-auto">
+        <div className="absolute inset-0 bg-[radial-gradient(circle,#1e293b_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none" />
+        <div className="relative mx-auto flex max-w-2xl flex-col items-center gap-0 px-4 py-10">
           <ResourcesProvider>
-            <GatilhoCard
+            <TriggerCard
               type={state.trigger_type}
               config={state.trigger_config}
               onTypeChange={(t) => patchTop("trigger_type", t)}
@@ -568,54 +568,54 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
 }
 
 // ------------------------------------------------------------
-// Gatilho card
+// Trigger card
 // ------------------------------------------------------------
 
-function GatilhoCard({
+function TriggerCard({
   type,
   config,
   onTypeChange,
   onConfigChange,
 }: {
-  type: AutomationGatilhoType
+  type: AutomationTriggerType
   config: Record<string, unknown>
-  onTypeChange: (t: AutomationGatilhoType) => void
+  onTypeChange: (t: AutomationTriggerType) => void
   onConfigChange: (c: Record<string, unknown>) => void
 }) {
-  const [open, setAberto] = useState(false)
+  const [open, setOpen] = useState(false)
   return (
     // Card width: full on mobile, fixed 320px on sm+. The canvas wrapper
     // (max-w-2xl + px-4) keeps this tidy on tablet/desktop.
-    <div classNome="z-10 w-full max-w-[320px] sm:w-80">
-      <div classNome="rounded-lg border border-slate-800 border-l-4 border-l-blue-500 bg-slate-900 shadow-lg">
+    <div className="z-10 w-full max-w-[320px] sm:w-80">
+      <div className="rounded-lg border border-slate-800 border-l-4 border-l-blue-500 bg-slate-900 shadow-lg">
         <button
           type="button"
-          onClick={() => setAberto((v) => !v)}
-          classNome="flex w-full items-center gap-3 px-4 py-3 text-left"
+          onClick={() => setOpen((v) => !v)}
+          className="flex w-full items-center gap-3 px-4 py-3 text-left"
         >
-          <div classNome="flex h-8 w-8 items-center justify-center rounded-md bg-blue-500/10 text-blue-400">
-            <Zap classNome="h-4 w-4" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-500/10 text-blue-400">
+            <Zap className="h-4 w-4" />
           </div>
-          <div classNome="min-w-0 flex-1">
-            <div classNome="text-[11px] uppercase tracking-wide text-blue-300">Gatilho</div>
-            <div classNome="truncate text-sm font-medium text-white">
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] uppercase tracking-wide text-blue-300">Trigger</div>
+            <div className="truncate text-sm font-medium text-white">
               {TRIGGER_OPTIONS.find((o) => o.value === type)?.label ?? type}
             </div>
           </div>
           <ChevronDown
-            classNome={cn("h-4 w-4 text-slate-400 transition-transform", open && "rotate-180")}
+            className={cn("h-4 w-4 text-slate-400 transition-transform", open && "rotate-180")}
           />
         </button>
         {open && (
-          <div classNome="space-y-3 border-t border-slate-800 px-4 py-3">
+          <div className="space-y-3 border-t border-slate-800 px-4 py-3">
             <div>
-              <label classNome="mb-1 block text-xs font-medium text-slate-400">
-                Gatilho type
+              <label className="mb-1 block text-xs font-medium text-slate-400">
+                Trigger type
               </label>
               <select
                 value={type}
-                onChange={(e) => onTypeChange(e.target.value as AutomationGatilhoType)}
-                classNome="w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm text-white focus:border-primary focus:outline-none"
+                onChange={(e) => onTypeChange(e.target.value as AutomationTriggerType)}
+                className="w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm text-white focus:border-primary focus:outline-none"
               >
                 {TRIGGER_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -623,22 +623,22 @@ function GatilhoCard({
                   </option>
                 ))}
               </select>
-              <p classNome="mt-1 text-[11px] text-slate-500">
+              <p className="mt-1 text-[11px] text-slate-500">
                 {TRIGGER_OPTIONS.find((o) => o.value === type)?.hint}
               </p>
             </div>
             {type === "keyword_match" && (
               <KeywordMatchConfig
-                config={config as unknown as KeywordMatchGatilhoConfig}
+                config={config as unknown as KeywordMatchTriggerConfig}
                 onChange={onConfigChange}
               />
             )}
             {type === "tag_added" && (
               <div>
-                <label classNome="mb-1 block text-xs font-medium text-slate-400">
+                <label className="mb-1 block text-xs font-medium text-slate-400">
                   Tag
                 </label>
-                <TagSelecionar
+                <TagSelect
                   value={(config.tag_id as string) ?? ""}
                   onChange={(v) => onConfigChange({ ...config, tag_id: v })}
                 />
@@ -651,7 +651,7 @@ function GatilhoCard({
                 onChange={(e) =>
                   onConfigChange({ ...config, schedule: e.target.value })
                 }
-                classNome="bg-slate-800 text-white"
+                className="bg-slate-800 text-white"
               />
             )}
           </div>
@@ -665,7 +665,7 @@ function KeywordMatchConfig({
   config,
   onChange,
 }: {
-  config: KeywordMatchGatilhoConfig
+  config: KeywordMatchTriggerConfig
   onChange: (c: Record<string, unknown>) => void
 }) {
   const keywords = config?.keywords ?? []
@@ -675,26 +675,26 @@ function KeywordMatchConfig({
   // We only parse into the keywords array on blur, then re-display the
   // cleaned, rejoined form. Seeded once on mount; this component remounts
   // when the trigger type changes, so the seed stays in sync.
-  const [draft, setRascunho] = useState(keywords.join(", "))
+  const [draft, setDraft] = useState(keywords.join(", "))
 
   function commit() {
     const parsed = draft
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean)
-    setRascunho(parsed.join(", "))
+    setDraft(parsed.join(", "))
     onChange({ ...config, keywords: parsed })
   }
 
   return (
-    <div classNome="space-y-2">
+    <div className="space-y-2">
       <div>
-        <label classNome="mb-1 block text-xs font-medium text-slate-400">
+        <label className="mb-1 block text-xs font-medium text-slate-400">
           Keywords (comma-separated)
         </label>
         <Input
           value={draft}
-          onChange={(e) => setRascunho(e.target.value)}
+          onChange={(e) => setDraft(e.target.value)}
           onBlur={commit}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -703,17 +703,17 @@ function KeywordMatchConfig({
             }
           }}
           placeholder="e.g. pricing, demo request, talk to sales"
-          classNome="bg-slate-800 text-white"
+          className="bg-slate-800 text-white"
         />
       </div>
       <div>
-        <label classNome="mb-1 block text-xs font-medium text-slate-400">
+        <label className="mb-1 block text-xs font-medium text-slate-400">
           Match type
         </label>
         <select
           value={config?.match_type ?? "contains"}
           onChange={(e) => onChange({ ...config, match_type: e.target.value as "exact" | "contains" })}
-          classNome="w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm text-white focus:outline-none"
+          className="w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm text-white focus:outline-none"
         >
           <option value="contains">Contains</option>
           <option value="exact">Exact</option>
@@ -759,8 +759,8 @@ function StepList(props: StepListProps) {
         })()
 
   return (
-    <div classNome="flex flex-col items-center">
-      <AdicionarButton onPick={(t) => props.addStepAt(parentScope, 0, t)} />
+    <div className="flex flex-col items-center">
+      <AddButton onPick={(t) => props.addStepAt(parentScope, 0, t)} />
       {steps.map((step, idx) => (
         <StepRenderer
           key={step.cid}
@@ -799,19 +799,19 @@ function StepRenderer({
   const meta = STEP_META[step.step_type]
   const Icon = meta.icon
   const expanded = props.expandedId === step.cid
-  const isCondição = step.step_type === "condition"
+  const isCondition = step.step_type === "condition"
   // Card widths on mobile fill the full canvas column (max-w-2xl px-4
   // still keeps them reasonable). On sm+ the original fixed widths
   // come back so the flow visual stays recognisable.
-  const width = isCondição
+  const width = isCondition
     ? "w-full max-w-[400px] sm:w-[400px]"
     : "w-full max-w-[320px] sm:w-80"
 
   return (
     <>
-      <div classNome={cn("z-10 flex flex-col", width)}>
+      <div className={cn("z-10 flex flex-col", width)}>
         <div
-          classNome={cn(
+          className={cn(
             "rounded-lg border border-slate-800 border-l-4 bg-slate-900 shadow-lg",
             meta.border,
           )}
@@ -819,31 +819,31 @@ function StepRenderer({
           <button
             type="button"
             onClick={() => props.setExpandedId(expanded ? null : step.cid)}
-            classNome="flex w-full items-center gap-3 px-4 py-3 text-left"
+            className="flex w-full items-center gap-3 px-4 py-3 text-left"
           >
-            <GripVertical classNome="h-4 w-4 flex-shrink-0 text-slate-600" aria-hidden />
-            <div classNome="flex h-8 w-8 items-center justify-center rounded-md bg-slate-800 text-slate-300">
-              <Icon classNome="h-4 w-4" />
+            <GripVertical className="h-4 w-4 flex-shrink-0 text-slate-600" aria-hidden />
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-800 text-slate-300">
+              <Icon className="h-4 w-4" />
             </div>
-            <div classNome="min-w-0 flex-1">
-              <div classNome="text-[11px] uppercase tracking-wide text-slate-400">
-                {isCondição ? "Condição" : step.step_type === "wait" ? "Wait" : "Ação"}
+            <div className="min-w-0 flex-1">
+              <div className="text-[11px] uppercase tracking-wide text-slate-400">
+                {isCondition ? "Condition" : step.step_type === "wait" ? "Wait" : "Action"}
               </div>
-              <div classNome="truncate text-sm font-medium text-white">{meta.label}</div>
-              <div classNome="truncate text-[11px] text-slate-500">{previewFor(step)}</div>
+              <div className="truncate text-sm font-medium text-white">{meta.label}</div>
+              <div className="truncate text-[11px] text-slate-500">{previewFor(step)}</div>
             </div>
             <ChevronDown
-              classNome={cn("h-4 w-4 text-slate-400 transition-transform", expanded && "rotate-180")}
+              className={cn("h-4 w-4 text-slate-400 transition-transform", expanded && "rotate-180")}
             />
           </button>
           {expanded && (
-            <div classNome="border-t border-slate-800 px-4 py-3">
-              <StepEditaror
+            <div className="border-t border-slate-800 px-4 py-3">
+              <StepEditor
                 step={step}
                 onChange={(next) => props.updateStep(path, () => next)}
               />
-              <div classNome="mt-3 flex items-center justify-between gap-2 border-t border-slate-800 pt-3">
-                <div classNome="flex gap-1">
+              <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-800 pt-3">
+                <div className="flex gap-1">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -851,7 +851,7 @@ function StepRenderer({
                     aria-label="Move up"
                     onClick={() => props.moveStepAt(path, -1)}
                   >
-                    <ArrowUp classNome="h-4 w-4" />
+                    <ArrowUp className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -860,7 +860,7 @@ function StepRenderer({
                     aria-label="Move down"
                     onClick={() => props.moveStepAt(path, 1)}
                   >
-                    <ArrowDown classNome="h-4 w-4" />
+                    <ArrowDown className="h-4 w-4" />
                   </Button>
                 </div>
                 <Button
@@ -868,27 +868,27 @@ function StepRenderer({
                   size="sm"
                   onClick={() => props.deleteStepAt(path)}
                 >
-                  <Trash2 classNome="h-3.5 w-3.5" />
-                  Excluir
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete
                 </Button>
               </div>
             </div>
           )}
         </div>
 
-        {isCondição && (
-          <CondiçãoBranches step={step} parentPath={path} {...props} />
+        {isCondition && (
+          <ConditionBranches step={step} parentPath={path} {...props} />
         )}
       </div>
 
-      <AdicionarButton
+      <AddButton
         onPick={(t) => props.addStepAt(parentScope, index + 1, t)}
       />
     </>
   )
 }
 
-function CondiçãoBranches({
+function ConditionBranches({
   step,
   parentPath,
   ...props
@@ -913,7 +913,7 @@ function CondiçãoBranches({
     // Stack Yes/No vertically on mobile — two columns at 375px would
     // cram each branch to ~170px which is too narrow for the nested
     // cards. Two-column grid returns on sm+.
-    <div classNome="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
       <BranchColumn label="Yes" color="text-primary">
         <StepList {...props} steps={yes} parentPath={yesPath} />
       </BranchColumn>
@@ -934,40 +934,40 @@ function BranchColumn({
   children: React.ReactNode
 }) {
   return (
-    <div classNome="flex flex-col items-center">
-      <div classNome={cn("mb-2 text-[11px] font-semibold uppercase", color)}>{label}</div>
+    <div className="flex flex-col items-center">
+      <div className={cn("mb-2 text-[11px] font-semibold uppercase", color)}>{label}</div>
       {children}
     </div>
   )
 }
 
-function AdicionarButton({ onPick }: { onPick: (t: AutomationStepType) => void }) {
+function AddButton({ onPick }: { onPick: (t: AutomationStepType) => void }) {
   return (
-    <div classNome="relative flex flex-col items-center">
-      <div classNome="h-4 w-[2px] bg-slate-700" aria-hidden />
+    <div className="relative flex flex-col items-center">
+      <div className="h-4 w-[2px] bg-slate-700" aria-hidden />
       <DropdownMenu>
-        <DropdownMenuGatilho
-          classNome="flex h-8 w-8 items-center justify-center rounded-full border-2 border-dashed border-slate-700 bg-slate-950 text-slate-400 transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary data-[popup-open]:border-primary data-[popup-open]:bg-primary/20 data-[popup-open]:text-primary"
-          aria-label="Adicionar step"
+        <DropdownMenuTrigger
+          className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-dashed border-slate-700 bg-slate-950 text-slate-400 transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary data-[popup-open]:border-primary data-[popup-open]:bg-primary/20 data-[popup-open]:text-primary"
+          aria-label="Add step"
         >
-          <Plus classNome="h-4 w-4" />
-        </DropdownMenuGatilho>
+          <Plus className="h-4 w-4" />
+        </DropdownMenuTrigger>
         <DropdownMenuContent
           align="start"
-          classNome="max-h-80 min-w-56 overflow-y-auto border-slate-700 bg-slate-900"
+          className="max-h-80 min-w-56 overflow-y-auto border-slate-700 bg-slate-900"
         >
           {ADDABLE_STEPS.map((t) => {
             const Icon = STEP_META[t].icon
             return (
               <DropdownMenuItem key={t} onClick={() => onPick(t)}>
-                <Icon classNome="h-4 w-4" />
+                <Icon className="h-4 w-4" />
                 {STEP_META[t].label}
               </DropdownMenuItem>
             )
           })}
         </DropdownMenuContent>
       </DropdownMenu>
-      <div classNome="h-4 w-[2px] bg-slate-700" aria-hidden />
+      <div className="h-4 w-[2px] bg-slate-700" aria-hidden />
     </div>
   )
 }
@@ -976,7 +976,7 @@ function AdicionarButton({ onPick }: { onPick: (t: AutomationStepType) => void }
 // Per-step config editor
 // ------------------------------------------------------------
 
-function StepEditaror({
+function StepEditor({
   step,
   onChange,
 }: {
@@ -995,14 +995,14 @@ function StepEditaror({
             value={(cfg.text as string) ?? ""}
             onChange={(e) => set({ text: e.target.value })}
             placeholder="Hi! Thanks for reaching out…"
-            classNome="min-h-24 bg-slate-800 text-white"
+            className="min-h-24 bg-slate-800 text-white"
           />
         </FieldBlock>
       )
     case "send_template":
       return (
-        <EnviarModeloFields
-          templateNome={(cfg.template_name as string) ?? ""}
+        <SendTemplateFields
+          templateName={(cfg.template_name as string) ?? ""}
           language={(cfg.language as string) ?? ""}
           onChange={(patch) => set(patch)}
         />
@@ -1011,7 +1011,7 @@ function StepEditaror({
     case "remove_tag":
       return (
         <FieldBlock label="Tag">
-          <TagSelecionar
+          <TagSelect
             value={(cfg.tag_id as string) ?? ""}
             onChange={(v) => set({ tag_id: v })}
           />
@@ -1024,15 +1024,15 @@ function StepEditaror({
             <select
               value={(cfg.mode as string) ?? "round_robin"}
               onChange={(e) => set({ mode: e.target.value })}
-              classNome="w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm text-white"
+              className="w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm text-white"
             >
               <option value="round_robin">Round-robin</option>
               <option value="specific">Specific agent</option>
             </select>
           </FieldBlock>
           {cfg.mode === "specific" && (
-            <FieldBlock label="Agente">
-              <AgentSelecionar
+            <FieldBlock label="Agent">
+              <AgentSelect
                 value={(cfg.agent_id as string) ?? ""}
                 onChange={(v) => set({ agent_id: v })}
               />
@@ -1047,18 +1047,18 @@ function StepEditaror({
             <select
               value={(cfg.field as string) ?? "name"}
               onChange={(e) => set({ field: e.target.value })}
-              classNome="w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm text-white"
+              className="w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm text-white"
             >
-              <option value="name">Nome</option>
-              <option value="email">E-mail</option>
+              <option value="name">Name</option>
+              <option value="email">Email</option>
               <option value="company">Company</option>
             </select>
           </FieldBlock>
-          <FieldBlock label="Valor">
+          <FieldBlock label="Value">
             <Input
               value={(cfg.value as string) ?? ""}
               onChange={(e) => set({ value: e.target.value })}
-              classNome="bg-slate-800 text-white"
+              className="bg-slate-800 text-white"
             />
           </FieldBlock>
         </>
@@ -1070,50 +1070,50 @@ function StepEditaror({
             <Input
               value={(cfg.pipeline_id as string) ?? ""}
               onChange={(e) => set({ pipeline_id: e.target.value })}
-              classNome="bg-slate-800 text-white"
+              className="bg-slate-800 text-white"
             />
           </FieldBlock>
-          <FieldBlock label="Etapa id">
+          <FieldBlock label="Stage id">
             <Input
               value={(cfg.stage_id as string) ?? ""}
               onChange={(e) => set({ stage_id: e.target.value })}
-              classNome="bg-slate-800 text-white"
+              className="bg-slate-800 text-white"
             />
           </FieldBlock>
           <FieldBlock label="Title">
             <Input
               value={(cfg.title as string) ?? ""}
               onChange={(e) => set({ title: e.target.value })}
-              classNome="bg-slate-800 text-white"
+              className="bg-slate-800 text-white"
             />
           </FieldBlock>
-          <FieldBlock label="Valor">
+          <FieldBlock label="Value">
             <Input
               type="number"
               value={(cfg.value as number) ?? 0}
               onChange={(e) => set({ value: Number(e.target.value) })}
-              classNome="bg-slate-800 text-white"
+              className="bg-slate-800 text-white"
             />
           </FieldBlock>
         </>
       )
     case "wait":
       return (
-        <div classNome="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <FieldBlock label="Amount">
             <Input
               type="number"
               min={1}
               value={(cfg.amount as number) ?? 1}
               onChange={(e) => set({ amount: Math.max(1, Number(e.target.value)) })}
-              classNome="bg-slate-800 text-white"
+              className="bg-slate-800 text-white"
             />
           </FieldBlock>
           <FieldBlock label="Unit">
             <select
               value={(cfg.unit as string) ?? "hours"}
               onChange={(e) => set({ unit: e.target.value })}
-              classNome="w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm text-white"
+              className="w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm text-white"
             >
               <option value="minutes">Minutes</option>
               <option value="hours">Hours</option>
@@ -1129,7 +1129,7 @@ function StepEditaror({
             <select
               value={(cfg.subject as string) ?? "tag_presence"}
               onChange={(e) => set({ subject: e.target.value })}
-              classNome="w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm text-white"
+              className="w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm text-white"
             >
               <option value="tag_presence">Tag presence</option>
               <option value="contact_field">Contact field</option>
@@ -1150,15 +1150,15 @@ function StepEditaror({
               }
               value={(cfg.operand as string) ?? ""}
               onChange={(e) => set({ operand: e.target.value })}
-              classNome="bg-slate-800 text-white"
+              className="bg-slate-800 text-white"
             />
           </FieldBlock>
           {(cfg.subject === "contact_field" || cfg.subject === "message_content") && (
-            <FieldBlock label="Valor">
+            <FieldBlock label="Value">
               <Input
                 value={(cfg.value as string) ?? ""}
                 onChange={(e) => set({ value: e.target.value })}
-                classNome="bg-slate-800 text-white"
+                className="bg-slate-800 text-white"
               />
             </FieldBlock>
           )}
@@ -1171,21 +1171,21 @@ function StepEditaror({
             <Input
               value={(cfg.url as string) ?? ""}
               onChange={(e) => set({ url: e.target.value })}
-              classNome="bg-slate-800 text-white"
+              className="bg-slate-800 text-white"
             />
           </FieldBlock>
           <FieldBlock label="Body template (JSON)">
             <Textarea
               value={(cfg.body_template as string) ?? ""}
               onChange={(e) => set({ body_template: e.target.value })}
-              classNome="min-h-20 bg-slate-800 font-mono text-xs text-white"
+              className="min-h-20 bg-slate-800 font-mono text-xs text-white"
             />
           </FieldBlock>
         </>
       )
     case "close_conversation":
       return (
-        <p classNome="text-xs text-slate-400">
+        <p className="text-xs text-slate-400">
           Sets the conversation status to &quot;closed&quot;. No configuration needed.
         </p>
       )
@@ -1202,8 +1202,8 @@ function FieldBlock({
   children: React.ReactNode
 }) {
   return (
-    <div classNome="mb-2 last:mb-0">
-      <label classNome="mb-1 block text-xs font-medium text-slate-400">{label}</label>
+    <div className="mb-2 last:mb-0">
+      <label className="mb-1 block text-xs font-medium text-slate-400">{label}</label>
       {children}
     </div>
   )

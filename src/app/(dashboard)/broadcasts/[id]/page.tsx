@@ -17,19 +17,19 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuGatilho,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
   ArrowLeft,
   Loader2,
   Users,
-  Enviar,
+  Send,
   CheckCheck,
   Eye,
   AlertCircle,
   MessageCircle,
-  Filtrar,
-  Baixar,
+  Filter,
+  Download,
   ChevronDown,
   Trash2,
 } from 'lucide-react';
@@ -50,15 +50,15 @@ interface StatCardProps {
 function StatCard({ label, value, total, icon, color }: StatCardProps) {
   const pct = total > 0 ? Math.round((value / total) * 100) : 0;
   return (
-    <div classNome="rounded-xl border border-slate-800 bg-slate-900 p-4">
-      <div classNome="flex items-center justify-between">
-        <div classNome={`flex h-8 w-8 items-center justify-center rounded-lg ${color}`}>
+    <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+      <div className="flex items-center justify-between">
+        <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${color}`}>
           {icon}
         </div>
-        <span classNome="text-xs text-slate-500">{pct}%</span>
+        <span className="text-xs text-slate-500">{pct}%</span>
       </div>
-      <p classNome="mt-3 text-2xl font-bold text-white">{value.toLocaleString()}</p>
-      <p classNome="text-xs text-slate-400">{label}</p>
+      <p className="mt-3 text-2xl font-bold text-white">{value.toLocaleString()}</p>
+      <p className="text-xs text-slate-400">{label}</p>
     </div>
   );
 }
@@ -71,35 +71,35 @@ interface FunnelStep {
 
 /**
  * Pure-CSS funnel chart: decreasing-width rounded bars.
- * Width is relative to the largest step (typically Enviado) so we
+ * Width is relative to the largest step (typically Sent) so we
  * always render a full bar at the top and proportional tails.
  */
 function FunnelChart({ steps }: { steps: FunnelStep[] }) {
   const max = Math.max(...steps.map((s) => s.value), 1);
   return (
-    <div classNome="rounded-xl border border-slate-800 bg-slate-900 p-4">
-      <h3 classNome="mb-4 text-sm font-medium text-white">Funnel</h3>
-      <div classNome="space-y-2">
+    <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+      <h3 className="mb-4 text-sm font-medium text-white">Funnel</h3>
+      <div className="space-y-2">
         {steps.map((step) => {
           const pctOfMax = Math.max(5, Math.round((step.value / max) * 100));
-          const pctOfEnviado =
+          const pctOfSent =
             steps[0].value > 0
               ? Math.round((step.value / steps[0].value) * 100)
               : 0;
           return (
-            <div key={step.label} classNome="flex items-center gap-3">
-              <span classNome="w-20 shrink-0 text-xs text-slate-400">
+            <div key={step.label} className="flex items-center gap-3">
+              <span className="w-20 shrink-0 text-xs text-slate-400">
                 {step.label}
               </span>
-              <div classNome="relative h-7 flex-1 rounded-full bg-slate-800">
+              <div className="relative h-7 flex-1 rounded-full bg-slate-800">
                 <div
-                  classNome={`h-7 rounded-full ${step.color} transition-[width] duration-500`}
+                  className={`h-7 rounded-full ${step.color} transition-[width] duration-500`}
                   style={{ width: `${pctOfMax}%` }}
                 />
-                <span classNome="absolute inset-0 flex items-center px-3 text-xs font-medium text-white">
+                <span className="absolute inset-0 flex items-center px-3 text-xs font-medium text-white">
                   {step.value.toLocaleString()}
-                  <span classNome="ml-2 text-slate-300/80">
-                    ({pctOfEnviado}%)
+                  <span className="ml-2 text-slate-300/80">
+                    ({pctOfSent}%)
                   </span>
                 </span>
               </div>
@@ -147,13 +147,13 @@ export default function BroadcastDetailPage() {
   const broadcastId = params.id as string;
 
   const [broadcast, setBroadcast] = useState<Broadcast | null>(null);
-  const [recipients, setDestinatários] = useState<BroadcastRecipient[]>([]);
+  const [recipients, setRecipients] = useState<BroadcastRecipient[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setErro] = useState<string | null>(null);
-  const [statusFiltrar, setStatusFiltrar] = useState<RecipientStatus | 'all'>(
+  const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<RecipientStatus | 'all'>(
     'all',
   );
-  const [confirmExcluir, setConfirmarExcluir] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -161,25 +161,25 @@ export default function BroadcastDetailPage() {
       try {
         const supabase = createClient();
 
-        const { data: bc, error: bcErro } = await supabase
+        const { data: bc, error: bcError } = await supabase
           .from('broadcasts')
           .select('*')
           .eq('id', broadcastId)
           .single();
 
-        if (bcErro) throw bcErro;
+        if (bcError) throw bcError;
         setBroadcast(bc);
 
-        const { data: recs, error: recsErro } = await supabase
+        const { data: recs, error: recsError } = await supabase
           .from('broadcast_recipients')
           .select('*, contact:contacts(*)')
           .eq('broadcast_id', broadcastId)
           .order('created_at', { ascending: false });
 
-        if (recsErro) throw recsErro;
-        setDestinatários(recs ?? []);
+        if (recsError) throw recsError;
+        setRecipients(recs ?? []);
       } catch (err) {
-        setErro(err instanceof Erro ? err.message : 'Falhou to load broadcast');
+        setError(err instanceof Error ? err.message : 'Failed to load broadcast');
       } finally {
         setLoading(false);
       }
@@ -188,25 +188,25 @@ export default function BroadcastDetailPage() {
     fetchData();
   }, [broadcastId]);
 
-  const filteredDestinatários = useMemo(
+  const filteredRecipients = useMemo(
     () =>
-      statusFiltrar === 'all'
+      statusFilter === 'all'
         ? recipients
-        : recipients.filter((r) => r.status === statusFiltrar),
-    [recipients, statusFiltrar],
+        : recipients.filter((r) => r.status === statusFilter),
+    [recipients, statusFilter],
   );
 
-  function handleExportar() {
+  function handleExport() {
     if (!broadcast) return;
     const header = [
       'Contact',
-      'Telefone',
+      'Phone',
       'Status',
-      'Enviado At',
-      'Entregue At',
-      'Lido At',
+      'Sent At',
+      'Delivered At',
+      'Read At',
       'Replied At',
-      'Erro',
+      'Error',
     ];
     const rows = recipients.map((r) => [
       r.contact?.name ?? '',
@@ -219,11 +219,11 @@ export default function BroadcastDetailPage() {
       r.error_message ?? '',
     ]);
     const csv = toCsv([header, ...rows]);
-    const safeNome = broadcast.name.replace(/[^a-z0-9-_]+/gi, '-').toLowerCase();
-    downloadBlob(`broadcast-${safeNome}-${broadcastId.slice(0, 8)}.csv`, csv);
+    const safeName = broadcast.name.replace(/[^a-z0-9-_]+/gi, '-').toLowerCase();
+    downloadBlob(`broadcast-${safeName}-${broadcastId.slice(0, 8)}.csv`, csv);
   }
 
-  async function handleExcluir() {
+  async function handleDelete() {
     setDeleting(true);
     const supabase = createClient();
     // broadcast_recipients cascades on broadcasts.id (migration 001), so a
@@ -236,7 +236,7 @@ export default function BroadcastDetailPage() {
       .eq('id', broadcastId);
     setDeleting(false);
     if (delErr) {
-      toast.error(`Falhou to delete: ${delErr.message}`);
+      toast.error(`Failed to delete: ${delErr.message}`);
       return;
     }
     toast.success('Broadcast deleted');
@@ -245,18 +245,18 @@ export default function BroadcastDetailPage() {
 
   if (loading) {
     return (
-      <div classNome="flex h-64 items-center justify-center">
-        <Loader2 classNome="h-6 w-6 animate-spin text-primary" />
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
 
   if (error || !broadcast) {
     return (
-      <div classNome="flex h-64 flex-col items-center justify-center gap-2">
-        <p classNome="text-sm text-red-400">{error ?? 'Broadcast not found'}</p>
+      <div className="flex h-64 flex-col items-center justify-center gap-2">
+        <p className="text-sm text-red-400">{error ?? 'Broadcast not found'}</p>
         <Button variant="outline" onClick={() => router.push('/broadcasts')}>
-          Voltar to Transmissões
+          Back to Broadcasts
         </Button>
       </div>
     );
@@ -265,67 +265,67 @@ export default function BroadcastDetailPage() {
   const status = getBroadcastStatus(broadcast.status);
 
   const funnelSteps: FunnelStep[] = [
-    { label: 'Enviado', value: broadcast.sent_count, color: 'bg-primary' },
-    { label: 'Entregue', value: broadcast.delivered_count, color: 'bg-teal-500' },
-    { label: 'Lido', value: broadcast.read_count, color: 'bg-blue-500' },
+    { label: 'Sent', value: broadcast.sent_count, color: 'bg-primary' },
+    { label: 'Delivered', value: broadcast.delivered_count, color: 'bg-teal-500' },
+    { label: 'Read', value: broadcast.read_count, color: 'bg-blue-500' },
     { label: 'Replied', value: broadcast.replied_count, color: 'bg-indigo-500' },
   ];
 
   return (
-    <div classNome="space-y-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div classNome="flex flex-wrap items-start justify-between gap-3">
-        <div classNome="flex items-center gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-center gap-4">
           <Button
             variant="outline"
             size="icon"
             onClick={() => router.push('/broadcasts')}
-            classNome="border-slate-700"
+            className="border-slate-700"
           >
-            <ArrowLeft classNome="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <div classNome="flex items-center gap-3">
-              <h1 classNome="text-2xl font-bold text-white">{broadcast.name}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-white">{broadcast.name}</h1>
               <span
-                classNome={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${status.classes}`}
+                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${status.classes}`}
               >
                 {status.label}
               </span>
             </div>
-            <div classNome="mt-1 flex items-center gap-3 text-sm text-slate-400">
-              <span>Modelo: {broadcast.template_name}</span>
+            <div className="mt-1 flex items-center gap-3 text-sm text-slate-400">
+              <span>Template: {broadcast.template_name}</span>
               <span>-</span>
               <span>
-                Criard {new Date(broadcast.created_at).toLocaleDateString()}
+                Created {new Date(broadcast.created_at).toLocaleDateString()}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Excluir — inline-confirm pattern matches the pipeline-settings
-            "Excluir Pipeline" flow. Mid-send broadcasts can't be deleted
+        {/* Delete — inline-confirm pattern matches the pipeline-settings
+            "Delete Pipeline" flow. Mid-send broadcasts can't be deleted
             because orphaning in-flight Meta messages would leave the
             funnel inconsistent. */}
-        {confirmExcluir ? (
-          <div classNome="flex items-center gap-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm">
-            <span classNome="text-red-300">Excluir this broadcast?</span>
+        {confirmDelete ? (
+          <div className="flex items-center gap-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm">
+            <span className="text-red-300">Delete this broadcast?</span>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setConfirmarExcluir(false)}
+              onClick={() => setConfirmDelete(false)}
               disabled={deleting}
-              classNome="h-7 border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800"
+              className="h-7 border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800"
             >
-              Cancelar
+              Cancel
             </Button>
             <Button
               size="sm"
-              onClick={handleExcluir}
+              onClick={handleDelete}
               disabled={deleting}
-              classNome="h-7 bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+              className="h-7 bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
             >
-              {deleting ? 'Deleting…' : 'Confirmar'}
+              {deleting ? 'Deleting…' : 'Confirm'}
             </Button>
           </div>
         ) : (
@@ -333,107 +333,107 @@ export default function BroadcastDetailPage() {
             variant="outline"
             size="sm"
             disabled={broadcast.status === 'sending'}
-            onClick={() => setConfirmarExcluir(true)}
+            onClick={() => setConfirmDelete(true)}
             title={
               broadcast.status === 'sending'
                 ? 'Cannot delete while a broadcast is actively sending'
-                : 'Excluir this broadcast'
+                : 'Delete this broadcast'
             }
-            classNome="border-red-500/30 bg-transparent text-red-400 hover:bg-red-500/10 disabled:opacity-40"
+            className="border-red-500/30 bg-transparent text-red-400 hover:bg-red-500/10 disabled:opacity-40"
           >
-            <Trash2 classNome="h-3.5 w-3.5" />
-            Excluir
+            <Trash2 className="h-3.5 w-3.5" />
+            Delete
           </Button>
         )}
       </div>
 
-      {/* Stats — 6 cards: Total / Enviado / Entregue / Lido / Replied / Falhou */}
-      <div classNome="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      {/* Stats — 6 cards: Total / Sent / Delivered / Read / Replied / Failed */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard
-          label="Total Destinatários"
+          label="Total Recipients"
           value={broadcast.total_recipients}
           total={broadcast.total_recipients}
-          icon={<Users classNome="h-4 w-4" />}
+          icon={<Users className="h-4 w-4" />}
           color="bg-slate-800 text-slate-300"
         />
         <StatCard
-          label="Enviado"
+          label="Sent"
           value={broadcast.sent_count}
           total={broadcast.total_recipients}
-          icon={<Enviar classNome="h-4 w-4" />}
+          icon={<Send className="h-4 w-4" />}
           color="bg-primary/10 text-primary"
         />
         <StatCard
-          label="Entregue"
+          label="Delivered"
           value={broadcast.delivered_count}
           total={broadcast.total_recipients}
-          icon={<CheckCheck classNome="h-4 w-4" />}
+          icon={<CheckCheck className="h-4 w-4" />}
           color="bg-teal-500/10 text-teal-400"
         />
         <StatCard
-          label="Lido"
+          label="Read"
           value={broadcast.read_count}
           total={broadcast.total_recipients}
-          icon={<Eye classNome="h-4 w-4" />}
+          icon={<Eye className="h-4 w-4" />}
           color="bg-blue-500/10 text-blue-400"
         />
         <StatCard
           label="Replied"
           value={broadcast.replied_count}
           total={broadcast.total_recipients}
-          icon={<MessageCircle classNome="h-4 w-4" />}
+          icon={<MessageCircle className="h-4 w-4" />}
           color="bg-indigo-500/10 text-indigo-400"
         />
         <StatCard
-          label="Falhou"
+          label="Failed"
           value={broadcast.failed_count}
           total={broadcast.total_recipients}
-          icon={<AlertCircle classNome="h-4 w-4" />}
+          icon={<AlertCircle className="h-4 w-4" />}
           color="bg-red-500/10 text-red-400"
         />
       </div>
 
       <FunnelChart steps={funnelSteps} />
 
-      {/* Destinatários Table */}
-      <div classNome="rounded-xl border border-slate-800 bg-slate-900">
-        <div classNome="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 px-4 py-3">
-          <h2 classNome="text-sm font-medium text-white">
-            Destinatários ({filteredDestinatários.length}
-            {statusFiltrar !== 'all' ? ` of ${recipients.length}` : ''})
+      {/* Recipients Table */}
+      <div className="rounded-xl border border-slate-800 bg-slate-900">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 px-4 py-3">
+          <h2 className="text-sm font-medium text-white">
+            Recipients ({filteredRecipients.length}
+            {statusFilter !== 'all' ? ` of ${recipients.length}` : ''})
           </h2>
-          <div classNome="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <DropdownMenu>
-              <DropdownMenuGatilho
+              <DropdownMenuTrigger
                 render={
                   <Button
                     variant="outline"
                     size="sm"
-                    classNome="border-slate-700 text-slate-300 hover:bg-slate-800"
+                    className="border-slate-700 text-slate-300 hover:bg-slate-800"
                   />
                 }
               >
-                <Filtrar classNome="h-3.5 w-3.5" />
-                {statusFiltrar === 'all'
-                  ? 'Todos statuses'
-                  : getRecipientStatus(statusFiltrar).label}
-                <ChevronDown classNome="h-3 w-3" />
-              </DropdownMenuGatilho>
-              <DropdownMenuContent classNome="border-slate-700 bg-slate-900">
+                <Filter className="h-3.5 w-3.5" />
+                {statusFilter === 'all'
+                  ? 'All statuses'
+                  : getRecipientStatus(statusFilter).label}
+                <ChevronDown className="h-3 w-3" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="border-slate-700 bg-slate-900">
                 <DropdownMenuItem
-                  onClick={() => setStatusFiltrar('all')}
-                  classNome={
-                    statusFiltrar === 'all' ? 'text-primary' : 'text-slate-300'
+                  onClick={() => setStatusFilter('all')}
+                  className={
+                    statusFilter === 'all' ? 'text-primary' : 'text-slate-300'
                   }
                 >
-                  Todos statuses
+                  All statuses
                 </DropdownMenuItem>
                 {RECIPIENT_STATUSES.map((s) => (
                   <DropdownMenuItem
                     key={s}
-                    onClick={() => setStatusFiltrar(s)}
-                    classNome={
-                      statusFiltrar === s
+                    onClick={() => setStatusFilter(s)}
+                    className={
+                      statusFilter === s
                         ? 'text-primary'
                         : 'text-slate-300'
                     }
@@ -447,72 +447,72 @@ export default function BroadcastDetailPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleExportar}
+              onClick={handleExport}
               disabled={recipients.length === 0}
-              classNome="border-slate-700 text-slate-300 hover:bg-slate-800"
+              className="border-slate-700 text-slate-300 hover:bg-slate-800"
             >
-              <Baixar classNome="h-3.5 w-3.5" />
-              Exportar CSV
+              <Download className="h-3.5 w-3.5" />
+              Export CSV
             </Button>
           </div>
         </div>
 
-        {filteredDestinatários.length === 0 ? (
-          <div classNome="flex h-32 items-center justify-center">
-            <p classNome="text-sm text-slate-400">
+        {filteredRecipients.length === 0 ? (
+          <div className="flex h-32 items-center justify-center">
+            <p className="text-sm text-slate-400">
               {recipients.length === 0
                 ? 'No recipients found.'
                 : 'No recipients match this filter.'}
             </p>
           </div>
         ) : (
-          <div classNome="overflow-x-auto">
+          <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow classNome="border-slate-800 hover:bg-transparent">
-                  <TableHead classNome="text-slate-400">Contact</TableHead>
-                  <TableHead classNome="text-slate-400">Telefone</TableHead>
-                  <TableHead classNome="text-slate-400">Status</TableHead>
-                  <TableHead classNome="text-slate-400">Enviado</TableHead>
-                  <TableHead classNome="text-slate-400">Entregue</TableHead>
-                  <TableHead classNome="text-slate-400">Lido</TableHead>
-                  <TableHead classNome="text-slate-400">Erro</TableHead>
+                <TableRow className="border-slate-800 hover:bg-transparent">
+                  <TableHead className="text-slate-400">Contact</TableHead>
+                  <TableHead className="text-slate-400">Phone</TableHead>
+                  <TableHead className="text-slate-400">Status</TableHead>
+                  <TableHead className="text-slate-400">Sent</TableHead>
+                  <TableHead className="text-slate-400">Delivered</TableHead>
+                  <TableHead className="text-slate-400">Read</TableHead>
+                  <TableHead className="text-slate-400">Error</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredDestinatários.map((recipient) => {
+                {filteredRecipients.map((recipient) => {
                   const rStatus = getRecipientStatus(recipient.status);
                   return (
-                    <TableRow key={recipient.id} classNome="border-slate-800">
-                      <TableCell classNome="font-medium text-white">
+                    <TableRow key={recipient.id} className="border-slate-800">
+                      <TableCell className="font-medium text-white">
                         {recipient.contact?.name ?? 'Unknown'}
                       </TableCell>
-                      <TableCell classNome="text-slate-300">
+                      <TableCell className="text-slate-300">
                         {recipient.contact?.phone ?? '-'}
                       </TableCell>
                       <TableCell>
                         <span
-                          classNome={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${rStatus.classes}`}
+                          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${rStatus.classes}`}
                         >
                           {rStatus.label}
                         </span>
                       </TableCell>
-                      <TableCell classNome="text-slate-400">
+                      <TableCell className="text-slate-400">
                         {recipient.sent_at
                           ? new Date(recipient.sent_at).toLocaleString()
                           : '-'}
                       </TableCell>
-                      <TableCell classNome="text-slate-400">
+                      <TableCell className="text-slate-400">
                         {recipient.delivered_at
                           ? new Date(recipient.delivered_at).toLocaleString()
                           : '-'}
                       </TableCell>
-                      <TableCell classNome="text-slate-400">
+                      <TableCell className="text-slate-400">
                         {recipient.read_at
                           ? new Date(recipient.read_at).toLocaleString()
                           : '-'}
                       </TableCell>
-                      <TableCell classNome="max-w-xs truncate text-xs text-red-400">
+                      <TableCell className="max-w-xs truncate text-xs text-red-400">
                         {recipient.error_message ?? '-'}
                       </TableCell>
                     </TableRow>

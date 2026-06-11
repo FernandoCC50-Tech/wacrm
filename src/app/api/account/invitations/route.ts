@@ -4,9 +4,9 @@
 //   GET  — list outstanding (un-redeemed, non-expired) invites.
 //   POST — create a new invite link.
 //
-// Both admin+. The list endpoint is what the Membros tab uses to
+// Both admin+. The list endpoint is what the Members tab uses to
 // populate the "Pending invitations" section; create is what the
-// "Convidar membro" dialog calls.
+// "Invite member" dialog calls.
 //
 // IMPORTANT: the plaintext token is returned exactly ONCE — in
 // the POST response. We store only the SHA-256 hash on the row,
@@ -17,23 +17,23 @@
 // revoke and re-issue.
 // ============================================================
 
-import { PróximoResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-import { requireFunção, toErroResponse } from "@/lib/auth/account";
+import { requireRole, toErrorResponse } from "@/lib/auth/account";
 import {
   clampExpiryDays,
   generateInviteToken,
   inviteExpiresAt,
   inviteUrl,
 } from "@/lib/auth/invitations";
-import { isAccountFunção } from "@/lib/auth/roles";
+import { isAccountRole } from "@/lib/auth/roles";
 import {
   checkRateLimit,
   rateLimitResponse,
   RATE_LIMITS,
 } from "@/lib/rate-limit";
 
-// Resolver the base URL we publish invite links under.
+// Resolve the base URL we publish invite links under.
 //
 // Resolution order, first match wins:
 //
@@ -68,12 +68,12 @@ import {
 //   surface should set this to their canonical hostnames; everyone
 //   else gets today's permissive behavior.
 //
-// Anterior implementation hard-defaulted to `https://wacrm.tech`
+// Previous implementation hard-defaulted to `https://wacrm.tech`
 // (the docs/marketing site, a different repo). Forks that didn't
 // set `NEXT_PUBLIC_SITE_URL` got invite links pointing at the
 // marketing site, which 404s on `/join/<token>`. This resolution
 // chain removes the foot-gun.
-function parseTodosowedHosts(): readonly string[] | null {
+function parseAllowedHosts(): readonly string[] | null {
   const raw = process.env.ALLOWED_INVITE_HOSTS?.trim();
   if (!raw) return null;
   const list = raw
@@ -83,7 +83,7 @@ function parseTodosowedHosts(): readonly string[] | null {
   return list.length > 0 ? list : null;
 }
 
-function isHostTodosowed(
+function isHostAllowed(
   hostname: string,
   allowList: readonly string[] | null,
 ): boolean {
@@ -95,7 +95,7 @@ function getBaseUrl(request: Request): string {
   const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (explicit) return explicit.replace(/\/+$/, "");
 
-  const allowList = parseTodosowedHosts();
+  const allowList = parseAllowedHosts();
   const forwardedHost = request.headers
     .get("x-forwarded-host")
     ?.split(",")[0]
@@ -104,12 +104,12 @@ function getBaseUrl(request: Request): string {
     .get("x-forwarded-proto")
     ?.split(",")[0]
     ?.trim();
-  if (forwardedHost && isHostTodosowed(forwardedHost, allowList)) {
+  if (forwardedHost && isHostAllowed(forwardedHost, allowList)) {
     return `${forwardedProto || "https"}://${forwardedHost}`;
   }
 
   const host = request.headers.get("host")?.trim();
-  if (host && isHostTodosowed(host, allowList)) {
+  if (host && isHostAllowed(host, allowList)) {
     // The protocol on `request.url` is whatever the framework saw —
     // reliable for bare deployments where no proxy is rewriting it.
     const reqProto = new URL(request.url).protocol.replace(":", "");
@@ -138,7 +138,7 @@ const MAX_LABEL_LEN = 80;
 
 export async function GET() {
   try {
-    const ctx = await requireFunção("admin");
+    const ctx = await requireRole("admin");
 
     const { data, error } = await ctx.supabase
       .from("account_invitations")
@@ -152,29 +152,29 @@ export async function GET() {
 
     if (error) {
       console.error("[GET /api/account/invitations] fetch error:", error);
-      return PróximoResponse.json(
-        { error: "Falhou to load invitations" },
+      return NextResponse.json(
+        { error: "Failed to load invitations" },
         { status: 500 },
       );
     }
 
-    return PróximoResponse.json({ invitations: data ?? [] });
+    return NextResponse.json({ invitations: data ?? [] });
   } catch (err) {
-    return toErroResponse(err);
+    return toErrorResponse(err);
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const ctx = await requireFunção("admin");
+    const ctx = await requireRole("admin");
 
-    // 30/min per user. The Membros tab is a clicks-only UI so any
+    // 30/min per user. The Members tab is a clicks-only UI so any
     // legitimate admin is far below this; the cap exists to keep
     // a script run in a loop or a compromised admin session from
     // flooding `account_invitations` with rows.
     const limit = checkRateLimit(
-      `admin:inviteCriar:${ctx.userId}`,
-      RATE_LIMITS.adminAção,
+      `admin:inviteCreate:${ctx.userId}`,
+      RATE_LIMITS.adminAction,
     );
     if (!limit.success) return rateLimitResponse(limit);
 
@@ -183,11 +183,11 @@ export async function POST(request: Request) {
       | null;
 
     const role = body?.role;
-    if (!isAccountFunção(role) || role === "owner") {
+    if (!isAccountRole(role) || role === "owner") {
       // The DB CHECK already rejects 'owner', but failing fast
       // here gives a clearer 400 than the eventual constraint
       // violation surfaced as a 500.
-      return PróximoResponse.json(
+      return NextResponse.json(
         { error: "'role' must be one of admin, agent, viewer" },
         { status: 400 },
       );
@@ -206,8 +206,8 @@ export async function POST(request: Request) {
     if (typeof body?.label === "string") {
       const trimmed = body.label.trim();
       if (trimmed.length > MAX_LABEL_LEN) {
-        return PróximoResponse.json(
-          { error: `Rótulo must be ${MAX_LABEL_LEN} characters or fewer` },
+        return NextResponse.json(
+          { error: `Label must be ${MAX_LABEL_LEN} characters or fewer` },
           { status: 400 },
         );
       }
@@ -231,13 +231,13 @@ export async function POST(request: Request) {
 
     if (error || !data) {
       console.error("[POST /api/account/invitations] insert error:", error);
-      return PróximoResponse.json(
-        { error: "Falhou to create invitation" },
+      return NextResponse.json(
+        { error: "Failed to create invitation" },
         { status: 500 },
       );
     }
 
-    return PróximoResponse.json(
+    return NextResponse.json(
       {
         invitation: data,
         // Plaintext payload — visible to the admin exactly once.
@@ -248,6 +248,6 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (err) {
-    return toErroResponse(err);
+    return toErrorResponse(err);
   }
 }

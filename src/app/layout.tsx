@@ -32,7 +32,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeCor: "#020617",
+  themeColor: "#020617",
   colorScheme: "dark",
 };
 
@@ -62,14 +62,14 @@ const THEME_BOOT_SCRIPT = `
 
 export default function RootLayout({
   children,
-}: Lidoonly<{
+}: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
     <html
       lang="en"
       data-theme={DEFAULT_THEME}
-      classNome={`${inter.variable} h-full antialiased`}
+      className={`${inter.variable} h-full antialiased`}
       // The `theme-boot` script below rewrites `data-theme` on <html>
       // from localStorage before React hydrates, so for any non-default
       // theme the client DOM intentionally differs from the server-
@@ -85,7 +85,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }}
         />
       </head>
-      <body classNome="min-h-full bg-background text-foreground font-sans">
+      <body className="min-h-full bg-background text-foreground font-sans">
         <ThemeProvider>
           {children}
           <Toaster

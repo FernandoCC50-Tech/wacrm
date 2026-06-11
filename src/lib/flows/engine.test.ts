@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
   matchReplyId,
-  matchesKeywordGatilho,
+  matchesKeywordTrigger,
   isAutoAdvancing,
   isSuspending,
   isTerminal,
-  evaluateCondiçãoPredicate,
+  evaluateConditionPredicate,
 } from "./engine";
 
 describe("matchReplyId", () => {
@@ -97,27 +97,27 @@ describe("matchReplyId", () => {
   });
 });
 
-describe("matchesKeywordGatilho", () => {
+describe("matchesKeywordTrigger", () => {
   it("returns false for empty text", () => {
-    expect(matchesKeywordGatilho("", { keywords: ["hi"] })).toBe(false);
+    expect(matchesKeywordTrigger("", { keywords: ["hi"] })).toBe(false);
   });
 
   it("returns false when keywords array is empty", () => {
-    expect(matchesKeywordGatilho("anything", { keywords: [] })).toBe(false);
+    expect(matchesKeywordTrigger("anything", { keywords: [] })).toBe(false);
   });
 
   it("default match_type='contains' does case-insensitive substring", () => {
     const cfg = { keywords: ["support"] };
-    expect(matchesKeywordGatilho("I need SUPPORT please", cfg)).toBe(true);
-    expect(matchesKeywordGatilho("Support is great", cfg)).toBe(true);
-    expect(matchesKeywordGatilho("Help me", cfg)).toBe(false);
+    expect(matchesKeywordTrigger("I need SUPPORT please", cfg)).toBe(true);
+    expect(matchesKeywordTrigger("Support is great", cfg)).toBe(true);
+    expect(matchesKeywordTrigger("Help me", cfg)).toBe(false);
   });
 
   it("match_type='exact' compares the whole string case-insensitively", () => {
     const cfg = { keywords: ["help"], match_type: "exact" as const };
-    expect(matchesKeywordGatilho("help", cfg)).toBe(true);
-    expect(matchesKeywordGatilho("HELP", cfg)).toBe(true);
-    expect(matchesKeywordGatilho("help me", cfg)).toBe(false);
+    expect(matchesKeywordTrigger("help", cfg)).toBe(true);
+    expect(matchesKeywordTrigger("HELP", cfg)).toBe(true);
+    expect(matchesKeywordTrigger("help me", cfg)).toBe(false);
   });
 
   it("case_sensitive=true preserves case", () => {
@@ -125,21 +125,21 @@ describe("matchesKeywordGatilho", () => {
       keywords: ["Support"],
       case_sensitive: true,
     };
-    expect(matchesKeywordGatilho("I need Support", cfg)).toBe(true);
-    expect(matchesKeywordGatilho("I need support", cfg)).toBe(false);
+    expect(matchesKeywordTrigger("I need Support", cfg)).toBe(true);
+    expect(matchesKeywordTrigger("I need support", cfg)).toBe(false);
   });
 
   it("matches any one of multiple keywords", () => {
     const cfg = { keywords: ["help", "support", "issue"] };
-    expect(matchesKeywordGatilho("I have an issue", cfg)).toBe(true);
-    expect(matchesKeywordGatilho("I need Help!", cfg)).toBe(true);
-    expect(matchesKeywordGatilho("nothing to see here", cfg)).toBe(false);
+    expect(matchesKeywordTrigger("I have an issue", cfg)).toBe(true);
+    expect(matchesKeywordTrigger("I need Help!", cfg)).toBe(true);
+    expect(matchesKeywordTrigger("nothing to see here", cfg)).toBe(false);
   });
 
   it("skips empty strings in the keywords array", () => {
     const cfg = { keywords: ["", "support", ""] };
-    expect(matchesKeywordGatilho("support center", cfg)).toBe(true);
-    expect(matchesKeywordGatilho("nope", cfg)).toBe(false);
+    expect(matchesKeywordTrigger("support center", cfg)).toBe(true);
+    expect(matchesKeywordTrigger("nope", cfg)).toBe(false);
   });
 });
 
@@ -198,101 +198,101 @@ describe("node classification helpers", () => {
   });
 });
 
-describe("evaluateCondiçãoPredicate", () => {
+describe("evaluateConditionPredicate", () => {
   it("present: true when subject has a value", () => {
     expect(
-      evaluateCondiçãoPredicate({
+      evaluateConditionPredicate({
         operator: "present",
-        subjectValor: "alice@example.com",
-        configValor: undefined,
+        subjectValue: "alice@example.com",
+        configValue: undefined,
       }),
     ).toBe(true);
   });
 
   it("present: false when subject is undefined or empty", () => {
     expect(
-      evaluateCondiçãoPredicate({
+      evaluateConditionPredicate({
         operator: "present",
-        subjectValor: undefined,
-        configValor: undefined,
+        subjectValue: undefined,
+        configValue: undefined,
       }),
     ).toBe(false);
     expect(
-      evaluateCondiçãoPredicate({
+      evaluateConditionPredicate({
         operator: "present",
-        subjectValor: "",
-        configValor: undefined,
+        subjectValue: "",
+        configValue: undefined,
       }),
     ).toBe(false);
   });
 
   it("absent: inverse of present", () => {
     expect(
-      evaluateCondiçãoPredicate({
+      evaluateConditionPredicate({
         operator: "absent",
-        subjectValor: undefined,
-        configValor: undefined,
+        subjectValue: undefined,
+        configValue: undefined,
       }),
     ).toBe(true);
     expect(
-      evaluateCondiçãoPredicate({
+      evaluateConditionPredicate({
         operator: "absent",
-        subjectValor: "x",
-        configValor: undefined,
+        subjectValue: "x",
+        configValue: undefined,
       }),
     ).toBe(false);
   });
 
   it("equals: exact string comparison; case-sensitive", () => {
     expect(
-      evaluateCondiçãoPredicate({
+      evaluateConditionPredicate({
         operator: "equals",
-        subjectValor: "VIP",
-        configValor: "VIP",
+        subjectValue: "VIP",
+        configValue: "VIP",
       }),
     ).toBe(true);
     expect(
-      evaluateCondiçãoPredicate({
+      evaluateConditionPredicate({
         operator: "equals",
-        subjectValor: "vip",
-        configValor: "VIP",
+        subjectValue: "vip",
+        configValue: "VIP",
       }),
     ).toBe(false);
   });
 
   it("equals: undefined subject never matches (even against empty)", () => {
     expect(
-      evaluateCondiçãoPredicate({
+      evaluateConditionPredicate({
         operator: "equals",
-        subjectValor: undefined,
-        configValor: "",
+        subjectValue: undefined,
+        configValue: "",
       }),
     ).toBe(false);
   });
 
   it("contains: substring match", () => {
     expect(
-      evaluateCondiçãoPredicate({
+      evaluateConditionPredicate({
         operator: "contains",
-        subjectValor: "support@example.com",
-        configValor: "@example.com",
+        subjectValue: "support@example.com",
+        configValue: "@example.com",
       }),
     ).toBe(true);
     expect(
-      evaluateCondiçãoPredicate({
+      evaluateConditionPredicate({
         operator: "contains",
-        subjectValor: "support@other.com",
-        configValor: "@example.com",
+        subjectValue: "support@other.com",
+        configValue: "@example.com",
       }),
     ).toBe(false);
   });
 
   it("contains: undefined subject never matches", () => {
     expect(
-      evaluateCondiçãoPredicate({
+      evaluateConditionPredicate({
         operator: "contains",
-        subjectValor: undefined,
-        configValor: "anything",
+        subjectValue: undefined,
+        configValue: "anything",
       }),
     ).toBe(false);
   });

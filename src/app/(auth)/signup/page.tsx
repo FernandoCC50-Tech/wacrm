@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Rótulo } from "@/components/ui/label";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -14,8 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { CheckCircle, UsersRound } from "lucide-react";
-import { O2Logo } from "@/components/ui/o2-logo";
+import { MessageSquare, CheckCircle, UsersRound } from "lucide-react";
 
 // `useSearchParams` opts the component out of static prerendering
 // unless wrapped in Suspense — same pattern as /login.
@@ -36,26 +35,26 @@ function SignupPageInner() {
   // step after verifying instead of being dropped on /dashboard.
   const inviteToken = searchParams.get("invite");
 
-  const [fullNome, setFullNome] = useState("");
-  const [email, setE-mail] = useState("");
-  const [password, setSenha] = useState("");
-  const [confirmSenha, setConfirmarSenha] = useState("");
-  const [error, setErro] = useState<string | null>(null);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [success, setSucesso] = useState(false);
+  const [success, setSuccess] = useState(false);
   const supabase = createClient();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErro(null);
+    setError(null);
 
-    if (password !== confirmSenha) {
-      setErro("As senhas não coincidem");
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
       return;
     }
 
     if (password.length < 6) {
-      setErro("A senha deve ter pelo menos 6 caracteres");
+      setError("Password must be at least 6 characters");
       return;
     }
 
@@ -74,36 +73,36 @@ function SignupPageInner() {
       password,
       options: {
         data: {
-          full_name: fullNome,
+          full_name: fullName,
         },
         ...(emailRedirectTo ? { emailRedirectTo } : {}),
       },
     });
 
     if (error) {
-      setErro(error.message);
+      setError(error.message);
       setLoading(false);
       return;
     }
 
-    setSucesso(true);
+    setSuccess(true);
     setLoading(false);
   };
 
   if (success) {
     return (
-      <div classNome="flex min-h-screen items-center justify-center bg-slate-950 px-4">
-        <Card classNome="w-full max-w-md border-slate-800 bg-slate-900">
-          <CardHeader classNome="items-center text-center">
-            <div classNome="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-              <CheckCircle classNome="h-6 w-6 text-primary" />
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
+        <Card className="w-full max-w-md border-slate-800 bg-slate-900">
+          <CardHeader className="items-center text-center">
+            <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+              <CheckCircle className="h-6 w-6 text-primary" />
             </div>
-            <CardTitle classNome="text-xl text-white">
-              Verifique seu e-mail
+            <CardTitle className="text-xl text-white">
+              Check your email
             </CardTitle>
-            <CardDescription classNome="text-slate-400">
+            <CardDescription className="text-slate-400">
               We&apos;ve sent a confirmation link to{" "}
-              <span classNome="text-white">{email}</span>. Please check your
+              <span className="text-white">{email}</span>. Please check your
               inbox and click the link to verify your account.
             </CardDescription>
           </CardHeader>
@@ -117,9 +116,9 @@ function SignupPageInner() {
             >
               <Button
                 variant="outline"
-                classNome="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
               >
-                Voltar ao login
+                Back to sign in
               </Button>
             </Link>
           </CardContent>
@@ -129,103 +128,103 @@ function SignupPageInner() {
   }
 
   return (
-    <div classNome="flex min-h-screen items-center justify-center bg-slate-950 px-4">
-      <Card classNome="w-full max-w-md border-slate-800 bg-slate-900">
-        <CardHeader classNome="items-center text-center">
-          <div classNome="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
+      <Card className="w-full max-w-md border-slate-800 bg-slate-900">
+        <CardHeader className="items-center text-center">
+          <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
             {inviteToken ? (
-              <UsersRound classNome="h-6 w-6 text-primary" />
+              <UsersRound className="h-6 w-6 text-primary" />
             ) : (
-              <MessageSquare classNome="h-6 w-6 text-primary" />
+              <MessageSquare className="h-6 w-6 text-primary" />
             )}
           </div>
-          <CardTitle classNome="text-xl text-white">
-            {inviteToken ? "Criar conta e entrar" : "Criar conta"}
+          <CardTitle className="text-xl text-white">
+            {inviteToken ? "Create account & join" : "Create account"}
           </CardTitle>
-          <CardDescription classNome="text-slate-400">
+          <CardDescription className="text-slate-400">
             {inviteToken
-              ? "Verifique seu e-mail e aceite o convite para entrar no time."
-              : "Comece com o Disparador Pro by O2Nexus"}
+              ? "Verify your email, then accept the invitation to join your team."
+              : "Get started with CRM Template for WhatsApp"}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSignup} classNome="flex flex-col gap-4">
+          <form onSubmit={handleSignup} className="flex flex-col gap-4">
             {error && (
-              <div classNome="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+              <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
                 {error}
               </div>
             )}
 
-            <div classNome="flex flex-col gap-2">
-              <Rótulo htmlFor="fullNome" classNome="text-slate-300">
-                Nome completo
-              </Rótulo>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="fullName" className="text-slate-300">
+                Full name
+              </Label>
               <Input
-                id="fullNome"
+                id="fullName"
                 type="text"
-                placeholder="João Silva"
-                value={fullNome}
-                onChange={(e) => setFullNome(e.target.value)}
+                placeholder="John Doe"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
                 required
-                classNome="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500 focus-visible:border-primary focus-visible:ring-primary/20"
+                className="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500 focus-visible:border-primary focus-visible:ring-primary/20"
               />
             </div>
 
-            <div classNome="flex flex-col gap-2">
-              <Rótulo htmlFor="email" classNome="text-slate-300">
-                E-mail
-              </Rótulo>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="email" className="text-slate-300">
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="voce@exemplo.com"
+                placeholder="you@example.com"
                 value={email}
-                onChange={(e) => setE-mail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
                 required
-                classNome="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500 focus-visible:border-primary focus-visible:ring-primary/20"
+                className="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500 focus-visible:border-primary focus-visible:ring-primary/20"
               />
             </div>
 
-            <div classNome="flex flex-col gap-2">
-              <Rótulo htmlFor="password" classNome="text-slate-300">
-                Senha
-              </Rótulo>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="password" className="text-slate-300">
+                Password
+              </Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Pelo menos 6 caracteres"
+                placeholder="At least 6 characters"
                 value={password}
-                onChange={(e) => setSenha(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
                 required
-                classNome="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500 focus-visible:border-primary focus-visible:ring-primary/20"
+                className="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500 focus-visible:border-primary focus-visible:ring-primary/20"
               />
             </div>
 
-            <div classNome="flex flex-col gap-2">
-              <Rótulo htmlFor="confirmSenha" classNome="text-slate-300">
-                Confirmarar senha
-              </Rótulo>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="confirmPassword" className="text-slate-300">
+                Confirm password
+              </Label>
               <Input
-                id="confirmSenha"
+                id="confirmPassword"
                 type="password"
-                placeholder="Repita sua senha"
-                value={confirmSenha}
-                onChange={(e) => setConfirmarSenha(e.target.value)}
+                placeholder="Repeat your password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                classNome="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500 focus-visible:border-primary focus-visible:ring-primary/20"
+                className="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500 focus-visible:border-primary focus-visible:ring-primary/20"
               />
             </div>
 
             <Button
               type="submit"
               disabled={loading}
-              classNome="mt-2 h-10 w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              className="mt-2 h-10 w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
-              {loading ? "Criando conta..." : "Criar conta"}
+              {loading ? "Creating account..." : "Create account"}
             </Button>
           </form>
 
-          <p classNome="mt-6 text-center text-sm text-slate-400">
+          <p className="mt-6 text-center text-sm text-slate-400">
             Já tem uma conta?{" "}
             <Link
               href={
@@ -233,7 +232,7 @@ function SignupPageInner() {
                   ? `/login?invite=${encodeURIComponent(inviteToken)}`
                   : "/login"
               }
-              classNome="text-primary hover:text-primary/80"
+              className="text-primary hover:text-primary/80"
             >
               Entrar
             </Link>

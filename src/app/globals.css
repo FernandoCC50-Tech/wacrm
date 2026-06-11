@@ -70,7 +70,6 @@
  * ============================================================ */
 
 :root,
-html[data-theme="o2nexus"],
 html[data-theme="violet"] {
   --background: oklch(0.13 0.01 260);
   --foreground: oklch(0.985 0 0);
@@ -80,9 +79,9 @@ html[data-theme="violet"] {
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.47 0.23 22);
   --primary-foreground: oklch(0.985 0 0);
-  --primary-hover: oklch(0.55 0.21 22);
-  --primary-soft: oklch(0.47 0.23 22 / 0.12);
-  --primary-soft-2: oklch(0.47 0.23 22 / 0.2);
+  --primary-hover: oklch(0.6 0.22 293);
+  --primary-soft: oklch(0.526 0.247 293 / 0.12);
+  --primary-soft-2: oklch(0.526 0.247 293 / 0.2);
   --secondary: oklch(0.22 0.01 260);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.22 0.01 260);
@@ -116,7 +115,7 @@ html[data-theme="emerald"] {
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.185 0.01 200);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.62 0.16 162);
+  --primary: oklch(0.47 0.23 22);
   --primary-foreground: oklch(0.16 0.02 162);
   --primary-hover: oklch(0.68 0.15 162);
   --primary-soft: oklch(0.62 0.16 162 / 0.12);
@@ -153,7 +152,7 @@ html[data-theme="cobalt"] {
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.18 0.015 252);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.585 0.2 254);
+  --primary: oklch(0.47 0.23 22);
   --primary-foreground: oklch(0.985 0 0);
   --primary-hover: oklch(0.66 0.18 254);
   --primary-soft: oklch(0.585 0.2 254 / 0.12);
@@ -190,7 +189,7 @@ html[data-theme="amber"] {
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.185 0.012 60);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.745 0.16 65);
+  --primary: oklch(0.47 0.23 22);
   --primary-foreground: oklch(0.18 0.03 65);
   --primary-hover: oklch(0.8 0.15 65);
   --primary-soft: oklch(0.745 0.16 65 / 0.12);
@@ -227,7 +226,7 @@ html[data-theme="rose"] {
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.18 0.012 15);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.645 0.22 16);
+  --primary: oklch(0.47 0.23 22);
   --primary-foreground: oklch(0.985 0 0);
   --primary-hover: oklch(0.71 0.2 16);
   --primary-soft: oklch(0.645 0.22 16 / 0.12);

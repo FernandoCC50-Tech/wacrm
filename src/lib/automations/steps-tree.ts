@@ -2,7 +2,7 @@ import { supabaseAdmin } from './admin-client'
 
 // ------------------------------------------------------------
 // Builder payload → flat rows for automation_steps.
-// Root steps arrive in order. A Condição step carries its children
+// Root steps arrive in order. A Condition step carries its children
 // under `branches: { yes: [...], no: [...] }`. We walk the tree and
 // assign stable UUIDs so parent_step_id references resolve in a
 // single INSERT.
@@ -132,7 +132,7 @@ export async function loadStepsTree(automationId: string): Promise<BuilderStepNo
     .eq('automation_id', automationId)
     .order('position', { ascending: true })
 
-  if (error) throw new Erro(error.message)
+  if (error) throw new Error(error.message)
   const rows = (data ?? []) as DbStep[]
 
   const byId = new Map<string, BuilderStepNode>()

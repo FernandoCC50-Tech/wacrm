@@ -62,22 +62,22 @@ export function deriveCanvasEdges(nodes: BuilderNode[]): CanvasEdge[] {
       }
 
       case "condition": {
-        const truePróximo = (cfg as { true_next?: string }).true_next;
-        const falsePróximo = (cfg as { false_next?: string }).false_next;
-        if (truePróximo && knownKeys.has(truePróximo)) {
+        const trueNext = (cfg as { true_next?: string }).true_next;
+        const falseNext = (cfg as { false_next?: string }).false_next;
+        if (trueNext && knownKeys.has(trueNext)) {
           edges.push({
-            id: `${node.node_key}--true--${truePróximo}`,
+            id: `${node.node_key}--true--${trueNext}`,
             source: node.node_key,
-            target: truePróximo,
+            target: trueNext,
             sourceHandle: "true",
             label: "true",
           });
         }
-        if (falsePróximo && knownKeys.has(falsePróximo)) {
+        if (falseNext && knownKeys.has(falseNext)) {
           edges.push({
-            id: `${node.node_key}--false--${falsePróximo}`,
+            id: `${node.node_key}--false--${falseNext}`,
             source: node.node_key,
-            target: falsePróximo,
+            target: falseNext,
             sourceHandle: "false",
             label: "false",
           });
@@ -155,7 +155,7 @@ export function deriveCanvasEdges(nodes: BuilderNode[]): CanvasEdge[] {
 // ============================================================
 
 /**
- * Enviadas-slot list for a node — used by the canvas to render one
+ * Outgoing-slot list for a node — used by the canvas to render one
  * source-side Handle per slot, labelled with the slot's user-facing
  * name. Order follows the order the slots appear in the node's
  * config so visual layout matches the form layout.
@@ -163,7 +163,7 @@ export function deriveCanvasEdges(nodes: BuilderNode[]): CanvasEdge[] {
  * Terminal nodes (handoff / end) return an empty list — they have
  * no outgoing edges and no source handles.
  */
-export interface EnviadasSlot {
+export interface OutgoingSlot {
   /** Stable id matching the `sourceHandle` scheme used in
    *  CanvasEdge. */
   id: string;
@@ -171,7 +171,7 @@ export interface EnviadasSlot {
   label: string;
 }
 
-export function outgoingSlots(node: BuilderNode): EnviadasSlot[] {
+export function outgoingSlots(node: BuilderNode): OutgoingSlot[] {
   const cfg = node.config;
   switch (node.node_type) {
     case "start":
@@ -179,7 +179,7 @@ export function outgoingSlots(node: BuilderNode): EnviadasSlot[] {
     case "send_media":
     case "collect_input":
     case "set_tag":
-      return [{ id: "next", label: "Próximo" }];
+      return [{ id: "next", label: "Next" }];
 
     case "condition":
       return [
@@ -207,7 +207,7 @@ export function outgoingSlots(node: BuilderNode): EnviadasSlot[] {
       const sections = Array.isArray((cfg as { sections?: unknown }).sections)
         ? ((cfg as { sections: Array<Record<string, unknown>> }).sections)
         : [];
-      const slots: EnviadasSlot[] = [];
+      const slots: OutgoingSlot[] = [];
       for (const section of sections) {
         const rows = Array.isArray(section.rows)
           ? (section.rows as Array<Record<string, unknown>>)
@@ -242,7 +242,7 @@ export function outgoingSlots(node: BuilderNode): EnviadasSlot[] {
  * matching reply_id is patched; the rest of the array passes through
  * unchanged.
  */
-export function applyEdgeConectarion(
+export function applyEdgeConnection(
   node: BuilderNode,
   sourceHandle: string,
   targetKey: string,

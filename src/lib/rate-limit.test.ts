@@ -45,7 +45,7 @@ describe("checkRateLimit", () => {
     vi.useFakeTimers();
     try {
       const t0 = new Date("2026-05-01T00:00:00Z").getTime();
-      vi.setSistemaTime(t0);
+      vi.setSystemTime(t0);
       __resetRateLimitForTests();
 
       checkRateLimit("user:1", OPTS);
@@ -54,7 +54,7 @@ describe("checkRateLimit", () => {
       expect(checkRateLimit("user:1", OPTS).success).toBe(false);
 
       // Jump just past the window.
-      vi.setSistemaTime(t0 + OPTS.windowMs + 1);
+      vi.setSystemTime(t0 + OPTS.windowMs + 1);
       const refreshed = checkRateLimit("user:1", OPTS);
       expect(refreshed.success).toBe(true);
       expect(refreshed.remaining).toBe(2);
@@ -96,7 +96,7 @@ describe("rateLimitResponse", () => {
 describe("RATE_LIMITS presets", () => {
   it("send and broadcast budgets are independent", async () => {
     __resetRateLimitForTests();
-    // Importaring here so the presets stay close to their assertions.
+    // Importing here so the presets stay close to their assertions.
     const { RATE_LIMITS } = await import("./rate-limit");
     expect(RATE_LIMITS.send.limit).toBeGreaterThan(RATE_LIMITS.broadcast.limit);
     expect(RATE_LIMITS.send.windowMs).toBe(60_000);

@@ -14,11 +14,11 @@
 // and maps Postgres SQLSTATEs back to HTTP statuses.
 // ============================================================
 
-import { PróximoResponse } from "next/server";
-import type { PostgrestErro } from "@supabase/supabase-js";
+import { NextResponse } from "next/server";
+import type { PostgrestError } from "@supabase/supabase-js";
 
-import { requireFunção, toErroResponse } from "@/lib/auth/account";
-import { isAccountFunção } from "@/lib/auth/roles";
+import { requireRole, toErrorResponse } from "@/lib/auth/account";
+import { isAccountRole } from "@/lib/auth/roles";
 import {
   checkRateLimit,
   rateLimitResponse,
@@ -28,16 +28,16 @@ import {
 // Map known SQLSTATEs from the RPCs (see migration 018) onto HTTP
 // statuses. The `error.code` field is the SQLSTATE; the `message`
 // is the human-readable RAISE message we put in the migration.
-function rpcErroToResponse(err: PostgrestErro): PróximoResponse {
+function rpcErrorToResponse(err: PostgrestError): NextResponse {
   if (err.code === "42501") {
-    return PróximoResponse.json({ error: err.message }, { status: 403 });
+    return NextResponse.json({ error: err.message }, { status: 403 });
   }
   if (err.code === "22023") {
-    return PróximoResponse.json({ error: err.message }, { status: 400 });
+    return NextResponse.json({ error: err.message }, { status: 400 });
   }
   console.error("[members route] unexpected RPC error:", err);
-  return PróximoResponse.json(
-    { error: "Falhou to update member" },
+  return NextResponse.json(
+    { error: "Failed to update member" },
     { status: 500 },
   );
 }
@@ -47,11 +47,11 @@ export async function PATCH(
   { params }: { params: Promise<{ userId: string }> },
 ) {
   try {
-    const ctx = await requireFunção("admin");
+    const ctx = await requireRole("admin");
 
     const limit = checkRateLimit(
-      `admin:memberFunção:${ctx.userId}`,
-      RATE_LIMITS.adminAção,
+      `admin:memberRole:${ctx.userId}`,
+      RATE_LIMITS.adminAction,
     );
     if (!limit.success) return rateLimitResponse(limit);
 
@@ -62,8 +62,8 @@ export async function PATCH(
       | null;
     const role = body?.role;
 
-    if (!isAccountFunção(role)) {
-      return PróximoResponse.json(
+    if (!isAccountRole(role)) {
+      return NextResponse.json(
         { error: "'role' must be one of owner, admin, agent, viewer" },
         { status: 400 },
       );
@@ -72,7 +72,7 @@ export async function PATCH(
     // The RPC blocks promotion to / demotion from owner, but
     // surface the friendlier 400 before crossing the wire too.
     if (role === "owner") {
-      return PróximoResponse.json(
+      return NextResponse.json(
         {
           error:
             "Use POST /api/account/transfer-ownership to promote a member to owner",
@@ -86,11 +86,11 @@ export async function PATCH(
       p_new_role: role,
     });
 
-    if (error) return rpcErroToResponse(error);
+    if (error) return rpcErrorToResponse(error);
 
-    return PróximoResponse.json({ ok: true });
+    return NextResponse.json({ ok: true });
   } catch (err) {
-    return toErroResponse(err);
+    return toErrorResponse(err);
   }
 }
 
@@ -99,11 +99,11 @@ export async function DELETE(
   { params }: { params: Promise<{ userId: string }> },
 ) {
   try {
-    const ctx = await requireFunção("admin");
+    const ctx = await requireRole("admin");
 
     const limit = checkRateLimit(
-      `admin:memberRemover:${ctx.userId}`,
-      RATE_LIMITS.adminAção,
+      `admin:memberRemove:${ctx.userId}`,
+      RATE_LIMITS.adminAction,
     );
     if (!limit.success) return rateLimitResponse(limit);
 
@@ -113,10 +113,10 @@ export async function DELETE(
       p_user_id: userId,
     });
 
-    if (error) return rpcErroToResponse(error);
+    if (error) return rpcErrorToResponse(error);
 
-    return PróximoResponse.json({ ok: true, newPersonalAccountId: data });
+    return NextResponse.json({ ok: true, newPersonalAccountId: data });
   } catch (err) {
-    return toErroResponse(err);
+    return toErrorResponse(err);
   }
 }

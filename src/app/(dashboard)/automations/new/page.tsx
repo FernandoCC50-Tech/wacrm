@@ -8,12 +8,12 @@ import {
   type BuilderInitial,
   type BuilderStep,
 } from "@/components/automations/automation-builder"
-import { AUTOMATION_TEMPLATES, type ModeloSlug } from "@/lib/automations/templates"
-import type { AutomationStepType, AutomationGatilhoType } from "@/types"
+import { AUTOMATION_TEMPLATES, type TemplateSlug } from "@/lib/automations/templates"
+import type { AutomationStepType, AutomationTriggerType } from "@/types"
 
-export default function NovoAutomationPage() {
+export default function NewAutomationPage() {
   const params = useSearchParams()
-  const template = params.get("template") as ModeloSlug | null
+  const template = params.get("template") as TemplateSlug | null
 
   const initial: BuilderInitial = useMemo(() => {
     if (template && AUTOMATION_TEMPLATES[template]) {
@@ -39,7 +39,7 @@ export default function NovoAutomationPage() {
     return {
       name: "",
       description: "",
-      trigger_type: "new_message_received" as AutomationGatilhoType,
+      trigger_type: "new_message_received" as AutomationTriggerType,
       trigger_config: {},
       is_active: false,
       steps: [],
@@ -66,7 +66,7 @@ function uid(): string {
   )
 }
 
-/** Modelo seeds are flat with parent_index references. Expand into the
+/** Template seeds are flat with parent_index references. Expand into the
  *  builder's nested tree, preserving order within each scope. */
 function expandFromSeeds(rows: SeedRow[]): BuilderStep[] {
   const nodes: BuilderStep[] = rows.map((r) => ({

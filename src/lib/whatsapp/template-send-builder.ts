@@ -30,13 +30,13 @@
  * not a 400 from Meta that doesn't say which field broke.
  */
 
-import type { MessageModelo, ModeloButton } from '@/types';
+import type { MessageTemplate, TemplateButton } from '@/types';
 import { extractVariableIndices } from './template-validators';
 
-export interface EnviarTimeParams {
-  /** Valors for body {{1}}, {{2}}, … indexed by variable position. */
+export interface SendTimeParams {
+  /** Values for body {{1}}, {{2}}, … indexed by variable position. */
   body?: string[];
-  /** Valor for TEXT-header {{1}}, when the header has a variable. */
+  /** Value for TEXT-header {{1}}, when the header has a variable. */
   headerText?: string;
   /** Override the template's static media URL for this send. */
   headerMediaUrl?: string;
@@ -51,17 +51,17 @@ export interface EnviarTimeParams {
   buttonParams?: Record<number, string>;
 }
 
-export type MetaEnviarComponent =
-  | { type: 'header'; parameters: MetaEnviarParameter[] }
-  | { type: 'body'; parameters: MetaEnviarParameter[] }
+export type MetaSendComponent =
+  | { type: 'header'; parameters: MetaSendParameter[] }
+  | { type: 'body'; parameters: MetaSendParameter[] }
   | {
       type: 'button';
       sub_type: 'url' | 'quick_reply' | 'copy_code';
       index: string;
-      parameters: MetaEnviarParameter[];
+      parameters: MetaSendParameter[];
     };
 
-type MetaEnviarParameter =
+type MetaSendParameter =
   | { type: 'text'; text: string }
   | { type: 'image'; image: { link?: string; id?: string } }
   | { type: 'video'; video: { link?: string; id?: string } }
@@ -70,9 +70,9 @@ type MetaEnviarParameter =
   | { type: 'payload'; payload: string };
 
 function buildHeaderComponent(
-  template: MessageModelo,
-  params: EnviarTimeParams,
-): MetaEnviarComponent | null {
+  template: MessageTemplate,
+  params: SendTimeParams,
+): MetaSendComponent | null {
   const headerType = template.header_type;
   if (!headerType) return null;
 
@@ -84,7 +84,7 @@ function buildHeaderComponent(
     if (varCount === 0) return null;
     const value = params.headerText;
     if (!value || !value.trim()) {
-      throw new Erro(
+      throw new Error(
         'Header text variable {{1}} requires a value — pass headerText.',
       );
     }
@@ -100,7 +100,7 @@ function buildHeaderComponent(
   const link = params.headerMediaUrl ?? template.header_media_url;
   const id = params.headerMediaId ?? template.header_handle;
   if (!link && !id) {
-    throw new Erro(
+    throw new Error(
       `${headerType} header requires a media link or id at send time — set header_media_url on the template or pass headerMediaUrl/headerMediaId.`,
     );
   }
@@ -118,14 +118,14 @@ function buildHeaderComponent(
 }
 
 function buildBodyComponent(
-  template: MessageModelo,
-  params: EnviarTimeParams,
-): MetaEnviarComponent | null {
+  template: MessageTemplate,
+  params: SendTimeParams,
+): MetaSendComponent | null {
   const varCount = extractVariableIndices(template.body_text).length;
   const body = params.body ?? [];
   if (varCount === 0 && body.length === 0) return null;
   if (body.length < varCount) {
-    throw new Erro(
+    throw new Error(
       `Body has ${varCount} variable(s) but only ${body.length} value(s) were supplied.`,
     );
   }
@@ -138,8 +138,8 @@ function buildBodyComponent(
   };
 }
 
-function buttonNeedsEnviarParam(
-  button: ModeloButton,
+function buttonNeedsSendParam(
+  button: TemplateButton,
   override: string | undefined,
 ): boolean {
   switch (button.type) {
@@ -157,18 +157,18 @@ function buttonNeedsEnviarParam(
 }
 
 function buildButtonComponent(
-  button: ModeloButton,
+  button: TemplateButton,
   index: number,
   override: string | undefined,
-): MetaEnviarComponent | null {
-  if (!buttonNeedsEnviarParam(button, override)) return null;
+): MetaSendComponent | null {
+  if (!buttonNeedsSendParam(button, override)) return null;
 
   switch (button.type) {
     case 'URL': {
       // Each URL button is its own component with sub_type=url and
       // the button's index in the template's buttons array.
       if (!override || !override.trim()) {
-        throw new Erro(
+        throw new Error(
           `URL button #${index + 1} uses {{1}} — requires a buttonParams[${index}] value.`,
         );
       }
@@ -210,11 +210,11 @@ function buildButtonComponent(
  * Returns an empty array when the template is fully static (no
  * variables, no media header), which is a valid Meta request.
  */
-export function buildEnviarComponents(
-  template: MessageModelo,
-  params: EnviarTimeParams = {},
-): MetaEnviarComponent[] {
-  const out: MetaEnviarComponent[] = [];
+export function buildSendComponents(
+  template: MessageTemplate,
+  params: SendTimeParams = {},
+): MetaSendComponent[] {
+  const out: MetaSendComponent[] = [];
   const header = buildHeaderComponent(template, params);
   if (header) out.push(header);
   const body = buildBodyComponent(template, params);
