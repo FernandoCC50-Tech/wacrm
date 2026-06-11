@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server'
+import { PróximoResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/whatsapp/encryption'
 import {
   getSubscribedApps,
-  verifyPhoneNumber,
+  verifyTelefoneNumber,
 } from '@/lib/whatsapp/meta-api'
 
 /**
@@ -11,7 +11,7 @@ import {
  *
  * Diagnostic endpoint — confirms the user's saved phone number is
  * actually reachable on Meta's side. Solves the failure mode that
- * surfaced the multi-number bug originally: "UI says Connected but
+ * surfaced the multi-number bug originally: "UI says Conectared but
  * Meta isn't delivering events."
  *
  * Three checks run independently so the UI can show which step
@@ -32,13 +32,13 @@ export async function GET() {
   const supabase = await createClient()
   const {
     data: { user },
-    error: authError,
+    error: authErro,
   } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (authErro || !user) {
+    return PróximoResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // whatsapp_config is one-row-per-account post-017. Resolve the
+  // whatsapp_config is one-row-per-account post-017. Resolver the
   // caller's account_id so a teammate who joined an existing account
   // sees the same registration state as the admin who set it up.
   const { data: profile } = await supabase
@@ -48,7 +48,7 @@ export async function GET() {
     .maybeSingle()
   const accountId = profile?.account_id as string | undefined
   if (!accountId) {
-    return NextResponse.json({
+    return PróximoResponse.json({
       live: false,
       checks: { config_exists: false },
       message: 'Your profile is not linked to an account.',
@@ -62,7 +62,7 @@ export async function GET() {
     .maybeSingle()
 
   if (!config) {
-    return NextResponse.json({
+    return PróximoResponse.json({
       live: false,
       checks: { config_exists: false },
       message: 'No WhatsApp configuration saved yet.',
@@ -73,7 +73,7 @@ export async function GET() {
   try {
     accessToken = decrypt(config.access_token)
   } catch {
-    return NextResponse.json({
+    return PróximoResponse.json({
       live: false,
       checks: {
         config_exists: true,
@@ -99,16 +99,16 @@ export async function GET() {
   }
   const errors: string[] = []
 
-  // 1. Phone metadata
+  // 1. Telefone metadata
   try {
-    await verifyPhoneNumber({
+    await verifyTelefoneNumber({
       phoneNumberId: config.phone_number_id,
       accessToken,
     })
     checks.phone_metadata_ok = true
   } catch (err) {
     errors.push(
-      `Phone metadata check failed: ${err instanceof Error ? err.message : String(err)}`,
+      `Telefone metadata check failed: ${err instanceof Erro ? err.message : String(err)}`,
     )
   }
 
@@ -131,12 +131,12 @@ export async function GET() {
       }
     } catch (err) {
       errors.push(
-        `WABA subscription check failed: ${err instanceof Error ? err.message : String(err)}`,
+        `WABA subscription check failed: ${err instanceof Erro ? err.message : String(err)}`,
       )
     }
   } else {
     errors.push(
-      'No WABA ID on file — webhooks can\'t be wired without it. Add it in the form and re-save.',
+      'No WABA ID on file — webhooks can\'t be wired without it. Adicionar it in the form and re-save.',
     )
   }
 
@@ -145,7 +145,7 @@ export async function GET() {
     (checks.waba_subscribed_to_app ?? false) &&
     checks.locally_marked_registered
 
-  return NextResponse.json({
+  return PróximoResponse.json({
     live,
     checks,
     errors,

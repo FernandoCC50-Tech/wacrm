@@ -32,7 +32,7 @@ describe("startOfLocalDay", () => {
 describe("daysAgoStart", () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-05-18T13:45:22"));
+    vi.setSistemaTime(new Date("2026-05-18T13:45:22"));
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -53,7 +53,7 @@ describe("daysAgoStart", () => {
   });
 
   it("crosses month boundaries cleanly", () => {
-    vi.setSystemTime(new Date("2026-05-02T08:00:00"));
+    vi.setSistemaTime(new Date("2026-05-02T08:00:00"));
     const out = daysAgoStart(5);
     expect(out.getMonth()).toBe(3); // April (0-indexed)
     expect(out.getDate()).toBe(27);
@@ -79,7 +79,7 @@ describe("localDayKey", () => {
 describe("lastNDayKeys", () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-05-18T08:30:00"));
+    vi.setSistemaTime(new Date("2026-05-18T08:30:00"));
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -94,7 +94,7 @@ describe("lastNDayKeys", () => {
   });
 
   it("rolls back across a month boundary", () => {
-    vi.setSystemTime(new Date("2026-05-02T08:00:00"));
+    vi.setSistemaTime(new Date("2026-05-02T08:00:00"));
     expect(lastNDayKeys(4)).toEqual([
       "2026-04-29",
       "2026-04-30",

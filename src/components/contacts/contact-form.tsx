@@ -21,40 +21,40 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Rótulo } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, AlertTriangle } from 'lucide-react';
 
 interface ContactFormProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onAbertoChange: (open: boolean) => void;
   contact?: Contact | null;
-  contactTags?: ContactTag[];
-  onSaved: () => void;
-  /** Open an existing contact's detail view — used by the duplicate
+  contactEtiquetas?: ContactTag[];
+  onSalvard: () => void;
+  /** Aberto an existing contact's detail view — used by the duplicate
    *  notice to jump to the contact that already owns this number. */
   onViewExisting?: (contactId: string) => void;
 }
 
 export function ContactForm({
   open,
-  onOpenChange,
+  onAbertoChange,
   contact,
-  contactTags = [],
-  onSaved,
+  contactEtiquetas = [],
+  onSalvard,
   onViewExisting,
 }: ContactFormProps) {
   const supabase = createClient();
   const { accountId } = useAuth();
-  const isEdit = !!contact;
+  const isEditar = !!contact;
 
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
+  const [name, setNome] = useState('');
+  const [phone, setTelefone] = useState('');
+  const [email, setE-mail] = useState('');
   const [company, setCompany] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Duplicate-phone detection for NEW contacts. `exact` (same digits)
+  // Duplicar-phone detection for NEW contacts. `exact` (same digits)
   // hard-blocks the save; a fuzzy trunk-variant match only warns. The
   // DB unique index (migration 022) is the real backstop — this is the
   // friendly heads-up before we get there.
@@ -63,26 +63,26 @@ export function ContactForm({
   >(null);
   const [checkingDup, setCheckingDup] = useState(false);
 
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [loadingTags, setLoadingTags] = useState(false);
+  const [tags, setEtiquetas] = useState<Tag[]>([]);
+  const [selectedTagIds, setSelecionaredTagIds] = useState<string[]>([]);
+  const [loadingEtiquetas, setLoadingEtiquetas] = useState(false);
 
   useEffect(() => {
     if (open) {
-      setName(contact?.name ?? '');
-      setPhone(contact?.phone ?? '');
-      setEmail(contact?.email ?? '');
+      setNome(contact?.name ?? '');
+      setTelefone(contact?.phone ?? '');
+      setE-mail(contact?.email ?? '');
       setCompany(contact?.company ?? '');
-      setSelectedTagIds(contactTags.map((ct) => ct.tag_id));
+      setSelecionaredTagIds(contactEtiquetas.map((ct) => ct.tag_id));
       setDupMatch(null);
-      fetchTags();
+      fetchEtiquetas();
     }
   }, [open, contact]);
 
   // Look up an existing contact with this number (new contacts only).
   // Runs on blur so we don't query on every keystroke.
-  async function checkDuplicate() {
-    if (isEdit || !accountId) return;
+  async function checkDuplicar() {
+    if (isEditar || !accountId) return;
     const value = phone.trim();
     if (!value) {
       setDupMatch(null);
@@ -101,18 +101,18 @@ export function ContactForm({
     }
   }
 
-  async function fetchTags() {
-    setLoadingTags(true);
+  async function fetchEtiquetas() {
+    setLoadingEtiquetas(true);
     const { data } = await supabase
       .from('tags')
       .select('*')
       .order('name');
-    if (data) setTags(data);
-    setLoadingTags(false);
+    if (data) setEtiquetas(data);
+    setLoadingEtiquetas(false);
   }
 
   function toggleTag(tagId: string) {
-    setSelectedTagIds((prev) =>
+    setSelecionaredTagIds((prev) =>
       prev.includes(tagId)
         ? prev.filter((id) => id !== tagId)
         : [...prev, tagId]
@@ -123,13 +123,13 @@ export function ContactForm({
     e.preventDefault();
 
     if (!phone.trim()) {
-      toast.error('Phone number is required');
+      toast.error('Número de telefone is required');
       return;
     }
 
     // Hard-block an exact duplicate on create (the DB unique index is
     // the real backstop; this avoids a round-trip + a raw error toast).
-    if (!isEdit && dupMatch?.exact) {
+    if (!isEditar && dupMatch?.exact) {
       toast.error('A contact with this phone number already exists');
       return;
     }
@@ -141,12 +141,12 @@ export function ContactForm({
         data: { session },
       } = await supabase.auth.getSession();
       const user = session?.user;
-      if (!user) throw new Error('Not authenticated');
-      if (!accountId) throw new Error('Your profile is not linked to an account.');
+      if (!user) throw new Erro('Not authenticated');
+      if (!accountId) throw new Erro('Your profile is not linked to an account.');
 
       let contactId = contact?.id;
 
-      if (isEdit && contactId) {
+      if (isEditar && contactId) {
         const { error } = await supabase
           .from('contacts')
           .update({
@@ -187,16 +187,16 @@ export function ContactForm({
             contact_id: contactId!,
             tag_id,
           }));
-          const { error: tagError } = await supabase
+          const { error: tagErro } = await supabase
             .from('contact_tags')
             .insert(tagRows);
-          if (tagError) throw tagError;
+          if (tagErro) throw tagErro;
         }
       }
 
-      toast.success(isEdit ? 'Contact updated' : 'Contact created');
-      onOpenChange(false);
-      onSaved();
+      toast.success(isEditar ? 'Contact updated' : 'Contact created');
+      onAbertoChange(false);
+      onSalvard();
     } catch (err: unknown) {
       // The unique index (migration 022) rejects a duplicate phone that
       // slipped past the on-blur check (race, or a format that
@@ -204,7 +204,7 @@ export function ContactForm({
       // and, for new contacts, point the user at the existing record.
       if (isUniqueViolation(err)) {
         toast.error('A contact with this phone number already exists');
-        if (!isEdit && accountId) {
+        if (!isEditar && accountId) {
           const existing = await findExistingContact(
             supabase,
             accountId,
@@ -214,7 +214,7 @@ export function ContactForm({
         }
         return;
       }
-      const message = err instanceof Error ? err.message : 'Failed to save contact';
+      const message = err instanceof Erro ? err.message : 'Falhou to save contact';
       toast.error(message);
     } finally {
       setSaving(false);
@@ -222,58 +222,58 @@ export function ContactForm({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-slate-900 border-slate-700 text-slate-200 sm:max-w-md">
+    <Dialog open={open} onAbertoChange={onAbertoChange}>
+      <DialogContent classNome="bg-slate-900 border-slate-700 text-slate-200 sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-white">
-            {isEdit ? 'Edit Contact' : 'Add Contact'}
+          <DialogTitle classNome="text-white">
+            {isEditar ? 'Editar Contact' : 'Adicionar Contact'}
           </DialogTitle>
-          <DialogDescription className="text-slate-400">
-            {isEdit
+          <DialogDescription classNome="text-slate-400">
+            {isEditar
               ? 'Update the contact details below.'
               : 'Fill in the details to create a new contact.'}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="cf-name" className="text-slate-300">
-              Name
-            </Label>
+        <form onSubmit={handleSubmit} classNome="space-y-4">
+          <div classNome="space-y-2">
+            <Rótulo htmlFor="cf-name" classNome="text-slate-300">
+              Nome
+            </Rótulo>
             <Input
               id="cf-name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="John Doe"
-              className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+              onChange={(e) => setNome(e.target.value)}
+              placeholder="João Silva"
+              classNome="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="cf-phone" className="text-slate-300">
-              Phone <span className="text-red-400">*</span>
-            </Label>
+          <div classNome="space-y-2">
+            <Rótulo htmlFor="cf-phone" classNome="text-slate-300">
+              Telefone <span classNome="text-red-400">*</span>
+            </Rótulo>
             <Input
               id="cf-phone"
               value={phone}
               onChange={(e) => {
-                setPhone(e.target.value);
+                setTelefone(e.target.value);
                 if (dupMatch) setDupMatch(null);
               }}
-              onBlur={checkDuplicate}
+              onBlur={checkDuplicar}
               placeholder="+1 234 567 8900"
-              className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+              classNome="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
             />
             {dupMatch ? (
               <div
-                className={`flex items-start gap-2 rounded-md border px-2.5 py-2 text-xs ${
+                classNome={`flex items-start gap-2 rounded-md border px-2.5 py-2 text-xs ${
                   dupMatch.exact
                     ? 'border-red-500/40 bg-red-500/10 text-red-300'
                     : 'border-amber-500/40 bg-amber-500/10 text-amber-300'
                 }`}
               >
-                <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
-                <div className="space-y-1">
+                <AlertTriangle classNome="mt-0.5 size-3.5 shrink-0" />
+                <div classNome="space-y-1">
                   <p>
                     {dupMatch.exact
                       ? 'A contact with this phone number already exists.'
@@ -283,7 +283,7 @@ export function ContactForm({
                     <button
                       type="button"
                       onClick={() => onViewExisting(dupMatch.contact.id)}
-                      className="font-medium underline underline-offset-2 hover:no-underline"
+                      classNome="font-medium underline underline-offset-2 hover:no-underline"
                     >
                       View {dupMatch.contact.name || dupMatch.contact.phone}
                     </button>
@@ -291,52 +291,52 @@ export function ContactForm({
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-slate-500">
+              <p classNome="text-xs text-slate-500">
                 Include country code, e.g. +1 for US
               </p>
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="cf-email" className="text-slate-300">
-              Email
-            </Label>
+          <div classNome="space-y-2">
+            <Rótulo htmlFor="cf-email" classNome="text-slate-300">
+              E-mail
+            </Rótulo>
             <Input
               id="cf-email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => setE-mail(e.target.value)}
               placeholder="john@example.com"
-              className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+              classNome="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="cf-company" className="text-slate-300">
+          <div classNome="space-y-2">
+            <Rótulo htmlFor="cf-company" classNome="text-slate-300">
               Company
-            </Label>
+            </Rótulo>
             <Input
               id="cf-company"
               value={company}
               onChange={(e) => setCompany(e.target.value)}
               placeholder="Acme Inc."
-              className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+              classNome="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
             />
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-slate-300">Tags</Label>
-            {loadingTags ? (
-              <div className="flex items-center gap-2 text-slate-500 text-sm">
-                <Loader2 className="size-3 animate-spin" />
+          <div classNome="space-y-2">
+            <Rótulo classNome="text-slate-300">Etiquetas</Rótulo>
+            {loadingEtiquetas ? (
+              <div classNome="flex items-center gap-2 text-slate-500 text-sm">
+                <Loader2 classNome="size-3 animate-spin" />
                 Loading tags...
               </div>
             ) : tags.length === 0 ? (
-              <p className="text-xs text-slate-500">
-                No tags available. Create tags in Settings.
+              <p classNome="text-xs text-slate-500">
+                Nenhuma etiqueta available. Criar etiquetas in Settings.
               </p>
             ) : (
-              <div className="flex flex-wrap gap-1.5">
+              <div classNome="flex flex-wrap gap-1.5">
                 {tags.map((tag) => {
                   const selected = selectedTagIds.includes(tag.id);
                   return (
@@ -344,15 +344,15 @@ export function ContactForm({
                       key={tag.id}
                       type="button"
                       onClick={() => toggleTag(tag.id)}
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors cursor-pointer ${
+                      classNome={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors cursor-pointer ${
                         selected
                           ? 'ring-2 ring-primary ring-offset-1 ring-offset-slate-900'
                           : 'opacity-60 hover:opacity-100'
                       }`}
                       style={{
-                        backgroundColor: tag.color + '20',
+                        backgroundCor: tag.color + '20',
                         color: tag.color,
-                        borderColor: tag.color,
+                        borderCor: tag.color,
                       }}
                     >
                       {tag.name}
@@ -363,22 +363,22 @@ export function ContactForm({
             )}
           </div>
 
-          <DialogFooter className="bg-slate-900 border-slate-700">
+          <DialogFooter classNome="bg-slate-900 border-slate-700">
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="border-slate-700 text-slate-300 hover:bg-slate-800"
+              onClick={() => onAbertoChange(false)}
+              classNome="border-slate-700 text-slate-300 hover:bg-slate-800"
             >
-              Cancel
+              Cancelar
             </Button>
             <Button
               type="submit"
-              disabled={saving || checkingDup || (!isEdit && !!dupMatch?.exact)}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              disabled={saving || checkingDup || (!isEditar && !!dupMatch?.exact)}
+              classNome="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
-              {saving && <Loader2 className="size-4 animate-spin" />}
-              {isEdit ? 'Update' : 'Create'}
+              {saving && <Loader2 classNome="size-4 animate-spin" />}
+              {isEditar ? 'Update' : 'Criar'}
             </Button>
           </DialogFooter>
         </form>

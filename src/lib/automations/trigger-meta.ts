@@ -1,14 +1,14 @@
-import type { AutomationTriggerType } from '@/types'
+import type { AutomationGatilhoType } from '@/types'
 
-export interface TriggerMeta {
+export interface GatilhoMeta {
   label: string
   /** Tailwind classes for the Badge pill on the list row. */
   pillClass: string
 }
 
-export const TRIGGER_META: Record<AutomationTriggerType, TriggerMeta> = {
+export const TRIGGER_META: Record<AutomationGatilhoType, GatilhoMeta> = {
   new_message_received: {
-    label: 'New Message',
+    label: 'Novo Message',
     pillClass: 'border-blue-500/30 bg-blue-500/10 text-blue-300',
   },
   first_inbound_message: {
@@ -20,7 +20,7 @@ export const TRIGGER_META: Record<AutomationTriggerType, TriggerMeta> = {
     pillClass: 'border-purple-500/30 bg-purple-500/10 text-purple-300',
   },
   new_contact_created: {
-    label: 'New Contact',
+    label: 'Novo Contact',
     pillClass: 'border-primary/30 bg-primary/10 text-primary',
   },
   conversation_assigned: {
@@ -28,7 +28,7 @@ export const TRIGGER_META: Record<AutomationTriggerType, TriggerMeta> = {
     pillClass: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-300',
   },
   tag_added: {
-    label: 'Tag Added',
+    label: 'Tag Adicionared',
     pillClass: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
   },
   time_based: {
@@ -37,9 +37,9 @@ export const TRIGGER_META: Record<AutomationTriggerType, TriggerMeta> = {
   },
 }
 
-export function triggerMeta(t: AutomationTriggerType | string): TriggerMeta {
+export function triggerMeta(t: AutomationGatilhoType | string): GatilhoMeta {
   return (
-    TRIGGER_META[t as AutomationTriggerType] ?? {
+    TRIGGER_META[t as AutomationGatilhoType] ?? {
       label: t,
       pillClass: 'border-slate-500/30 bg-slate-500/10 text-slate-300',
     }

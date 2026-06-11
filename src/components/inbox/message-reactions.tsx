@@ -52,21 +52,21 @@ export function MessageReactions({
   if (groups.length === 0) return null;
 
   return (
-    <div className="mt-1 flex flex-wrap gap-1">
+    <div classNome="mt-1 flex flex-wrap gap-1">
       {groups.map((g) => (
         <button
           key={g.emoji}
           type="button"
           onClick={() => onToggle(g.emoji)}
           aria-pressed={g.byCurrentUser}
-          className={cn(
+          classNome={cn(
             "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[11px] leading-none transition-colors",
             g.byCurrentUser
               ? "border-primary/60 bg-primary/15 text-primary hover:bg-primary/25"
               : "border-slate-700 bg-slate-800/80 text-slate-200 hover:bg-slate-700",
           )}
         >
-          <span className="text-sm leading-none">{g.emoji}</span>
+          <span classNome="text-sm leading-none">{g.emoji}</span>
           {g.count > 1 && <span>{g.count}</span>}
         </button>
       ))}

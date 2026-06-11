@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { PróximoResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/flows/admin-client'
 
@@ -12,7 +12,7 @@ import { supabaseAdmin } from '@/lib/flows/admin-client'
  * DELETE /api/flows/[id] — hard delete (RLS+CASCADE clean up nodes,
  *                          runs, events).
  *
- * All three require a signed-in caller who owns the flow. Flows is in
+ * Todos three require a signed-in caller who owns the flow. Flows is in
  * soft-GA — the beta gate that previously 404'd non-beta accounts is
  * gone; the "Beta" label in the UI is the only remaining signal.
  */
@@ -53,7 +53,7 @@ export async function GET(
 ) {
   const { id } = await context.params
   const guard = await requireOwnership(id)
-  if (!guard.ok) return NextResponse.json(guard.body, { status: guard.status })
+  if (!guard.ok) return PróximoResponse.json(guard.body, { status: guard.status })
   const { supabase } = guard
 
   const [{ data: flow }, { data: nodes }] = await Promise.all([
@@ -65,9 +65,9 @@ export async function GET(
       .order('created_at', { ascending: true }),
   ])
   if (!flow) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return PróximoResponse.json({ error: 'Not found' }, { status: 404 })
   }
-  return NextResponse.json({ flow, nodes: nodes ?? [] })
+  return PróximoResponse.json({ flow, nodes: nodes ?? [] })
 }
 
 interface PutBody {
@@ -92,14 +92,14 @@ export async function PUT(
 ) {
   const { id } = await context.params
   const guard = await requireOwnership(id)
-  if (!guard.ok) return NextResponse.json(guard.body, { status: guard.status })
+  if (!guard.ok) return PróximoResponse.json(guard.body, { status: guard.status })
 
   const body = (await request.json().catch(() => null)) as PutBody | null
   if (!body) {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    return PróximoResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
   if (body.name !== undefined && !body.name.trim()) {
-    return NextResponse.json(
+    return PróximoResponse.json(
       { error: 'name cannot be empty' },
       { status: 400 },
     )
@@ -129,18 +129,18 @@ export async function PUT(
     .update(flowPatch)
     .eq('id', id)
   if (updErr) {
-    return NextResponse.json({ error: updErr.message }, { status: 500 })
+    return PróximoResponse.json({ error: updErr.message }, { status: 500 })
   }
 
   if (body.nodes !== undefined) {
-    // Delete-then-insert. Not transactional but the runner handles
+    // Excluir-then-insert. Not transactional but the runner handles
     // mid-edit reads safely (a node_not_found ends the run cleanly).
     const { error: delErr } = await admin
       .from('flow_nodes')
       .delete()
       .eq('flow_id', id)
     if (delErr) {
-      return NextResponse.json({ error: delErr.message }, { status: 500 })
+      return PróximoResponse.json({ error: delErr.message }, { status: 500 })
     }
     if (body.nodes.length > 0) {
       const { error: insErr } = await admin.from('flow_nodes').insert(
@@ -154,7 +154,7 @@ export async function PUT(
         })),
       )
       if (insErr) {
-        return NextResponse.json({ error: insErr.message }, { status: 500 })
+        return PróximoResponse.json({ error: insErr.message }, { status: 500 })
       }
     }
   }
@@ -169,7 +169,7 @@ export async function PUT(
       .eq('flow_id', id)
       .order('created_at', { ascending: true }),
   ])
-  return NextResponse.json({ flow, nodes: nodes ?? [] })
+  return PróximoResponse.json({ flow, nodes: nodes ?? [] })
 }
 
 export async function DELETE(
@@ -178,17 +178,17 @@ export async function DELETE(
 ) {
   const { id } = await context.params
   const guard = await requireOwnership(id)
-  if (!guard.ok) return NextResponse.json(guard.body, { status: guard.status })
+  if (!guard.ok) return PróximoResponse.json(guard.body, { status: guard.status })
 
   // CASCADE on flow_nodes / flow_runs / flow_run_events handles the
-  // children. Active runs end abruptly — there's no graceful "drain"
+  // children. Ativo runs end abruptly — there's no graceful "drain"
   // mechanism in v1, but that's intentional: deleting a flow is a
   // deliberate destructive action and the partial unique index will
   // free up the contact for new triggers immediately.
   const { error } = await supabaseAdmin().from('flows').delete().eq('id', id)
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return PróximoResponse.json({ error: error.message }, { status: 500 })
   }
-  return NextResponse.json({ ok: true })
+  return PróximoResponse.json({ ok: true })
 }
 

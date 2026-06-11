@@ -3,7 +3,7 @@
  * Meta requires digits only — no + prefix, no spaces, no dashes.
  * e.g. "+370 63949836" → "37063949836"
  */
-export function sanitizePhoneForMeta(phone: string): string {
+export function sanitizeTelefoneForMeta(phone: string): string {
   if (!phone) return ''
   return phone.replace(/\D/g, '')
 }
@@ -12,7 +12,7 @@ export function sanitizePhoneForMeta(phone: string): string {
  * Normalize phone number by removing all non-digit characters.
  * Used for comparing phone numbers in different formats.
  */
-export function normalizePhone(phone: string): string {
+export function normalizeTelefone(phone: string): string {
   if (!phone) return ''
   return phone.replace(/\D/g, '')
 }
@@ -23,8 +23,8 @@ export function normalizePhone(phone: string): string {
  * by comparing the last 8 digits.
  */
 export function phonesMatch(phone1: string, phone2: string): boolean {
-  const n1 = normalizePhone(phone1)
-  const n2 = normalizePhone(phone2)
+  const n1 = normalizeTelefone(phone1)
+  const n2 = normalizeTelefone(phone2)
   if (n1 === n2) return true
   if (n1.length >= 8 && n2.length >= 8) {
     return n1.slice(-8) === n2.slice(-8)
@@ -58,7 +58,7 @@ export function isValidE164(phone: string): boolean {
  * Country-code lengths of 1, 2, and 3 digits are tried because we
  * don't know the user's country ahead of time.
  *
- * @param sanitized - digits-only phone number (from sanitizePhoneForMeta)
+ * @param sanitized - digits-only phone number (from sanitizeTelefoneForMeta)
  * @returns deduplicated list of variants, original first
  */
 export function phoneVariants(sanitized: string): string[] {
@@ -81,7 +81,7 @@ export function phoneVariants(sanitized: string): string[] {
     }
   }
 
-  // 3. Remove a leading 0 after each plausible country-code length
+  // 3. Remover a leading 0 after each plausible country-code length
   for (const ccLen of [1, 2, 3]) {
     if (sanitized.length <= ccLen + 1) continue
     const cc = sanitized.slice(0, ccLen)
@@ -99,6 +99,6 @@ export function phoneVariants(sanitized: string): string[] {
  * phone number isn't in the allowed list (sandbox restriction).
  * Detected via error code 131030 or the standard error text.
  */
-export function isRecipientNotAllowedError(message: string): boolean {
+export function isRecipientNotTodosowedErro(message: string): boolean {
   return /131030|not in allowed list|not in the allowed list/i.test(message)
 }

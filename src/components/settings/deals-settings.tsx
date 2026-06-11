@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { CURRENCIES } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { Rótulo } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -31,23 +31,23 @@ export function DealsSettings() {
   const {
     accountId,
     defaultCurrency,
-    canEditSettings,
+    canEditarSettings,
     profileLoading,
     refreshProfile,
   } = useAuth();
 
-  const [selected, setSelected] = useState(defaultCurrency);
+  const [selected, setSelecionared] = useState(defaultCurrency);
   const [saving, setSaving] = useState(false);
 
   // Keep the select in sync once the profile (and its account default)
   // resolves, and after a save round-trips through refreshProfile.
   useEffect(() => {
-    setSelected(defaultCurrency);
+    setSelecionared(defaultCurrency);
   }, [defaultCurrency]);
 
   const dirty = selected !== defaultCurrency;
 
-  async function handleSave() {
+  async function handleSalvar() {
     if (!accountId || !dirty) return;
     setSaving(true);
     const { error } = await supabase
@@ -55,7 +55,7 @@ export function DealsSettings() {
       .update({ default_currency: selected })
       .eq("id", accountId);
     if (error) {
-      toast.error("Failed to save default currency");
+      toast.error("Falhou to save default currency");
       setSaving(false);
       return;
     }
@@ -67,27 +67,27 @@ export function DealsSettings() {
   }
 
   return (
-    <section className="mt-4 space-y-4">
-      <Card className="bg-slate-900 border-slate-700 ring-0 ring-transparent">
+    <section classNome="mt-4 space-y-4">
+      <Card classNome="bg-slate-900 border-slate-700 ring-0 ring-transparent">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-white">
-            <Coins className="size-4 text-primary" />
+          <CardTitle classNome="flex items-center gap-2 text-white">
+            <Coins classNome="size-4 text-primary" />
             Default currency
           </CardTitle>
-          <CardDescription className="text-slate-400">
-            New deals default to this currency, and pipeline and
+          <CardDescription classNome="text-slate-400">
+            Novo deals default to this currency, and pipeline and
             dashboard totals are shown in it. Existing deals keep the
             currency they were saved with.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-2 sm:max-w-xs">
-            <Label className="text-slate-300">Currency</Label>
+        <CardContent classNome="space-y-4">
+          <div classNome="grid gap-2 sm:max-w-xs">
+            <Rótulo classNome="text-slate-300">Currency</Rótulo>
             <select
               value={selected}
-              onChange={(e) => setSelected(e.target.value)}
-              disabled={!canEditSettings || profileLoading}
-              className="h-9 w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
+              onChange={(e) => setSelecionared(e.target.value)}
+              disabled={!canEditarSettings || profileLoading}
+              classNome="h-9 w-full rounded-lg border border-slate-700 bg-slate-800 px-2.5 text-sm text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-60"
             >
               {CURRENCIES.map((c) => (
                 <option key={c.code} value={c.code}>
@@ -95,26 +95,26 @@ export function DealsSettings() {
                 </option>
               ))}
             </select>
-            {!canEditSettings && (
-              <p className="text-xs text-slate-500">
+            {!canEditarSettings && (
+              <p classNome="text-xs text-slate-500">
                 Only account admins can change the default currency.
               </p>
             )}
           </div>
 
-          {canEditSettings && (
+          {canEditarSettings && (
             <Button
-              onClick={handleSave}
+              onClick={handleSalvar}
               disabled={saving || !dirty}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              classNome="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {saving ? (
                 <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Saving...
+                  <Loader2 classNome="size-4 animate-spin" />
+                  Salvando...
                 </>
               ) : (
-                "Save"
+                "Salvar"
               )}
             </Button>
           )}

@@ -12,17 +12,17 @@ import type {
   ConversationsSeriesPoint,
   MetricsBundle,
   PipelineDonutData,
-  PipelineStageSlice,
+  PipelineEtapaSlice,
   ResponseTimeBucket,
   ResponseTimeSummary,
 } from './types'
 
 // ------------------------------------------------------------
-// All client-side aggregation. RLS scopes every query to the
+// Todos client-side aggregation. RLS scopes every query to the
 // signed-in user automatically, so we never pass user_id explicitly
 // here. Perf is acceptable for the current scale (low thousands of
 // messages) — if a tenant's dataset outgrows this, we'd migrate the
-// heavy aggregations to SQL RPCs. Noted in the PR.
+// heavy aggregations to SQL RPCs. Notad in the PR.
 // ------------------------------------------------------------
 
 type DB = SupabaseClient
@@ -35,13 +35,13 @@ export async function loadMetrics(db: DB): Promise<MetricsBundle> {
 
   const [
     openConvCur,
-    newConvToday,
-    newConvYesterday,
-    newContactsToday,
-    newContactsYesterday,
+    newConvHoje,
+    newConvOntem,
+    newContatosHoje,
+    newContatosOntem,
     openDeals,
-    messagesToday,
-    messagesYesterday,
+    messagesHoje,
+    messagesOntem,
   ] = await Promise.all([
     db.from('conversations').select('id', { count: 'exact', head: true }).eq('status', 'open'),
     db
@@ -76,7 +76,7 @@ export async function loadMetrics(db: DB): Promise<MetricsBundle> {
   ])
 
   const openDealsRows = (openDeals.data ?? []) as { value: number | null }[]
-  const openDealsValue = openDealsRows.reduce((sum, d) => sum + (d.value ?? 0), 0)
+  const openDealsValor = openDealsRows.reduce((sum, d) => sum + (d.value ?? 0), 0)
 
   return {
     activeConversations: {
@@ -84,22 +84,22 @@ export async function loadMetrics(db: DB): Promise<MetricsBundle> {
       // "vs yesterday" on a current-state count has no clean answer
       // without snapshots — we show the delta in NEW open conversations
       // today vs yesterday. That's the business-meaningful daily signal.
-      previous: (newConvToday.count ?? 0) - (newConvYesterday.count ?? 0),
+      previous: (newConvHoje.count ?? 0) - (newConvOntem.count ?? 0),
     },
-    newContactsToday: {
-      current: newContactsToday.count ?? 0,
-      previous: newContactsYesterday.count ?? 0,
+    newContatosHoje: {
+      current: newContatosHoje.count ?? 0,
+      previous: newContatosOntem.count ?? 0,
     },
-    openDealsValue,
+    openDealsValor,
     openDealsCount: openDealsRows.length,
-    messagesSentToday: {
-      current: messagesToday.count ?? 0,
-      previous: messagesYesterday.count ?? 0,
+    messagesEnviadoHoje: {
+      current: messagesHoje.count ?? 0,
+      previous: messagesOntem.count ?? 0,
     },
   }
 }
 
-// --- 2. Conversations over time ---------------------------------------
+// --- 2. Conversas ao longo do tempo ---------------------------------------
 
 export async function loadConversationsSeries(
   db: DB,
@@ -140,30 +140,30 @@ export async function loadPipelineDonut(db: DB): Promise<PipelineDonutData> {
     (stagesRes.data ?? []) as { id: string; name: string; color: string }[]
   const deals = (dealsRes.data ?? []) as { stage_id: string; value: number | null }[]
 
-  const byStage = new Map<string, { count: number; total: number }>()
+  const byEtapa = new Map<string, { count: number; total: number }>()
   for (const d of deals) {
-    const row = byStage.get(d.stage_id) ?? { count: 0, total: 0 }
+    const row = byEtapa.get(d.stage_id) ?? { count: 0, total: 0 }
     row.count += 1
     row.total += d.value ?? 0
-    byStage.set(d.stage_id, row)
+    byEtapa.set(d.stage_id, row)
   }
 
-  const slices: PipelineStageSlice[] = stages
+  const slices: PipelineEtapaSlice[] = stages
     .map((s) => ({
       id: s.id,
       name: s.name,
       color: s.color || '#64748b',
-      dealCount: byStage.get(s.id)?.count ?? 0,
-      totalValue: byStage.get(s.id)?.total ?? 0,
+      dealCount: byEtapa.get(s.id)?.count ?? 0,
+      totalValor: byEtapa.get(s.id)?.total ?? 0,
     }))
     // Hide empty stages from the ring (but we'd still show them in the
     // legend if the user wanted a full breakdown — trimming keeps the
     // visual clean for the common case).
-    .filter((s) => s.totalValue > 0 || s.dealCount > 0)
+    .filter((s) => s.totalValor > 0 || s.dealCount > 0)
 
   return {
     stages: slices,
-    totalValue: slices.reduce((sum, s) => sum + s.totalValue, 0),
+    totalValor: slices.reduce((sum, s) => sum + s.totalValor, 0),
   }
 }
 
@@ -263,7 +263,7 @@ export async function loadResponseTime(db: DB): Promise<ResponseTimeSummary> {
   }
 }
 
-// --- 5. Activity feed --------------------------------------------------
+// --- 5. Feed de atividades --------------------------------------------------
 
 export async function loadActivity(db: DB, limit = 20): Promise<ActivityItem[]> {
   // Pull ~10 from each source (plenty of headroom after merge-sort),
@@ -318,7 +318,7 @@ export async function loadActivity(db: DB, limit = 20): Promise<ActivityItem[]> 
     items.push({
       id: `msg-${m.id}`,
       kind: 'message',
-      text: `New message from ${who}`,
+      text: `Novo message from ${who}`,
       at: m.created_at,
       href: `/inbox?c=${m.conversation_id}`,
     })
@@ -328,7 +328,7 @@ export async function loadActivity(db: DB, limit = 20): Promise<ActivityItem[]> 
     items.push({
       id: `contact-${c.id}`,
       kind: 'contact',
-      text: `New contact: ${c.name || c.phone}`,
+      text: `Novo contact: ${c.name || c.phone}`,
       at: c.created_at,
       href: '/contacts',
     })
@@ -383,11 +383,11 @@ export async function loadActivity(db: DB, limit = 20): Promise<ActivityItem[]> 
     const automation = Array.isArray(l.automation) ? l.automation[0] : l.automation
     const contact = Array.isArray(l.contact) ? l.contact[0] : l.contact
     const who = contact?.name || contact?.phone || 'a contact'
-    const autoName = automation?.name || 'Automation'
+    const autoNome = automation?.name || 'Automation'
     items.push({
       id: `auto-${l.id}`,
       kind: 'automation',
-      text: `Automation "${autoName}" ${l.status === 'failed' ? 'failed for' : 'triggered for'} ${who}`,
+      text: `Automation "${autoNome}" ${l.status === 'failed' ? 'failed for' : 'triggered for'} ${who}`,
       at: l.created_at,
     })
   }

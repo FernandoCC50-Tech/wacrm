@@ -8,7 +8,7 @@ import {
   Briefcase,
   Radio,
   Zap,
-  Inbox,
+  Caixa de Entrada,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
 import type { ActivityItem, ActivityKind } from '@/lib/dashboard/types'
@@ -25,7 +25,7 @@ const PAGE_SIZES = [5, 10, 20, 50] as const
 type PageSize = (typeof PAGE_SIZES)[number]
 
 interface KindTheme {
-  icon: ComponentType<{ className?: string }>
+  icon: ComponentType<{ classNome?: string }>
   /** Tailwind classes for the round icon badge + label color. */
   badge: string
 }
@@ -54,34 +54,34 @@ export function ActivityFeed({ items, loading }: ActivityFeedProps) {
     i === 0 || totalLoaded > PAGE_SIZES[i - 1]
 
   return (
-    <section className="rounded-xl border border-slate-800 bg-slate-900">
-      <header className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
-        <h2 className="text-sm font-semibold text-white">Recent Activity</h2>
+    <section classNome="rounded-xl border border-slate-800 bg-slate-900">
+      <header classNome="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+        <h2 classNome="text-sm font-semibold text-white">Recent Activity</h2>
         <Link
           href="/inbox"
-          className="text-xs font-medium text-primary hover:text-primary/80"
+          classNome="text-xs font-medium text-primary hover:text-primary/80"
         >
-          View all →
+          Ver tudo →
         </Link>
       </header>
 
       {loading || !items ? (
-        <div className="space-y-2 p-5">
+        <div classNome="space-y-2 p-5">
           {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-10 w-full" />
+            <Skeleton key={i} classNome="h-10 w-full" />
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="p-5">
+        <div classNome="p-5">
           <EmptyState
-            icon={Inbox}
-            title="No activity yet"
+            icon={Caixa de Entrada}
+            title="Nenhuma atividade ainda"
             hint="Activity from messages, deals, broadcasts, and automations will appear here."
           />
         </div>
       ) : (
         <>
-          <ul className="divide-y divide-slate-800">
+          <ul classNome="divide-y divide-slate-800">
             {visible.map((it, i) => {
               const theme = KIND_THEME[it.kind]
               const Icon = theme.icon
@@ -89,27 +89,27 @@ export function ActivityFeed({ items, loading }: ActivityFeedProps) {
               // translation of the spec's white / #f9fafb stripes.
               const stripe = i % 2 === 0 ? 'bg-transparent' : 'bg-slate-900/40'
               const row = (
-                <div className="flex items-center gap-3 px-5 py-2.5">
+                <div classNome="flex items-center gap-3 px-5 py-2.5">
                   <span
-                    className={cn(
+                    classNome={cn(
                       'flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full',
                       theme.badge,
                     )}
                   >
-                    <Icon className="h-3.5 w-3.5" />
+                    <Icon classNome="h-3.5 w-3.5" />
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-sm text-slate-200">
+                  <span classNome="min-w-0 flex-1 truncate text-sm text-slate-200">
                     {it.text}
                   </span>
-                  <span className="flex-shrink-0 text-xs text-slate-500 tabular-nums">
+                  <span classNome="flex-shrink-0 text-xs text-slate-500 tabular-nums">
                     {relativeTime(it.at)}
                   </span>
                 </div>
               )
               return (
-                <li key={it.id} className={cn(stripe, 'transition-colors hover:bg-slate-800/40')}>
+                <li key={it.id} classNome={cn(stripe, 'transition-colors hover:bg-slate-800/40')}>
                   {it.href ? (
-                    <Link href={it.href} className="block">
+                    <Link href={it.href} classNome="block">
                       {row}
                     </Link>
                   ) : (
@@ -119,13 +119,13 @@ export function ActivityFeed({ items, loading }: ActivityFeedProps) {
               )
             })}
           </ul>
-          <footer className="flex items-center justify-between border-t border-slate-800 px-5 py-3 text-xs">
-            <span className="text-slate-500 tabular-nums">
+          <footer classNome="flex items-center justify-between border-t border-slate-800 px-5 py-3 text-xs">
+            <span classNome="text-slate-500 tabular-nums">
               Showing {visible.length} of {totalLoaded}
               {totalLoaded === 50 ? '+' : ''}
             </span>
-            <div className="flex items-center gap-1">
-              <span className="mr-1 text-slate-500">Show</span>
+            <div classNome="flex items-center gap-1">
+              <span classNome="mr-1 text-slate-500">Show</span>
               {PAGE_SIZES.map((size, i) => {
                 const disabled = !isSizeUseful(size, i)
                 return (
@@ -134,7 +134,7 @@ export function ActivityFeed({ items, loading }: ActivityFeedProps) {
                     type="button"
                     onClick={() => setPageSize(size)}
                     disabled={disabled}
-                    className={cn(
+                    classNome={cn(
                       'rounded-md px-2 py-1 font-medium tabular-nums transition-colors',
                       pageSize === size
                         ? 'bg-slate-700 text-white'

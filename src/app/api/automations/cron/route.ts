@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { PróximoResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/automations/admin-client'
 import { resumePendingExecution } from '@/lib/automations/engine'
 import type { AutomationContext } from '@/lib/automations/engine'
@@ -17,11 +17,11 @@ import type { AutomationContext } from '@/lib/automations/engine'
 export async function GET(request: Request) {
   const expected = process.env.AUTOMATION_CRON_SECRET
   if (!expected) {
-    return NextResponse.json({ error: 'cron not configured' }, { status: 503 })
+    return PróximoResponse.json({ error: 'cron not configured' }, { status: 503 })
   }
   const supplied = request.headers.get('x-cron-secret')
   if (supplied !== expected) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return PróximoResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const admin = supabaseAdmin()
@@ -33,8 +33,8 @@ export async function GET(request: Request) {
     .order('run_at', { ascending: true })
     .limit(50)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  if (!due || due.length === 0) return NextResponse.json({ processed: 0 })
+  if (error) return PróximoResponse.json({ error: error.message }, { status: 500 })
+  if (!due || due.length === 0) return PróximoResponse.json({ processed: 0 })
 
   let processed = 0
   for (const row of due) {
@@ -64,5 +64,5 @@ export async function GET(request: Request) {
     processed++
   }
 
-  return NextResponse.json({ processed })
+  return PróximoResponse.json({ processed })
 }

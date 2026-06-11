@@ -42,13 +42,13 @@ function RateCell({
 }) {
   const pct = percent(value, total);
   return (
-    <div className="flex items-center gap-2">
-      <span className="w-10 text-right text-xs tabular-nums text-slate-300">
+    <div classNome="flex items-center gap-2">
+      <span classNome="w-10 text-right text-xs tabular-nums text-slate-300">
         {pct}%
       </span>
-      <div className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-800">
+      <div classNome="h-1.5 w-20 overflow-hidden rounded-full bg-slate-800">
         <div
-          className={`h-1.5 rounded-full ${color}`}
+          classNome={`h-1.5 rounded-full ${color}`}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -56,38 +56,38 @@ function RateCell({
   );
 }
 
-export default function BroadcastsPage() {
+export default function TransmissõesPage() {
   const router = useRouter();
-  const canCreate = useCan('send-messages');
-  const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
+  const canCriar = useCan('send-messages');
+  const [broadcasts, setTransmissões] = useState<Broadcast[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setErro] = useState<string | null>(null);
 
   // Used to kick off polling only while something is actively sending.
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  async function fetchBroadcasts() {
+  async function fetchTransmissões() {
     try {
       const supabase = createClient();
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchErro } = await supabase
         .from('broadcasts')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (fetchError) throw fetchError;
-      setBroadcasts(data ?? []);
+      if (fetchErro) throw fetchErro;
+      setTransmissões(data ?? []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load broadcasts');
+      setErro(err instanceof Erro ? err.message : 'Falhou to load broadcasts');
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    fetchBroadcasts();
+    fetchTransmissões();
   }, []);
 
-  const anySending = useMemo(
+  const anyEnviaring = useMemo(
     () => broadcasts.some((b) => b.status === 'sending'),
     [broadcasts],
   );
@@ -95,7 +95,7 @@ export default function BroadcastsPage() {
   useEffect(() => {
     function startPolling() {
       if (pollTimer.current) return;
-      pollTimer.current = setInterval(fetchBroadcasts, POLL_INTERVAL_MS);
+      pollTimer.current = setInterval(fetchTransmissões, POLL_INTERVAL_MS);
     }
     function stopPolling() {
       if (!pollTimer.current) return;
@@ -107,16 +107,16 @@ export default function BroadcastsPage() {
     // the user is away, and ensures a fresh fetch the moment they
     // refocus so they don't see stale data on return.
     function handleVisibilityChange() {
-      if (!anySending) return;
+      if (!anyEnviaring) return;
       if (document.visibilityState === 'hidden') {
         stopPolling();
       } else {
-        fetchBroadcasts();
+        fetchTransmissões();
         startPolling();
       }
     }
 
-    if (anySending && document.visibilityState === 'visible') {
+    if (anyEnviaring && document.visibilityState === 'visible') {
       startPolling();
     } else {
       stopPolling();
@@ -126,20 +126,20 @@ export default function BroadcastsPage() {
       stopPolling();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [anySending]);
+  }, [anyEnviaring]);
 
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div classNome="flex h-64 items-center justify-center">
+        <Loader2 classNome="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center gap-2">
-        <p className="text-sm text-red-400">{error}</p>
+      <div classNome="flex h-64 flex-col items-center justify-center gap-2">
+        <p classNome="text-sm text-red-400">{error}</p>
         <Button variant="outline" onClick={() => window.location.reload()}>
           Retry
         </Button>
@@ -148,16 +148,16 @@ export default function BroadcastsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div classNome="space-y-6">
       {/* Top indeterminate progress bar: only visible while a broadcast
           is mid-send. Pure CSS animation so no extra deps. */}
-      {anySending && (
+      {anyEnviaring && (
         <div
           role="progressbar"
           aria-label="Broadcast in progress"
-          className="broadcast-indeterminate fixed inset-x-0 top-0 z-40 h-0.5 overflow-hidden bg-slate-800"
+          classNome="broadcast-indeterminate fixed inset-x-0 top-0 z-40 h-0.5 overflow-hidden bg-slate-800"
         >
-          <div className="broadcast-indeterminate-bar h-0.5 bg-primary" />
+          <div classNome="broadcast-indeterminate-bar h-0.5 bg-primary" />
           <style jsx>{`
             .broadcast-indeterminate-bar {
               width: 33%;
@@ -177,55 +177,55 @@ export default function BroadcastsPage() {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      <div classNome="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Broadcasts</h1>
-          <p className="mt-1 text-sm text-slate-400">
-            Send bulk messages to your contacts using approved templates.
+          <h1 classNome="text-2xl font-bold text-white">Transmissões</h1>
+          <p classNome="mt-1 text-sm text-slate-400">
+            Enviar bulk messages to your contacts using approved templates.
           </p>
         </div>
         <GatedButton
-          canAct={canCreate}
+          canAct={canCriar}
           gateReason="create broadcasts"
           onClick={() => router.push('/broadcasts/new')}
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
+          classNome="bg-primary text-primary-foreground hover:bg-primary/90"
         >
-          <Plus className="h-4 w-4" />
-          New Broadcast
+          <Plus classNome="h-4 w-4" />
+          Novo Broadcast
         </GatedButton>
       </div>
 
       {broadcasts.length === 0 ? (
-        <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-slate-800 bg-slate-900">
-          <Radio className="mb-3 h-10 w-10 text-slate-600" />
-          <p className="text-sm font-medium text-white">No broadcasts yet</p>
-          <p className="mt-1 text-xs text-slate-400">
-            Create your first broadcast to reach your contacts at scale.
+        <div classNome="flex h-64 flex-col items-center justify-center rounded-xl border border-slate-800 bg-slate-900">
+          <Radio classNome="mb-3 h-10 w-10 text-slate-600" />
+          <p classNome="text-sm font-medium text-white">No broadcasts yet</p>
+          <p classNome="mt-1 text-xs text-slate-400">
+            Criar your first broadcast to reach your contacts at scale.
           </p>
           <GatedButton
-            canAct={canCreate}
+            canAct={canCriar}
             gateReason="create broadcasts"
             onClick={() => router.push('/broadcasts/new')}
-            className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90"
+            classNome="mt-4 bg-primary text-primary-foreground hover:bg-primary/90"
           >
-            <Plus className="h-4 w-4" />
-            New Broadcast
+            <Plus classNome="h-4 w-4" />
+            Novo Broadcast
           </GatedButton>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900">
+        <div classNome="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-800 hover:bg-transparent">
-                <TableHead className="text-slate-400">Name</TableHead>
-                <TableHead className="hidden text-slate-400 md:table-cell">Template</TableHead>
-                <TableHead className="hidden text-right text-slate-400 sm:table-cell">
-                  Recipients
+              <TableRow classNome="border-slate-800 hover:bg-transparent">
+                <TableHead classNome="text-slate-400">Nome</TableHead>
+                <TableHead classNome="hidden text-slate-400 md:table-cell">Modelo</TableHead>
+                <TableHead classNome="hidden text-right text-slate-400 sm:table-cell">
+                  Destinatários
                 </TableHead>
-                <TableHead className="hidden text-slate-400 lg:table-cell">Delivery</TableHead>
-                <TableHead className="hidden text-slate-400 lg:table-cell">Read</TableHead>
-                <TableHead className="text-slate-400">Status</TableHead>
-                <TableHead className="hidden text-slate-400 sm:table-cell">Date</TableHead>
+                <TableHead classNome="hidden text-slate-400 lg:table-cell">Delivery</TableHead>
+                <TableHead classNome="hidden text-slate-400 lg:table-cell">Lido</TableHead>
+                <TableHead classNome="text-slate-400">Status</TableHead>
+                <TableHead classNome="hidden text-slate-400 sm:table-cell">Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -234,26 +234,26 @@ export default function BroadcastsPage() {
                 return (
                   <TableRow
                     key={broadcast.id}
-                    className="cursor-pointer border-slate-800 hover:bg-slate-800/50"
+                    classNome="cursor-pointer border-slate-800 hover:bg-slate-800/50"
                     onClick={() => router.push(`/broadcasts/${broadcast.id}`)}
                   >
-                    <TableCell className="font-medium text-white">
+                    <TableCell classNome="font-medium text-white">
                       {broadcast.name}
                     </TableCell>
-                    <TableCell className="hidden text-slate-300 md:table-cell">
+                    <TableCell classNome="hidden text-slate-300 md:table-cell">
                       {broadcast.template_name}
                     </TableCell>
-                    <TableCell className="hidden text-right text-slate-300 tabular-nums sm:table-cell">
+                    <TableCell classNome="hidden text-right text-slate-300 tabular-nums sm:table-cell">
                       {broadcast.total_recipients}
                     </TableCell>
-                    <TableCell className="hidden lg:table-cell">
+                    <TableCell classNome="hidden lg:table-cell">
                       <RateCell
                         value={broadcast.delivered_count}
                         total={broadcast.total_recipients}
                         color="bg-primary"
                       />
                     </TableCell>
-                    <TableCell className="hidden lg:table-cell">
+                    <TableCell classNome="hidden lg:table-cell">
                       <RateCell
                         value={broadcast.read_count}
                         total={broadcast.total_recipients}
@@ -262,18 +262,18 @@ export default function BroadcastsPage() {
                     </TableCell>
                     <TableCell>
                       <span
-                        className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${status.classes}`}
+                        classNome={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${status.classes}`}
                       >
                         {status.pulse && (
-                          <span className="relative flex h-1.5 w-1.5">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75" />
-                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-yellow-400" />
+                          <span classNome="relative flex h-1.5 w-1.5">
+                            <span classNome="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75" />
+                            <span classNome="relative inline-flex h-1.5 w-1.5 rounded-full bg-yellow-400" />
                           </span>
                         )}
                         {status.label}
                       </span>
                     </TableCell>
-                    <TableCell className="hidden text-slate-400 sm:table-cell">
+                    <TableCell classNome="hidden text-slate-400 sm:table-cell">
                       {new Date(broadcast.created_at).toLocaleDateString()}
                     </TableCell>
                   </TableRow>

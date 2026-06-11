@@ -21,7 +21,7 @@
 //   its `Referer` header. The /join page doesn't currently load
 //   anything external, but `Referrer-Policy: no-referrer` is a
 //   cheap belt-and-braces guard against future regressions
-//   accidentally leaking tokens. Per Next.js 16's `metadata`
+//   accidentally leaking tokens. Per Próximo.js 16's `metadata`
 //   export, this surfaces as `<meta name="referrer" content="no-referrer">`.
 // ============================================================
 
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
 
 export default function JoinLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
+    <div classNome="flex min-h-screen items-center justify-center bg-slate-950 px-4">
       {children}
     </div>
   );

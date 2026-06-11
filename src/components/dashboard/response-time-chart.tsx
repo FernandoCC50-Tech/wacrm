@@ -44,43 +44,43 @@ export function ResponseTimeChart({
     })) ?? []
 
   return (
-    <section className="rounded-xl border border-slate-800 bg-slate-900">
-      <header className="flex items-center justify-between gap-3 border-b border-slate-800 px-5 py-4">
+    <section classNome="rounded-xl border border-slate-800 bg-slate-900">
+      <header classNome="flex items-center justify-between gap-3 border-b border-slate-800 px-5 py-4">
         <div>
-          <h2 className="text-sm font-semibold text-white">
+          <h2 classNome="text-sm font-semibold text-white">
             Average First Response Time
           </h2>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <p classNome="mt-0.5 text-xs text-slate-500">
             Minutes to reply to a customer&apos;s first unreplied message, by
             weekday
           </p>
         </div>
-        <div className="flex items-center gap-3 text-right text-xs">
+        <div classNome="flex items-center gap-3 text-right text-xs">
           {thresholdMinutes > 0 && (
-            <span className="rounded-full border border-rose-500/40 bg-rose-500/10 px-2 py-0.5 font-medium text-rose-300 tabular-nums">
+            <span classNome="rounded-full border border-rose-500/40 bg-rose-500/10 px-2 py-0.5 font-medium text-rose-300 tabular-nums">
               target {thresholdMinutes}m
             </span>
           )}
           {data && (data.thisWeekAvg != null || data.lastWeekAvg != null) && (
             <div>
-              <div className="text-slate-400">
+              <div classNome="text-slate-400">
                 This week:{' '}
-                <span className="font-medium text-white tabular-nums">
+                <span classNome="font-medium text-white tabular-nums">
                   {fmt(data.thisWeekAvg)}
                 </span>
               </div>
-              <div className="text-slate-500">
+              <div classNome="text-slate-500">
                 Last week:{' '}
-                <span className="tabular-nums">{fmt(data.lastWeekAvg)}</span>
+                <span classNome="tabular-nums">{fmt(data.lastWeekAvg)}</span>
               </div>
             </div>
           )}
         </div>
       </header>
 
-      <div className="p-5">
+      <div classNome="p-5">
         {loading || !data ? (
-          <Skeleton className="h-[260px] w-full" />
+          <Skeleton classNome="h-[260px] w-full" />
         ) : !hasData ? (
           <EmptyState
             icon={Clock}
@@ -100,7 +100,7 @@ export function ResponseTimeChart({
             yAxisWidth={48}
             // Compact height so the chart sits well inside the card
             // without dominating the row alongside the donut + activity feed.
-            className="h-[260px]"
+            classNome="h-[260px]"
           />
         )}
       </div>

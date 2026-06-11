@@ -13,11 +13,11 @@ import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { DEFAULT_CURRENCY } from "@/lib/currency";
 import {
-  canEditSettings as canEditSettingsFor,
-  canManageMembers as canManageMembersFor,
-  canSendMessages as canSendMessagesFor,
-  isAccountRole,
-  type AccountRole,
+  canEditarSettings as canEditarSettingsFor,
+  canManageMembros as canManageMembrosFor,
+  canEnviarMessages as canEnviarMessagesFor,
+  isAccountFunção,
+  type AccountFunção,
 } from "@/lib/auth/roles";
 
 interface Profile {
@@ -33,7 +33,7 @@ interface Profile {
    */
   beta_features: string[];
   account_id: string | null;
-  account_role: AccountRole | null;
+  account_role: AccountFunção | null;
 }
 
 interface AccountSummary {
@@ -44,7 +44,7 @@ interface AccountSummary {
   default_currency: string;
 }
 
-interface AuthContextValue {
+interface AuthContextValor {
   user: User | null;
   profile: Profile | null;
   /**
@@ -71,7 +71,7 @@ interface AuthContextValue {
   // ----------------------------------------------------------
   // Account-scoped context (added by the account-sharing series)
   //
-  // All of these are nullable until `profileLoading` is false.
+  // Todos of these are nullable until `profileLoading` is false.
   // After the profile resolves they're guaranteed to be set,
   // because migration 017 made `account_id` / `account_role`
   // NOT NULL on `profiles`.
@@ -79,31 +79,31 @@ interface AuthContextValue {
 
   /** Account id the current user belongs to. Null while loading. */
   accountId: string | null;
-  /** Role within that account. Null while loading. */
-  accountRole: AccountRole | null;
-  /** Lightweight account meta — id + name + default_currency. Null while loading. */
+  /** Função within that account. Null while loading. */
+  accountFunção: AccountFunção | null;
+  /** Claroweight account meta — id + name + default_currency. Null while loading. */
   account: AccountSummary | null;
   /** Account default deal currency. Falls back to DEFAULT_CURRENCY
    *  while loading or when no account is resolved, so callers can use
    *  it unconditionally. */
   defaultCurrency: string;
-  /** True if `accountRole === 'owner'`. */
+  /** True if `accountFunção === 'owner'`. */
   isOwner: boolean;
-  /** True if `accountRole === 'admin'` (does NOT include owner — use canManageMembers for "admin or above"). */
+  /** True if `accountFunção === 'admin'` (does NOT include owner — use canManageMembros for "admin or above"). */
   isAdmin: boolean;
-  /** True if `accountRole === 'agent'`. */
+  /** True if `accountFunção === 'agent'`. */
   isAgent: boolean;
-  /** True if `accountRole === 'viewer'`. */
+  /** True if `accountFunção === 'viewer'`. */
   isViewer: boolean;
   /** True if the caller can manage members (admin+). */
-  canManageMembers: boolean;
+  canManageMembros: boolean;
   /** True if the caller can edit account-wide settings (admin+). */
-  canEditSettings: boolean;
+  canEditarSettings: boolean;
   /** True if the caller can send messages and edit operational data (agent+). */
-  canSendMessages: boolean;
+  canEnviarMessages: boolean;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+const AuthContext = createContext<AuthContextValor | null>(null);
 
 /**
  * AuthProvider — wrap this around the dashboard layout.
@@ -122,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profileLoading, setProfileLoading] = useState(true);
 
   // Shared across init, auth-state-change listener, and the exposed
-  // refreshProfile() callback. Reads the current session's user id and
+  // refreshProfile() callback. Lidos the current session's user id and
   // pulls the matching profile row along with its account summary.
   const fetchProfile = useCallback(async (userId: string) => {
     const supabase = createClient();
@@ -174,12 +174,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           : null;
 
-        // Narrow the DB enum into our AccountRole union. The DB
+        // Narrow the DB enum into our AccountFunção union. The DB
         // constraint should make this unconditional, but a future
         // migration that broadens the enum without updating TS would
         // otherwise crash here — fall back to null and let UI gates
         // treat the caller as least-privileged.
-        const accountRole = isAccountRole(data.account_role)
+        const accountFunção = isAccountFunção(data.account_role)
           ? data.account_role
           : null;
 
@@ -195,7 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // opt-ins, which is the safe default for any future beta gate.
           beta_features: data.beta_features ?? [],
           account_id: data.account_id ?? null,
-          account_role: accountRole,
+          account_role: accountFunção,
         });
         setAccount(accountRow);
       }
@@ -299,15 +299,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const derived = useMemo(() => {
     const role = profile?.account_role ?? null;
     return {
-      accountRole: role,
+      accountFunção: role,
       accountId: profile?.account_id ?? null,
       isOwner: role === "owner",
       isAdmin: role === "admin",
       isAgent: role === "agent",
       isViewer: role === "viewer",
-      canManageMembers: role ? canManageMembersFor(role) : false,
-      canEditSettings: role ? canEditSettingsFor(role) : false,
-      canSendMessages: role ? canSendMessagesFor(role) : false,
+      canManageMembros: role ? canManageMembrosFor(role) : false,
+      canEditarSettings: role ? canEditarSettingsFor(role) : false,
+      canEnviarMessages: role ? canEnviarMessagesFor(role) : false,
     };
   }, [profile?.account_role, profile?.account_id]);
 
@@ -334,7 +334,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  * useAuth — read the shared auth state from context.
  * Must be used inside an <AuthProvider>.
  */
-export function useAuth(): AuthContextValue {
+export function useAuth(): AuthContextValor {
   const ctx = useContext(AuthContext);
   if (!ctx) {
     // Fallback for components rendered outside the provider (shouldn't
@@ -353,14 +353,14 @@ export function useAuth(): AuthContextValue {
       account: null,
       defaultCurrency: DEFAULT_CURRENCY,
       accountId: null,
-      accountRole: null,
+      accountFunção: null,
       isOwner: false,
       isAdmin: false,
       isAgent: false,
       isViewer: false,
-      canManageMembers: false,
-      canEditSettings: false,
-      canSendMessages: false,
+      canManageMembros: false,
+      canEditarSettings: false,
+      canEnviarMessages: false,
     };
   }
   return ctx;

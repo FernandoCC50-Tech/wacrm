@@ -14,17 +14,17 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuGatilho,
 } from "@/components/ui/dropdown-menu";
 
 const pageTitles: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/inbox": "Inbox",
-  "/contacts": "Contacts",
-  "/pipelines": "Pipelines",
-  "/broadcasts": "Broadcasts",
-  "/automations": "Automations",
-  "/settings": "Settings",
+  "/dashboard": "Painel",
+  "/inbox": "Caixa de Entrada",
+  "/contacts": "Contatos",
+  "/pipelines": "Funis",
+  "/broadcasts": "Transmissões",
+  "/automations": "Automações",
+  "/settings": "Configurações",
 };
 
 function getPageTitle(pathname: string): string {
@@ -32,16 +32,16 @@ function getPageTitle(pathname: string): string {
   const match = Object.entries(pageTitles).find(([path]) =>
     pathname.startsWith(path),
   );
-  return match ? match[1] : "Dashboard";
+  return match ? match[1] : "Painel";
 }
 
 interface HeaderProps {
   /** Wired to the shell's drawer state. Used only on mobile — the
    *  hamburger button is hidden on lg+. */
-  onOpenSidebar?: () => void;
+  onAbertoSidebar?: () => void;
 }
 
-export function Header({ onOpenSidebar }: HeaderProps) {
+export function Header({ onAbertoSidebar }: HeaderProps) {
   const pathname = usePathname();
   const { profile, signOut } = useAuth();
   const title = getPageTitle(pathname);
@@ -52,85 +52,85 @@ export function Header({ onOpenSidebar }: HeaderProps) {
     "U";
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-slate-800 bg-slate-950 px-4 lg:px-6">
-      <div className="flex min-w-0 items-center gap-2">
+    <header classNome="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-slate-800 bg-slate-950 px-4 lg:px-6">
+      <div classNome="flex min-w-0 items-center gap-2">
         {/* Hamburger — mobile only. 44×44 hit target per Apple HIG. */}
         <button
           type="button"
-          onClick={onOpenSidebar}
-          aria-label="Open menu"
-          className="flex h-10 w-10 items-center justify-center rounded-md text-slate-300 transition-colors hover:bg-slate-800 hover:text-white lg:hidden"
+          onClick={onAbertoSidebar}
+          aria-label="Aberto menu"
+          classNome="flex h-10 w-10 items-center justify-center rounded-md text-slate-300 transition-colors hover:bg-slate-800 hover:text-white lg:hidden"
         >
-          <Menu className="h-5 w-5" />
+          <Menu classNome="h-5 w-5" />
         </button>
-        <h1 className="truncate text-base font-semibold text-white sm:text-lg">
+        <h1 classNome="truncate text-base font-semibold text-white sm:text-lg">
           {title}
         </h1>
       </div>
 
       <DropdownMenu>
-        <DropdownMenuTrigger
-          className="flex items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-slate-800/70 focus:bg-slate-800/70 focus:outline-none data-popup-open:bg-slate-800/70 sm:gap-3 sm:pl-1 sm:pr-3"
-          aria-label="Open account menu"
+        <DropdownMenuGatilho
+          classNome="flex items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-slate-800/70 focus:bg-slate-800/70 focus:outline-none data-popup-open:bg-slate-800/70 sm:gap-3 sm:pl-1 sm:pr-3"
+          aria-label="Aberto account menu"
         >
-          <Avatar className="size-8">
+          <Avatar classNome="size-8">
             {profile?.avatar_url ? (
               <AvatarImage
                 src={profile.avatar_url}
                 alt={profile.full_name ?? "Avatar"}
               />
             ) : null}
-            <AvatarFallback className="bg-primary/10 text-sm font-medium text-primary">
+            <AvatarFallback classNome="bg-primary/10 text-sm font-medium text-primary">
               {initial}
             </AvatarFallback>
           </Avatar>
-          <span className="hidden text-sm font-medium text-white sm:inline">
-            {profile?.full_name ?? "User"}
+          <span classNome="hidden text-sm font-medium text-white sm:inline">
+            {profile?.full_name ?? "Usuário"}
           </span>
-        </DropdownMenuTrigger>
+        </DropdownMenuGatilho>
         <DropdownMenuContent
           align="end"
           sideOffset={6}
-          className="min-w-56 bg-slate-900 text-slate-100 ring-slate-700"
+          classNome="min-w-56 bg-slate-900 text-slate-100 ring-slate-700"
         >
-          <div className="px-2 py-1.5">
-            <p className="truncate text-sm font-medium text-white">
-              {profile?.full_name ?? "User"}
+          <div classNome="px-2 py-1.5">
+            <p classNome="truncate text-sm font-medium text-white">
+              {profile?.full_name ?? "Usuário"}
             </p>
-            <p className="truncate text-xs text-slate-400">
+            <p classNome="truncate text-xs text-slate-400">
               {profile?.email ?? ""}
             </p>
           </div>
-          <DropdownMenuSeparator className="bg-slate-800" />
+          <DropdownMenuSeparator classNome="bg-slate-800" />
           <DropdownMenuItem
             render={
               <Link
                 href="/settings?tab=profile"
-                className="text-slate-200 focus:bg-slate-800 focus:text-white"
+                classNome="text-slate-200 focus:bg-slate-800 focus:text-white"
               />
             }
           >
-            <User className="size-4" />
+            <User classNome="size-4" />
             Profile
           </DropdownMenuItem>
           <DropdownMenuItem
             render={
               <Link
                 href="/settings?tab=whatsapp"
-                className="text-slate-200 focus:bg-slate-800 focus:text-white"
+                classNome="text-slate-200 focus:bg-slate-800 focus:text-white"
               />
             }
           >
-            <SettingsIcon className="size-4" />
+            <SettingsIcon classNome="size-4" />
             Settings
           </DropdownMenuItem>
-          <DropdownMenuSeparator className="bg-slate-800" />
+          <DropdownMenuSeparator classNome="bg-slate-800" />
           <DropdownMenuItem
             onClick={signOut}
-            className="text-slate-200 focus:bg-slate-800 focus:text-white"
+            classNome="text-slate-200 focus:bg-slate-800 focus:text-white"
           >
-            <LogOut className="size-4" />
-            Sign out
+            <LogOut classNome="size-4" />
+            Sair
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

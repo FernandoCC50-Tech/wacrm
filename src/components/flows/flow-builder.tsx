@@ -5,10 +5,10 @@
  *
  * Renders the trigger panel, entry-node picker, and the per-node card
  * list. Header and validation panel are NOT owned here — they live
- * once in FlowEditorShell so they show in both views (lifted in PR 3
+ * once in FlowEditarorShell so they show in both views (lifted in PR 3
  * so canvas users can also save + see validator issues).
  *
- * State lives in the shared `useFlowEditor()` context — toggling
+ * State lives in the shared `useFlowEditaror()` context — toggling
  * Canvas ⇄ List never loses edits, and a drag on the canvas updates
  * the same nodes the list view reads.
  *
@@ -30,17 +30,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Selecionar,
+  SelecionarContent,
+  SelecionarItem,
+  SelecionarGatilho,
+  SelecionarValor,
 } from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuGatilho,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { type ValidationIssue } from "@/lib/flows/validate";
@@ -52,10 +52,10 @@ import {
   type NodeType,
 } from "./shared";
 import { NodeConfigForm } from "./forms/node-config-form";
-import { NodeKeySelect } from "./forms/fields";
+import { NodeKeySelecionar } from "./forms/fields";
 import { IssueLine } from "./validation-panel";
 import {
-  useFlowEditor,
+  useFlowEditaror,
   type BuilderState,
 } from "./flow-editor-state";
 
@@ -79,7 +79,7 @@ export function FlowBuilder() {
     updateNode,
     updateNodeConfig,
     removeNode: removeNodeCtx,
-  } = useFlowEditor();
+  } = useFlowEditaror();
 
   // List-only UI state: which cards are expanded + scroll refs for
   // jump-to-node. The flash itself is read from context (flashKey)
@@ -150,8 +150,8 @@ export function FlowBuilder() {
   }, [flashKey]);
 
   return (
-    <div className="flex flex-col gap-6">
-      <TriggerPanel
+    <div classNome="flex flex-col gap-6">
+      <GatilhoPanel
         state={state}
         setState={setState}
         triggerIssues={issues.filter((i) => i.scope === "trigger")}
@@ -159,17 +159,17 @@ export function FlowBuilder() {
 
       <EntryPicker state={state} setState={setState} />
 
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-white">
+      <section classNome="flex flex-col gap-3">
+        <div classNome="flex items-center justify-between">
+          <h2 classNome="text-sm font-semibold text-white">
             Nodes ({state.nodes.length})
           </h2>
-          <AddNodeButton onAdd={addNode} />
+          <AdicionarNodeButton onAdicionar={addNode} />
         </div>
 
         {state.nodes.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-slate-700 bg-slate-900/50 p-8 text-center text-sm text-slate-400">
-            Add a <strong>Start</strong> node, then a <strong>Send buttons</strong>
+          <div classNome="rounded-lg border border-dashed border-slate-700 bg-slate-900/50 p-8 text-center text-sm text-slate-400">
+            Adicionar a <strong>Start</strong> node, then a <strong>Enviar buttons</strong>
             {" "}node, then a <strong>Handoff</strong> — that&apos;s the welcome-menu
             shape from the brief.
           </div>
@@ -189,7 +189,7 @@ export function FlowBuilder() {
               onToggle={() => toggleExpanded(node.node_key)}
               onUpdate={(patch) => updateNode(node.node_key, patch)}
               onUpdateConfig={(patch) => updateNodeConfig(node.node_key, patch)}
-              onRemove={() => removeNode(node.node_key)}
+              onRemover={() => removeNode(node.node_key)}
               onSetEntry={() =>
                 setState((s) => ({ ...s, entry_node_id: node.node_key }))
               }
@@ -203,27 +203,27 @@ export function FlowBuilder() {
 
 
 // ============================================================
-// Trigger panel
+// Gatilho panel
 // ============================================================
 
-function TriggerPanel({
+function GatilhoPanel({
   state,
   setState,
   triggerIssues,
 }: {
   state: BuilderState;
-  setState: React.Dispatch<React.SetStateAction<BuilderState>>;
+  setState: React.Dispatch<React.SetStateAção<BuilderState>>;
   triggerIssues: ValidationIssue[];
 }) {
   return (
-    <section className="rounded-lg border border-slate-800 bg-slate-900 p-4">
-      <h2 className="mb-3 text-sm font-semibold text-white">Trigger</h2>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+    <section classNome="rounded-lg border border-slate-800 bg-slate-900 p-4">
+      <h2 classNome="mb-3 text-sm font-semibold text-white">Gatilho</h2>
+      <div classNome="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs text-slate-400">When…</label>
-          <Select
+          <label classNome="mb-1 block text-xs text-slate-400">When…</label>
+          <Selecionar
             value={state.trigger_type}
-            onValueChange={(v) =>
+            onValorChange={(v) =>
               setState((s) => ({
                 ...s,
                 trigger_type: v as BuilderState["trigger_type"],
@@ -232,25 +232,25 @@ function TriggerPanel({
               }))
             }
           >
-            <SelectTrigger className="bg-slate-800">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="keyword">
+            <SelecionarGatilho classNome="bg-slate-800">
+              <SelecionarValor />
+            </SelecionarGatilho>
+            <SelecionarContent>
+              <SelecionarItem value="keyword">
                 A message contains a keyword
-              </SelectItem>
-              <SelectItem value="first_inbound_message">
+              </SelecionarItem>
+              <SelecionarItem value="first_inbound_message">
                 Customer&apos;s first ever inbound message
-              </SelectItem>
-              <SelectItem value="manual">
+              </SelecionarItem>
+              <SelecionarItem value="manual">
                 Manual only (no auto-trigger)
-              </SelectItem>
-            </SelectContent>
-          </Select>
+              </SelecionarItem>
+            </SelecionarContent>
+          </Selecionar>
         </div>
         {state.trigger_type === "keyword" && (
           <div>
-            <label className="mb-1 block text-xs text-slate-400">
+            <label classNome="mb-1 block text-xs text-slate-400">
               Keywords (comma-separated)
             </label>
             <Input
@@ -272,13 +272,13 @@ function TriggerPanel({
                 }))
               }
               placeholder="support, help, hi"
-              className="bg-slate-800"
+              classNome="bg-slate-800"
             />
           </div>
         )}
       </div>
       {triggerIssues.length > 0 && (
-        <div className="mt-3 flex flex-col gap-1">
+        <div classNome="mt-3 flex flex-col gap-1">
           {triggerIssues.map((i, ix) => (
             <IssueLine key={ix} issue={i} />
           ))}
@@ -297,21 +297,21 @@ function EntryPicker({
   setState,
 }: {
   state: BuilderState;
-  setState: React.Dispatch<React.SetStateAction<BuilderState>>;
+  setState: React.Dispatch<React.SetStateAção<BuilderState>>;
 }) {
   if (state.nodes.length === 0) return null;
   return (
-    <section className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900 p-3">
-      <CornerDownRight className="h-4 w-4 shrink-0 text-primary" />
-      <span className="text-xs text-slate-400">Entry node:</span>
-      <NodeKeySelect
+    <section classNome="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900 p-3">
+      <CornerDownRight classNome="h-4 w-4 shrink-0 text-primary" />
+      <span classNome="text-xs text-slate-400">Entry node:</span>
+      <NodeKeySelecionar
         value={state.entry_node_id}
         nodes={state.nodes}
         onChange={(key) =>
           setState((s) => ({ ...s, entry_node_id: key }))
         }
         placeholder="Pick the first node…"
-        className="flex-1 max-w-xs"
+        classNome="flex-1 max-w-xs"
       />
     </section>
   );
@@ -332,7 +332,7 @@ function NodeCard({
   onToggle,
   onUpdate,
   onUpdateConfig,
-  onRemove,
+  onRemover,
   onSetEntry,
 }: {
   node: BuilderNode;
@@ -345,18 +345,18 @@ function NodeCard({
   onToggle: () => void;
   onUpdate: (patch: Partial<BuilderNode>) => void;
   onUpdateConfig: (patch: Record<string, unknown>) => void;
-  onRemove: () => void;
+  onRemover: () => void;
   onSetEntry: () => void;
 }) {
   const meta = NODE_META[node.node_type];
-  const hasError = issues.some((i) => i.severity === "error");
+  const hasErro = issues.some((i) => i.severity === "error");
   const preview = summarizeNode(node);
   return (
     <div
       ref={cardRef}
-      className={cn(
+      classNome={cn(
         "rounded-lg border bg-slate-900 transition-shadow duration-500",
-        hasError
+        hasErro
           ? "border-red-500/40"
           : isEntry
             ? "border-primary/50"
@@ -368,51 +368,51 @@ function NodeCard({
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left"
+        classNome="flex w-full items-center gap-3 px-4 py-3 text-left"
       >
-        <meta.icon className={cn("h-4 w-4 shrink-0", meta.color)} />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="truncate text-sm font-medium text-white">
+        <meta.icon classNome={cn("h-4 w-4 shrink-0", meta.color)} />
+        <div classNome="min-w-0 flex-1">
+          <div classNome="flex items-center gap-2">
+            <span classNome="truncate text-sm font-medium text-white">
               {meta.label}
             </span>
-            <code className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-400">
+            <code classNome="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-400">
               {node.node_key}
             </code>
             {isEntry && (
               <Badge
                 variant="outline"
-                className="border-primary/40 bg-primary/10 text-[10px] text-primary"
+                classNome="border-primary/40 bg-primary/10 text-[10px] text-primary"
               >
                 Entry
               </Badge>
             )}
           </div>
           {!expanded && preview && (
-            <p className="mt-0.5 truncate text-xs text-slate-500">
+            <p classNome="mt-0.5 truncate text-xs text-slate-500">
               {preview}
             </p>
           )}
         </div>
-        {hasError && (
-          <CircleAlert className="h-3.5 w-3.5 shrink-0 text-red-400" />
+        {hasErro && (
+          <CircleAlert classNome="h-3.5 w-3.5 shrink-0 text-red-400" />
         )}
         {expanded ? (
-          <ChevronUp className="h-4 w-4 text-slate-500" />
+          <ChevronUp classNome="h-4 w-4 text-slate-500" />
         ) : (
-          <ChevronDown className="h-4 w-4 text-slate-500" />
+          <ChevronDown classNome="h-4 w-4 text-slate-500" />
         )}
       </button>
       {expanded && (
-        <div className="border-t border-slate-800 px-4 py-4">
+        <div classNome="border-t border-slate-800 px-4 py-4">
           <NodeConfigWithAdvanced
             node={node}
             allNodes={allNodes}
             onUpdate={onUpdate}
             onUpdateConfig={onUpdateConfig}
           />
-          <div className="mt-4 flex items-center justify-between border-t border-slate-800 pt-3">
-            <div className="flex items-center gap-2">
+          <div classNome="mt-4 flex items-center justify-between border-t border-slate-800 pt-3">
+            <div classNome="flex items-center gap-2">
               {!isEntry && (
                 <Button variant="ghost" size="sm" onClick={onSetEntry}>
                   Set as entry
@@ -422,15 +422,15 @@ function NodeCard({
             <Button
               variant="ghost"
               size="sm"
-              onClick={onRemove}
-              className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
+              onClick={onRemover}
+              classNome="text-red-400 hover:bg-red-500/10 hover:text-red-300"
             >
-              <Trash2 className="h-3.5 w-3.5" />
-              Remove node
+              <Trash2 classNome="h-3.5 w-3.5" />
+              Remover node
             </Button>
           </div>
           {issues.length > 0 && (
-            <div className="mt-3 flex flex-col gap-1 rounded-md bg-red-500/5 p-2">
+            <div classNome="mt-3 flex flex-col gap-1 rounded-md bg-red-500/5 p-2">
               {issues.map((i, ix) => (
                 <IssueLine key={ix} issue={i} />
               ))}
@@ -463,30 +463,30 @@ function NodeConfigWithAdvanced({
   const hasReplyIds =
     node.node_type === "send_buttons" || node.node_type === "send_list";
   return (
-    <div className="flex flex-col gap-3">
+    <div classNome="flex flex-col gap-3">
       <NodeConfigForm
         node={node}
         allNodes={allNodes}
         showAdvanced={showAdvanced}
         onUpdateConfig={onUpdateConfig}
       />
-      <div className="border-t border-slate-800 pt-3">
+      <div classNome="border-t border-slate-800 pt-3">
         <button
           type="button"
           onClick={() => setShowAdvanced((v) => !v)}
-          className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
+          classNome="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"
         >
           {showAdvanced ? (
-            <ChevronUp className="h-3 w-3" />
+            <ChevronUp classNome="h-3 w-3" />
           ) : (
-            <ChevronDown className="h-3 w-3" />
+            <ChevronDown classNome="h-3 w-3" />
           )}
           {showAdvanced ? "Hide" : "Show"} advanced
         </button>
         {showAdvanced && (
-          <div className="mt-3 flex flex-col gap-3">
+          <div classNome="mt-3 flex flex-col gap-3">
             <div>
-              <label className="mb-1 block text-xs text-slate-400">
+              <label classNome="mb-1 block text-xs text-slate-400">
                 Node key (internal identifier — keep stable for analytics)
               </label>
               <Input
@@ -494,11 +494,11 @@ function NodeConfigWithAdvanced({
                 onChange={(e) =>
                   onUpdate({ node_key: slugify(e.target.value, node.node_key) })
                 }
-                className="bg-slate-800 font-mono text-xs"
+                classNome="bg-slate-800 font-mono text-xs"
               />
             </div>
             {hasReplyIds && (
-              <p className="text-[10px] text-slate-500">
+              <p classNome="text-[10px] text-slate-500">
                 Reply IDs for each option are shown inline above. They&apos;re
                 returned by WhatsApp when a customer taps; you usually don&apos;t
                 need to touch them.
@@ -513,10 +513,10 @@ function NodeConfigWithAdvanced({
 
 
 // ============================================================
-// Add-node menu
+// Adicionar-node menu
 // ============================================================
 
-function AddNodeButton({ onAdd }: { onAdd: (type: NodeType) => void }) {
+function AdicionarNodeButton({ onAdicionar }: { onAdicionar: (type: NodeType) => void }) {
   const types: NodeType[] = [
     "start",
     "send_buttons",
@@ -531,19 +531,19 @@ function AddNodeButton({ onAdd }: { onAdd: (type: NodeType) => void }) {
   ];
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-800"
-        aria-label="Add node"
+      <DropdownMenuGatilho
+        classNome="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-800"
+        aria-label="Adicionar node"
       >
-        <Plus className="h-3.5 w-3.5" />
-        Add node
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="border-slate-700 bg-slate-900">
+        <Plus classNome="h-3.5 w-3.5" />
+        Adicionar node
+      </DropdownMenuGatilho>
+      <DropdownMenuContent align="end" classNome="border-slate-700 bg-slate-900">
         {types.map((t) => {
           const meta = NODE_META[t];
           return (
-            <DropdownMenuItem key={t} onClick={() => onAdd(t)}>
-              <meta.icon className={cn("h-3.5 w-3.5", meta.color)} />
+            <DropdownMenuItem key={t} onClick={() => onAdicionar(t)}>
+              <meta.icon classNome={cn("h-3.5 w-3.5", meta.color)} />
               {meta.label}
             </DropdownMenuItem>
           );

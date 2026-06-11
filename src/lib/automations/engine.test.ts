@@ -77,11 +77,11 @@ vi.mock("./admin-client", () => {
 });
 
 vi.mock("./meta-send", () => ({
-  engineSendText: vi.fn(async () => ({ whatsapp_message_id: "m1" })),
-  engineSendTemplate: vi.fn(async () => ({ whatsapp_message_id: "m1" })),
+  engineEnviarText: vi.fn(async () => ({ whatsapp_message_id: "m1" })),
+  engineEnviarModelo: vi.fn(async () => ({ whatsapp_message_id: "m1" })),
 }));
 
-import { runAutomationsForTrigger } from "./engine";
+import { runAutomaçõesForGatilho } from "./engine";
 
 const ACCOUNT = "acct-1";
 
@@ -93,7 +93,7 @@ beforeEach(() => {
   h.state.updateCalls = [];
 });
 
-describe("runAutomationsForTrigger — tenant isolation", () => {
+describe("runAutomaçõesForGatilho — tenant isolation", () => {
   it("refuses to dispatch when the contact is not in the account (GHSA-63cv-2c49-m5v3)", async () => {
     // Ownership lookup returns nothing — the contact belongs to another tenant.
     h.state.owned = null;
@@ -101,7 +101,7 @@ describe("runAutomationsForTrigger — tenant isolation", () => {
     h.state.automations = [automationWithUpdateStep()];
     h.state.steps = [updateStep()];
 
-    await runAutomationsForTrigger({
+    await runAutomaçõesForGatilho({
       accountId: ACCOUNT,
       triggerType: "new_message_received",
       contactId: "victim-contact-uuid",
@@ -118,7 +118,7 @@ describe("runAutomationsForTrigger — tenant isolation", () => {
     h.state.owned = { id: "c1" };
     h.state.automations = []; // no matching automations; just prove we got past the guard
 
-    await runAutomationsForTrigger({
+    await runAutomaçõesForGatilho({
       accountId: ACCOUNT,
       triggerType: "new_message_received",
       contactId: "c1",
@@ -133,7 +133,7 @@ describe("runAutomationsForTrigger — tenant isolation", () => {
     h.state.automations = [automationWithUpdateStep()];
     h.state.steps = [updateStep()];
 
-    await runAutomationsForTrigger({
+    await runAutomaçõesForGatilho({
       accountId: ACCOUNT,
       triggerType: "new_message_received",
       contactId: "c1",

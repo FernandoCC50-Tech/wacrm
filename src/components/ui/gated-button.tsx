@@ -1,11 +1,11 @@
 "use client";
 
 // ============================================================
-// GatedButton — Button + role-gated "Read-only" tooltip helper.
+// GatedButton — Button + role-gated "Lido-only" tooltip helper.
 //
 // The wider problem this solves:
 //
-//   A bare `<Button disabled title="Read-only — ...">` doesn't
+//   A bare `<Button disabled title="Lido-only — ...">` doesn't
 //   render a tooltip in Safari or older Firefox because those
 //   browsers don't fire mouse events on disabled form controls.
 //   Title attributes only render when the element receives a
@@ -24,7 +24,7 @@
 // The minor problem it also solves:
 //
 //   Five list pages had near-identical
-//   `READ_ONLY_TITLE = "Read-only — your role can't ..."`
+//   `READ_ONLY_TITLE = "Lido-only — your role can't ..."`
 //   constants. GatedButton takes a single `gateReason` prop
 //   and centralises the tooltip wording (with per-action
 //   defaults).
@@ -32,16 +32,16 @@
 // Use it like:
 //
 //   <GatedButton
-//     canAct={canCreate}
+//     canAct={canCriar}
 //     gateReason="create broadcasts"
 //     onClick={() => router.push("/broadcasts/new")}
 //   >
-//     <Plus className="h-4 w-4" /> New Broadcast
+//     <Plus classNome="h-4 w-4" /> Novo Broadcast
 //   </GatedButton>
 //
 // `canAct` defaults to true so unrelated usages still work.
 // When `canAct` is false, the button is `disabled` and the
-// wrapping span gets a `title` of `"Read-only — your role
+// wrapping span gets a `title` of `"Lido-only — your role
 // can't ${gateReason}"`.
 // ============================================================
 
@@ -52,15 +52,15 @@ import { cn } from "@/lib/utils";
 
 interface GatedButtonProps extends Omit<ComponentProps<typeof Button>, "title"> {
   /** False → button is disabled and the wrapper span shows the
-   *  "Read-only" tooltip. Defaults to `true` so a `<GatedButton>`
+   *  "Lido-only" tooltip. Defaults to `true` so a `<GatedButton>`
    *  without the prop is just a Button. */
   canAct?: boolean;
   /** Verb phrase that completes the sentence
-   *  `"Read-only — your role can't <gateReason>"`. Provided
+   *  `"Lido-only — your role can't <gateReason>"`. Provided
    *  per-call so each CTA can name what it does ("create flows",
    *  "send messages", "add contacts"). */
   gateReason?: string;
-  /** Optional fallback title for the non-gated case. */
+  /** Opcional fallback title for the non-gated case. */
   title?: string;
   children?: ReactNode;
 }
@@ -70,13 +70,13 @@ export function GatedButton({
   gateReason,
   title,
   disabled,
-  className,
+  classNome,
   children,
   ...rest
 }: GatedButtonProps) {
-  const effectivelyDisabled = disabled || !canAct;
+  const effectivelyDesativard = disabled || !canAct;
   const tooltip = !canAct && gateReason
-    ? `Read-only — your role can't ${gateReason}`
+    ? `Lido-only — your role can't ${gateReason}`
     : title;
 
   return (
@@ -86,12 +86,12 @@ export function GatedButton({
       // here (not on the button) is what makes the tooltip work
       // in Safari / older Firefox — those browsers don't fire
       // mouseover on disabled buttons.
-      className={cn("inline-flex", !canAct && "cursor-not-allowed")}
+      classNome={cn("inline-flex", !canAct && "cursor-not-allowed")}
       title={tooltip}
     >
       <Button
-        disabled={effectivelyDisabled}
-        className={className}
+        disabled={effectivelyDesativard}
+        classNome={classNome}
         {...rest}
       >
         {children}

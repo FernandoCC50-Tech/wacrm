@@ -17,8 +17,8 @@
 // guard makes brute-force retries pointless past a few attempts.
 // ============================================================
 
-import { NextResponse } from "next/server";
-import type { PostgrestError } from "@supabase/supabase-js";
+import { PróximoResponse } from "next/server";
+import type { PostgrestErro } from "@supabase/supabase-js";
 
 import { hashInviteToken } from "@/lib/auth/invitations";
 import {
@@ -36,19 +36,19 @@ function getClientIp(request: Request): string {
   return "unknown";
 }
 
-function rpcErrorToResponse(err: PostgrestError): NextResponse {
+function rpcErroToResponse(err: PostgrestErro): PróximoResponse {
   if (err.code === "42501") {
-    return NextResponse.json({ error: err.message }, { status: 401 });
+    return PróximoResponse.json({ error: err.message }, { status: 401 });
   }
   if (err.code === "22023") {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    return PróximoResponse.json({ error: err.message }, { status: 400 });
   }
   if (err.code === "23505") {
-    return NextResponse.json({ error: err.message }, { status: 409 });
+    return PróximoResponse.json({ error: err.message }, { status: 409 });
   }
   console.error("[redeem] unexpected RPC error:", err);
-  return NextResponse.json(
-    { error: "Failed to redeem invitation" },
+  return PróximoResponse.json(
+    { error: "Falhou to redeem invitation" },
     { status: 500 },
   );
 }
@@ -63,7 +63,7 @@ export async function POST(
 
   const { token } = await params;
   if (!token || typeof token !== "string") {
-    return NextResponse.json(
+    return PróximoResponse.json(
       { error: "Missing invitation token" },
       { status: 400 },
     );
@@ -78,14 +78,14 @@ export async function POST(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return PróximoResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { data: accountId, error } = await supabase.rpc("redeem_invitation", {
     p_token_hash: hashInviteToken(token),
   });
 
-  if (error) return rpcErrorToResponse(error);
+  if (error) return rpcErroToResponse(error);
 
-  return NextResponse.json({ ok: true, accountId });
+  return PróximoResponse.json({ ok: true, accountId });
 }

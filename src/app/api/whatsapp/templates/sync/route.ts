@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server'
+import { PróximoResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/whatsapp/encryption'
 import { normalizeStatus } from '@/lib/whatsapp/template-status-normalize'
-import type { TemplateButton, TemplateSampleValues } from '@/types'
+import type { ModeloButton, ModeloSampleValors } from '@/types'
 
 /**
  * Sync message templates from Meta → local message_templates table.
@@ -28,7 +28,7 @@ interface MetaButton {
   example?: string[] | string
 }
 
-interface MetaTemplateComponent {
+interface MetaModeloComponent {
   type: string
   text?: string
   format?: string
@@ -40,13 +40,13 @@ interface MetaTemplateComponent {
   }
 }
 
-interface MetaTemplate {
+interface MetaModelo {
   id: string
   name: string
   language: string
   status: string
   category: string
-  components?: MetaTemplateComponent[]
+  components?: MetaModeloComponent[]
   quality_score?: { score?: string } | string
 }
 
@@ -60,7 +60,7 @@ function normalizeCategory(
 }
 
 function normalizeQualityScore(
-  raw: MetaTemplate['quality_score'],
+  raw: MetaModelo['quality_score'],
 ): 'GREEN' | 'YELLOW' | 'RED' | null {
   const score =
     typeof raw === 'string' ? raw : raw?.score ? String(raw.score) : null
@@ -71,9 +71,9 @@ function normalizeQualityScore(
     : null
 }
 
-function parseButtons(metaButtons: MetaButton[] | undefined): TemplateButton[] {
+function parseButtons(metaButtons: MetaButton[] | undefined): ModeloButton[] {
   if (!metaButtons?.length) return []
-  const out: TemplateButton[] = []
+  const out: ModeloButton[] = []
   for (const b of metaButtons) {
     switch (b.type?.toUpperCase()) {
       case 'QUICK_REPLY':
@@ -107,16 +107,16 @@ function parseButtons(metaButtons: MetaButton[] | undefined): TemplateButton[] {
   return out
 }
 
-function extractSampleValues(
-  body: MetaTemplateComponent | undefined,
-  header: MetaTemplateComponent | undefined,
-): TemplateSampleValues | null {
+function extractSampleValors(
+  body: MetaModeloComponent | undefined,
+  header: MetaModeloComponent | undefined,
+): ModeloSampleValors | null {
   // Meta returns body_text as a 2D array — one row per example set.
   // We take the first row (most templates have exactly one).
   const bodySample = body?.example?.body_text?.[0]
   const headerSample = header?.example?.header_text
   if (!bodySample?.length && !headerSample?.length) return null
-  const sv: TemplateSampleValues = {}
+  const sv: ModeloSampleValors = {}
   if (bodySample?.length) sv.body = bodySample
   if (headerSample?.length) sv.header = headerSample
   return sv
@@ -128,14 +128,14 @@ export async function POST() {
 
     const {
       data: { user },
-      error: authError,
+      error: authErro,
     } = await supabase.auth.getUser()
 
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (authErro || !user) {
+      return PróximoResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Resolve the caller's account_id — both whatsapp_config and
+    // Resolver the caller's account_id — both whatsapp_config and
     // the message_templates we sync into are account-scoped.
     const { data: profile } = await supabase
       .from('profiles')
@@ -144,30 +144,30 @@ export async function POST() {
       .maybeSingle()
     const accountId = profile?.account_id as string | undefined
     if (!accountId) {
-      return NextResponse.json(
+      return PróximoResponse.json(
         { error: 'Your profile is not linked to an account.' },
         { status: 403 },
       )
     }
 
-    const { data: config, error: configError } = await supabase
+    const { data: config, error: configErro } = await supabase
       .from('whatsapp_config')
       .select('*')
       .eq('account_id', accountId)
       .single()
 
-    if (configError || !config) {
-      return NextResponse.json(
+    if (configErro || !config) {
+      return PróximoResponse.json(
         {
           error:
-            'WhatsApp not configured. Connect your WhatsApp Business account in Settings first.',
+            'WhatsApp not configured. Conectar your WhatsApp Business account in Settings first.',
         },
         { status: 400 },
       )
     }
 
     if (!config.waba_id) {
-      return NextResponse.json(
+      return PróximoResponse.json(
         {
           error:
             'WABA (WhatsApp Business Account) ID missing. Re-connect your account in Settings.',
@@ -178,7 +178,7 @@ export async function POST() {
 
     const accessToken = decrypt(config.access_token)
 
-    const metaTemplates: MetaTemplate[] = []
+    const metaModelos: MetaModelo[] = []
     let nextUrl:
       | string
       | null = `${META_API_BASE}/${config.waba_id}/message_templates?limit=100&fields=id,name,language,status,category,components,quality_score`
@@ -199,14 +199,14 @@ export async function POST() {
         } catch {
           // response wasn't JSON — keep the fallback
         }
-        return NextResponse.json({ error: metaErr }, { status: 502 })
+        return PróximoResponse.json({ error: metaErr }, { status: 502 })
       }
 
       const metaBody: {
-        data?: MetaTemplate[]
+        data?: MetaModelo[]
         paging?: { next?: string }
       } = await metaRes.json()
-      if (metaBody.data) metaTemplates.push(...metaBody.data)
+      if (metaBody.data) metaModelos.push(...metaBody.data)
       nextUrl = metaBody.paging?.next ?? null
     }
 
@@ -214,14 +214,14 @@ export async function POST() {
     let updated = 0
     const errors: { name: string; language: string; message: string }[] = []
 
-    for (const t of metaTemplates) {
+    for (const t of metaModelos) {
       const body = (t.components ?? []).find((c) => c.type === 'BODY')
       const header = (t.components ?? []).find((c) => c.type === 'HEADER')
       const footer = (t.components ?? []).find((c) => c.type === 'FOOTER')
       const buttons = (t.components ?? []).find((c) => c.type === 'BUTTONS')
 
       const parsedButtons = parseButtons(buttons?.buttons)
-      const sampleValues = extractSampleValues(body, header)
+      const sampleValors = extractSampleValors(body, header)
 
       const headerFormat = header?.format?.toUpperCase()
       const headerType =
@@ -247,7 +247,7 @@ export async function POST() {
         body_text: body?.text ?? '',
         footer_text: footer?.text ?? null,
         buttons: parsedButtons.length ? parsedButtons : null,
-        sample_values: sampleValues,
+        sample_values: sampleValors,
         status: normalizeStatus(t.status),
         meta_template_id: t.id,
         quality_score: normalizeQualityScore(t.quality_score),
@@ -301,20 +301,20 @@ export async function POST() {
       }
     }
 
-    return NextResponse.json({
+    return PróximoResponse.json({
       success: errors.length === 0,
-      total: metaTemplates.length,
+      total: metaModelos.length,
       inserted,
       updated,
       errors,
       truncated: pageCount >= PAGE_CAP && nextUrl !== null,
     })
   } catch (error) {
-    console.error('Error syncing WhatsApp templates:', error)
-    return NextResponse.json(
+    console.error('Erro syncing WhatsApp templates:', error)
+    return PróximoResponse.json(
       {
         error:
-          error instanceof Error ? error.message : 'Failed to sync templates',
+          error instanceof Erro ? error.message : 'Falhou to sync templates',
       },
       { status: 500 },
     )

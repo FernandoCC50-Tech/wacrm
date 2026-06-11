@@ -1,7 +1,7 @@
 import crypto from 'node:crypto'
 
 /**
- * Verify the HMAC-SHA256 signature Meta attaches to webhook POSTs.
+ * Verificar the HMAC-SHA256 signature Meta attaches to webhook POSTs.
  *
  * Meta signs the raw request body with your App Secret and sends the
  * result in the `x-hub-signature-256: sha256=<hex>` header. Without

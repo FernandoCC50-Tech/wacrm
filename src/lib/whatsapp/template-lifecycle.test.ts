@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  deleteMessageTemplate,
-  editMessageTemplate,
-  submitMessageTemplate,
+  deleteMessageModelo,
+  editMessageModelo,
+  submitMessageModelo,
 } from './meta-api';
 
 // We mock fetch and assert on the request URL/method/body — these
@@ -23,20 +23,20 @@ function errorResponse(status: number, body: unknown): Response {
   });
 }
 
-describe('submitMessageTemplate', () => {
+describe('submitMessageModelo', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
   beforeEach(() => {
-    fetchMock = vi.fn().mockResolvedValue(
+    fetchMock = vi.fn().mockResolvidoValor(
       okResponse({ id: '123', status: 'PENDING', category: 'UTILITY' }),
     );
     vi.stubGlobal('fetch', fetchMock);
   });
   afterEach(() => {
-    vi.unstubAllGlobals();
+    vi.unstubTodosGlobals();
   });
 
   it('POSTs to /{wabaId}/message_templates with the payload as JSON', async () => {
-    const result = await submitMessageTemplate({
+    const result = await submitMessageModelo({
       wabaId: 'WABA1',
       accessToken: 'tok',
       payload: {
@@ -60,13 +60,13 @@ describe('submitMessageTemplate', () => {
   });
 
   it('throws Meta\'s error message on non-OK responses', async () => {
-    fetchMock.mockResolvedValueOnce(
+    fetchMock.mockResolvidoValorOnce(
       errorResponse(429, {
         error: { message: 'Rate limit (#80007).' },
       }),
     );
     await expect(
-      submitMessageTemplate({
+      submitMessageModelo({
         wabaId: 'W',
         accessToken: 't',
         payload: {
@@ -80,9 +80,9 @@ describe('submitMessageTemplate', () => {
   });
 
   it('throws if Meta accepts but returns no id (data integrity guard)', async () => {
-    fetchMock.mockResolvedValueOnce(okResponse({ status: 'PENDING' }));
+    fetchMock.mockResolvidoValorOnce(okResponse({ status: 'PENDING' }));
     await expect(
-      submitMessageTemplate({
+      submitMessageModelo({
         wabaId: 'W',
         accessToken: 't',
         payload: {
@@ -96,19 +96,19 @@ describe('submitMessageTemplate', () => {
   });
 });
 
-describe('editMessageTemplate', () => {
+describe('editMessageModelo', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
   beforeEach(() => {
-    fetchMock = vi.fn().mockResolvedValue(okResponse({ success: true }));
+    fetchMock = vi.fn().mockResolvidoValor(okResponse({ success: true }));
     vi.stubGlobal('fetch', fetchMock);
   });
   afterEach(() => {
-    vi.unstubAllGlobals();
+    vi.unstubTodosGlobals();
   });
 
   it('POSTs to /{templateId} with only `components` in the body by default', async () => {
-    await editMessageTemplate({
-      metaTemplateId: 'TMPL_42',
+    await editMessageModelo({
+      metaModeloId: 'TMPL_42',
       accessToken: 'tok',
       components: [{ type: 'BODY', text: 'new body' }],
     });
@@ -122,8 +122,8 @@ describe('editMessageTemplate', () => {
   });
 
   it('includes `category` when provided', async () => {
-    await editMessageTemplate({
-      metaTemplateId: 'TMPL_42',
+    await editMessageModelo({
+      metaModeloId: 'TMPL_42',
       accessToken: 'tok',
       components: [{ type: 'BODY', text: 'x' }],
       category: 'MARKETING',
@@ -137,8 +137,8 @@ describe('editMessageTemplate', () => {
 
   it('returns success:true on Meta success', async () => {
     expect(
-      await editMessageTemplate({
-        metaTemplateId: 'T',
+      await editMessageModelo({
+        metaModeloId: 'T',
         accessToken: 't',
         components: [],
       }),
@@ -146,10 +146,10 @@ describe('editMessageTemplate', () => {
   });
 
   it('treats { success: false } as failure', async () => {
-    fetchMock.mockResolvedValueOnce(okResponse({ success: false }));
+    fetchMock.mockResolvidoValorOnce(okResponse({ success: false }));
     expect(
-      await editMessageTemplate({
-        metaTemplateId: 'T',
+      await editMessageModelo({
+        metaModeloId: 'T',
         accessToken: 't',
         components: [],
       }),
@@ -157,18 +157,18 @@ describe('editMessageTemplate', () => {
   });
 });
 
-describe('deleteMessageTemplate', () => {
+describe('deleteMessageModelo', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
   beforeEach(() => {
-    fetchMock = vi.fn().mockResolvedValue(okResponse({ success: true }));
+    fetchMock = vi.fn().mockResolvidoValor(okResponse({ success: true }));
     vi.stubGlobal('fetch', fetchMock);
   });
   afterEach(() => {
-    vi.unstubAllGlobals();
+    vi.unstubTodosGlobals();
   });
 
-  it('DELETEs with name only when no metaTemplateId is given', async () => {
-    await deleteMessageTemplate({
+  it('DELETEs with name only when no metaModeloId is given', async () => {
+    await deleteMessageModelo({
       wabaId: 'W',
       accessToken: 't',
       name: 'order_confirmation',
@@ -182,12 +182,12 @@ describe('deleteMessageTemplate', () => {
 
   it('scopes to one language variant by including hsm_id', async () => {
     // This is THE bug the plan flagged: without hsm_id, Meta deletes
-    // every language variant of `name`. Verifying it's always sent.
-    await deleteMessageTemplate({
+    // every language variant of `name`. Verificaring it's always sent.
+    await deleteMessageModelo({
       wabaId: 'W',
       accessToken: 't',
       name: 'order_confirmation',
-      metaTemplateId: '12345',
+      metaModeloId: '12345',
     });
     const [url] = fetchMock.mock.calls[0];
     expect(url).toContain('name=order_confirmation');
@@ -195,29 +195,29 @@ describe('deleteMessageTemplate', () => {
   });
 
   it('treats 404 as a no-op (template already gone on Meta)', async () => {
-    fetchMock.mockResolvedValueOnce(
+    fetchMock.mockResolvidoValorOnce(
       errorResponse(404, { error: { message: 'not found' } }),
     );
     await expect(
-      deleteMessageTemplate({
+      deleteMessageModelo({
         wabaId: 'W',
         accessToken: 't',
         name: 'x',
-        metaTemplateId: 'y',
+        metaModeloId: 'y',
       }),
     ).resolves.toBeUndefined();
   });
 
   it('throws on non-404 errors', async () => {
-    fetchMock.mockResolvedValueOnce(
+    fetchMock.mockResolvidoValorOnce(
       errorResponse(500, { error: { message: 'boom' } }),
     );
     await expect(
-      deleteMessageTemplate({
+      deleteMessageModelo({
         wabaId: 'W',
         accessToken: 't',
         name: 'x',
-        metaTemplateId: 'y',
+        metaModeloId: 'y',
       }),
     ).rejects.toThrow(/boom/);
   });

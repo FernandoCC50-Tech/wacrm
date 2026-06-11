@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
-import type { Contact, Tag, ContactTag, ContactNote, CustomField, ContactCustomValue, Deal } from '@/types';
+import type { Contact, Tag, ContactTag, ContactNota, CustomField, ContactCustomValor, Deal } from '@/types';
 import {
   Sheet,
   SheetContent,
@@ -13,38 +13,38 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsGatilho, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Rótulo } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-  Phone,
+  Telefone,
   Mail,
   Building2,
-  Copy,
+  Copiar,
   Check,
   Loader2,
   Plus,
   Trash2,
-  Save,
+  Salvar,
   X,
   DollarSign,
 } from 'lucide-react';
 
 interface ContactDetailViewProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onAbertoChange: (open: boolean) => void;
   contactId: string | null;
   onUpdated: () => void;
 }
 
 export function ContactDetailView({
   open,
-  onOpenChange,
+  onAbertoChange,
   contactId,
   onUpdated,
 }: ContactDetailViewProps) {
@@ -53,29 +53,29 @@ export function ContactDetailView({
 
   const [contact, setContact] = useState<Contact | null>(null);
   const [loading, setLoading] = useState(false);
-  const [copiedPhone, setCopiedPhone] = useState(false);
+  const [copiedTelefone, setCopiedTelefone] = useState(false);
 
   // Details tab
-  const [editName, setEditName] = useState('');
-  const [editPhone, setEditPhone] = useState('');
-  const [editEmail, setEditEmail] = useState('');
-  const [editCompany, setEditCompany] = useState('');
+  const [editNome, setEditarNome] = useState('');
+  const [editTelefone, setEditarTelefone] = useState('');
+  const [editE-mail, setEditarE-mail] = useState('');
+  const [editCompany, setEditarCompany] = useState('');
   const [savingDetails, setSavingDetails] = useState(false);
 
-  // Tags tab
-  const [allTags, setAllTags] = useState<Tag[]>([]);
+  // Etiquetas tab
+  const [allEtiquetas, setTodosEtiquetas] = useState<Tag[]>([]);
   const [contactTagIds, setContactTagIds] = useState<string[]>([]);
-  const [savingTags, setSavingTags] = useState(false);
+  const [savingEtiquetas, setSavingEtiquetas] = useState(false);
 
-  // Notes tab
-  const [notes, setNotes] = useState<ContactNote[]>([]);
-  const [newNote, setNewNote] = useState('');
-  const [savingNote, setSavingNote] = useState(false);
-  const [loadingNotes, setLoadingNotes] = useState(false);
+  // Notas tab
+  const [notes, setNotas] = useState<ContactNota[]>([]);
+  const [newNota, setNovoNota] = useState('');
+  const [savingNota, setSavingNota] = useState(false);
+  const [loadingNotas, setLoadingNotas] = useState(false);
 
   // Custom fields tab
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
-  const [customValues, setCustomValues] = useState<Record<string, string>>({});
+  const [customValors, setCustomValors] = useState<Record<string, string>>({});
   const [savingCustom, setSavingCustom] = useState(false);
   const [loadingCustom, setLoadingCustom] = useState(false);
 
@@ -95,31 +95,31 @@ export function ContactDetailView({
 
     if (data) {
       setContact(data);
-      setEditName(data.name ?? '');
-      setEditPhone(data.phone);
-      setEditEmail(data.email ?? '');
-      setEditCompany(data.company ?? '');
+      setEditarNome(data.name ?? '');
+      setEditarTelefone(data.phone);
+      setEditarE-mail(data.email ?? '');
+      setEditarCompany(data.company ?? '');
     }
     setLoading(false);
   }, [contactId, supabase]);
 
-  const fetchTags = useCallback(async () => {
+  const fetchEtiquetas = useCallback(async () => {
     if (!contactId) return;
 
-    const [tagsRes, contactTagsRes] = await Promise.all([
+    const [tagsRes, contactEtiquetasRes] = await Promise.all([
       supabase.from('tags').select('*').order('name'),
       supabase.from('contact_tags').select('tag_id').eq('contact_id', contactId),
     ]);
 
-    if (tagsRes.data) setAllTags(tagsRes.data);
-    if (contactTagsRes.data) {
-      setContactTagIds(contactTagsRes.data.map((ct) => ct.tag_id));
+    if (tagsRes.data) setTodosEtiquetas(tagsRes.data);
+    if (contactEtiquetasRes.data) {
+      setContactTagIds(contactEtiquetasRes.data.map((ct) => ct.tag_id));
     }
   }, [contactId, supabase]);
 
-  const fetchNotes = useCallback(async () => {
+  const fetchNotas = useCallback(async () => {
     if (!contactId) return;
-    setLoadingNotes(true);
+    setLoadingNotas(true);
 
     const { data } = await supabase
       .from('contact_notes')
@@ -127,8 +127,8 @@ export function ContactDetailView({
       .eq('contact_id', contactId)
       .order('created_at', { ascending: false });
 
-    if (data) setNotes(data);
-    setLoadingNotes(false);
+    if (data) setNotas(data);
+    setLoadingNotas(false);
   }, [contactId, supabase]);
 
   const fetchCustomFields = useCallback(async () => {
@@ -149,7 +149,7 @@ export function ContactDetailView({
       valuesRes.data.forEach((v) => {
         map[v.custom_field_id] = v.value ?? '';
       });
-      setCustomValues(map);
+      setCustomValors(map);
     }
     setLoadingCustom(false);
   }, [contactId, supabase]);
@@ -169,23 +169,23 @@ export function ContactDetailView({
   useEffect(() => {
     if (open && contactId) {
       fetchContact();
-      fetchTags();
-      fetchNotes();
+      fetchEtiquetas();
+      fetchNotas();
       fetchCustomFields();
       fetchDeals();
     }
-  }, [open, contactId, fetchContact, fetchTags, fetchNotes, fetchCustomFields, fetchDeals]);
+  }, [open, contactId, fetchContact, fetchEtiquetas, fetchNotas, fetchCustomFields, fetchDeals]);
 
-  async function copyPhone() {
+  async function copyTelefone() {
     if (!contact) return;
     await navigator.clipboard.writeText(contact.phone);
-    setCopiedPhone(true);
-    setTimeout(() => setCopiedPhone(false), 2000);
+    setCopiedTelefone(true);
+    setTimeout(() => setCopiedTelefone(false), 2000);
   }
 
   async function saveDetails() {
-    if (!contactId || !editPhone.trim()) {
-      toast.error('Phone number is required');
+    if (!contactId || !editTelefone.trim()) {
+      toast.error('Número de telefone is required');
       return;
     }
 
@@ -193,16 +193,16 @@ export function ContactDetailView({
     const { error } = await supabase
       .from('contacts')
       .update({
-        name: editName.trim() || null,
-        phone: editPhone.trim(),
-        email: editEmail.trim() || null,
+        name: editNome.trim() || null,
+        phone: editTelefone.trim(),
+        email: editE-mail.trim() || null,
         company: editCompany.trim() || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', contactId);
 
     if (error) {
-      toast.error('Failed to update contact');
+      toast.error('Falhou to update contact');
     } else {
       toast.success('Contact updated');
       fetchContact();
@@ -213,11 +213,11 @@ export function ContactDetailView({
 
   async function toggleTag(tagId: string) {
     if (!contactId) return;
-    setSavingTags(true);
+    setSavingEtiquetas(true);
 
-    const isSelected = contactTagIds.includes(tagId);
+    const isSelecionared = contactTagIds.includes(tagId);
 
-    if (isSelected) {
+    if (isSelecionared) {
       const { error } = await supabase
         .from('contact_tags')
         .delete()
@@ -236,12 +236,12 @@ export function ContactDetailView({
         onUpdated();
       }
     }
-    setSavingTags(false);
+    setSavingEtiquetas(false);
   }
 
-  async function addNote() {
-    if (!contactId || !newNote.trim()) return;
-    setSavingNote(true);
+  async function addNota() {
+    if (!contactId || !newNota.trim()) return;
+    setSavingNota(true);
 
     const {
       data: { session },
@@ -249,7 +249,7 @@ export function ContactDetailView({
     const user = session?.user;
     if (!user || !accountId) {
       toast.error('Not authenticated');
-      setSavingNote(false);
+      setSavingNota(false);
       return;
     }
 
@@ -257,30 +257,30 @@ export function ContactDetailView({
       contact_id: contactId,
       account_id: accountId,
       user_id: user.id,
-      note_text: newNote.trim(),
+      note_text: newNota.trim(),
     });
 
     if (error) {
-      toast.error('Failed to add note');
+      toast.error('Falhou to add note');
     } else {
-      setNewNote('');
-      fetchNotes();
-      toast.success('Note added');
+      setNovoNota('');
+      fetchNotas();
+      toast.success('Nota added');
     }
-    setSavingNote(false);
+    setSavingNota(false);
   }
 
-  async function deleteNote(noteId: string) {
+  async function deleteNota(noteId: string) {
     const { error } = await supabase
       .from('contact_notes')
       .delete()
       .eq('id', noteId);
 
     if (error) {
-      toast.error('Failed to delete note');
+      toast.error('Falhou to delete note');
     } else {
-      setNotes((prev) => prev.filter((n) => n.id !== noteId));
-      toast.success('Note deleted');
+      setNotas((prev) => prev.filter((n) => n.id !== noteId));
+      toast.success('Nota deleted');
     }
   }
 
@@ -289,13 +289,13 @@ export function ContactDetailView({
     setSavingCustom(true);
 
     try {
-      // Delete existing values and re-insert
+      // Excluir existing values and re-insert
       await supabase
         .from('contact_custom_values')
         .delete()
         .eq('contact_id', contactId);
 
-      const rows = Object.entries(customValues)
+      const rows = Object.entries(customValors)
         .filter(([, val]) => val.trim())
         .map(([fieldId, val]) => ({
           contact_id: contactId,
@@ -312,7 +312,7 @@ export function ContactDetailView({
 
       toast.success('Custom fields saved');
     } catch {
-      toast.error('Failed to save custom fields');
+      toast.error('Falhou to save custom fields');
     }
     setSavingCustom(false);
   }
@@ -328,54 +328,54 @@ export function ContactDetailView({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onAbertoChange={onAbertoChange}>
       <SheetContent
         side="right"
-        className="bg-slate-900 border-slate-700 text-slate-200 sm:max-w-lg w-full p-0"
+        classNome="bg-slate-900 border-slate-700 text-slate-200 sm:max-w-lg w-full p-0"
       >
         {loading || !contact ? (
-          <div className="flex items-center justify-center h-full">
-            <Loader2 className="size-6 animate-spin text-primary" />
+          <div classNome="flex items-center justify-center h-full">
+            <Loader2 classNome="size-6 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="flex flex-col h-full">
+          <div classNome="flex flex-col h-full">
             {/* Header */}
-            <SheetHeader className="p-4 border-b border-slate-700/50">
-              <div className="flex items-center gap-3">
-                <Avatar className="size-12 bg-slate-800 border border-slate-700">
-                  <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+            <SheetHeader classNome="p-4 border-b border-slate-700/50">
+              <div classNome="flex items-center gap-3">
+                <Avatar classNome="size-12 bg-slate-800 border border-slate-700">
+                  <AvatarFallback classNome="bg-primary/10 text-primary text-sm font-medium">
                     {getInitials(contact.name)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1 min-w-0">
-                  <SheetTitle className="text-white truncate">
+                <div classNome="flex-1 min-w-0">
+                  <SheetTitle classNome="text-white truncate">
                     {contact.name || 'Unknown'}
                   </SheetTitle>
-                  <SheetDescription className="text-slate-400 text-xs mt-0.5">
+                  <SheetDescription classNome="text-slate-400 text-xs mt-0.5">
                     Contact details
                   </SheetDescription>
-                  <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-slate-400">
+                  <div classNome="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-slate-400">
                     <button
-                      onClick={copyPhone}
-                      className="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer"
+                      onClick={copyTelefone}
+                      classNome="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer"
                     >
-                      <Phone className="size-3" />
+                      <Telefone classNome="size-3" />
                       {contact.phone}
-                      {copiedPhone ? (
-                        <Check className="size-3 text-primary" />
+                      {copiedTelefone ? (
+                        <Check classNome="size-3 text-primary" />
                       ) : (
-                        <Copy className="size-3" />
+                        <Copiar classNome="size-3" />
                       )}
                     </button>
                     {contact.email && (
-                      <span className="flex items-center gap-1">
-                        <Mail className="size-3" />
+                      <span classNome="flex items-center gap-1">
+                        <Mail classNome="size-3" />
                         {contact.email}
                       </span>
                     )}
                     {contact.company && (
-                      <span className="flex items-center gap-1">
-                        <Building2 className="size-3" />
+                      <span classNome="flex items-center gap-1">
+                        <Building2 classNome="size-3" />
                         {contact.company}
                       </span>
                     )}
@@ -385,123 +385,123 @@ export function ContactDetailView({
             </SheetHeader>
 
             {/* Tabs */}
-            <Tabs defaultValue="details" className="flex-1 flex flex-col min-h-0">
-              <TabsList className="bg-slate-800/50 border-b border-slate-700 mx-4 mt-3">
-                <TabsTrigger
+            <Tabs defaultValor="details" classNome="flex-1 flex flex-col min-h-0">
+              <TabsList classNome="bg-slate-800/50 border-b border-slate-700 mx-4 mt-3">
+                <TabsGatilho
                   value="details"
-                  className="data-active:bg-slate-800 data-active:text-primary text-slate-400"
+                  classNome="data-active:bg-slate-800 data-active:text-primary text-slate-400"
                 >
                   Details
-                </TabsTrigger>
-                <TabsTrigger
+                </TabsGatilho>
+                <TabsGatilho
                   value="tags"
-                  className="data-active:bg-slate-800 data-active:text-primary text-slate-400"
+                  classNome="data-active:bg-slate-800 data-active:text-primary text-slate-400"
                 >
-                  Tags
-                </TabsTrigger>
-                <TabsTrigger
+                  Etiquetas
+                </TabsGatilho>
+                <TabsGatilho
                   value="notes"
-                  className="data-active:bg-slate-800 data-active:text-primary text-slate-400"
+                  classNome="data-active:bg-slate-800 data-active:text-primary text-slate-400"
                 >
-                  Notes
-                </TabsTrigger>
-                <TabsTrigger
+                  Notas
+                </TabsGatilho>
+                <TabsGatilho
                   value="custom"
-                  className="data-active:bg-slate-800 data-active:text-primary text-slate-400"
+                  classNome="data-active:bg-slate-800 data-active:text-primary text-slate-400"
                 >
                   Custom Fields
-                </TabsTrigger>
-                <TabsTrigger
+                </TabsGatilho>
+                <TabsGatilho
                   value="deals"
-                  className="data-active:bg-slate-800 data-active:text-primary text-slate-400"
+                  classNome="data-active:bg-slate-800 data-active:text-primary text-slate-400"
                 >
                   Deals
-                </TabsTrigger>
+                </TabsGatilho>
               </TabsList>
 
               {/* Details Tab */}
-              <TabsContent value="details" className="flex-1 overflow-y-auto px-4 py-3">
-                <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-slate-400 text-xs">Name</Label>
+              <TabsContent value="details" classNome="flex-1 overflow-y-auto px-4 py-3">
+                <div classNome="space-y-3">
+                  <div classNome="space-y-1.5">
+                    <Rótulo classNome="text-slate-400 text-xs">Nome</Rótulo>
                     <Input
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      className="bg-slate-800 border-slate-700 text-white h-8 text-sm"
+                      value={editNome}
+                      onChange={(e) => setEditarNome(e.target.value)}
+                      classNome="bg-slate-800 border-slate-700 text-white h-8 text-sm"
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-slate-400 text-xs">
-                      Phone <span className="text-red-400">*</span>
-                    </Label>
+                  <div classNome="space-y-1.5">
+                    <Rótulo classNome="text-slate-400 text-xs">
+                      Telefone <span classNome="text-red-400">*</span>
+                    </Rótulo>
                     <Input
-                      value={editPhone}
-                      onChange={(e) => setEditPhone(e.target.value)}
-                      className="bg-slate-800 border-slate-700 text-white h-8 text-sm"
+                      value={editTelefone}
+                      onChange={(e) => setEditarTelefone(e.target.value)}
+                      classNome="bg-slate-800 border-slate-700 text-white h-8 text-sm"
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-slate-400 text-xs">Email</Label>
+                  <div classNome="space-y-1.5">
+                    <Rótulo classNome="text-slate-400 text-xs">E-mail</Rótulo>
                     <Input
-                      value={editEmail}
-                      onChange={(e) => setEditEmail(e.target.value)}
-                      className="bg-slate-800 border-slate-700 text-white h-8 text-sm"
+                      value={editE-mail}
+                      onChange={(e) => setEditarE-mail(e.target.value)}
+                      classNome="bg-slate-800 border-slate-700 text-white h-8 text-sm"
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-slate-400 text-xs">Company</Label>
+                  <div classNome="space-y-1.5">
+                    <Rótulo classNome="text-slate-400 text-xs">Company</Rótulo>
                     <Input
                       value={editCompany}
-                      onChange={(e) => setEditCompany(e.target.value)}
-                      className="bg-slate-800 border-slate-700 text-white h-8 text-sm"
+                      onChange={(e) => setEditarCompany(e.target.value)}
+                      classNome="bg-slate-800 border-slate-700 text-white h-8 text-sm"
                     />
                   </div>
                   <Button
                     onClick={saveDetails}
                     disabled={savingDetails}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground w-full"
+                    classNome="bg-primary hover:bg-primary/90 text-primary-foreground w-full"
                     size="sm"
                   >
                     {savingDetails ? (
-                      <Loader2 className="size-3.5 animate-spin" />
+                      <Loader2 classNome="size-3.5 animate-spin" />
                     ) : (
-                      <Save className="size-3.5" />
+                      <Salvar classNome="size-3.5" />
                     )}
-                    Save Changes
+                    Salvar Changes
                   </Button>
                 </div>
               </TabsContent>
 
-              {/* Tags Tab */}
-              <TabsContent value="tags" className="flex-1 overflow-y-auto px-4 py-3">
-                <div className="space-y-3">
-                  <p className="text-xs text-slate-400">
+              {/* Etiquetas Tab */}
+              <TabsContent value="tags" classNome="flex-1 overflow-y-auto px-4 py-3">
+                <div classNome="space-y-3">
+                  <p classNome="text-xs text-slate-400">
                     Click a tag to add or remove it from this contact.
                   </p>
-                  {allTags.length === 0 ? (
-                    <p className="text-sm text-slate-500">
-                      No tags available. Create tags in Settings.
+                  {allEtiquetas.length === 0 ? (
+                    <p classNome="text-sm text-slate-500">
+                      Nenhuma etiqueta available. Criar etiquetas in Settings.
                     </p>
                   ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {allTags.map((tag) => {
+                    <div classNome="flex flex-wrap gap-2">
+                      {allEtiquetas.map((tag) => {
                         const selected = contactTagIds.includes(tag.id);
                         return (
                           <button
                             key={tag.id}
                             onClick={() => toggleTag(tag.id)}
-                            disabled={savingTags}
-                            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-all cursor-pointer ${
+                            disabled={savingEtiquetas}
+                            classNome={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-all cursor-pointer ${
                               selected
                                 ? 'ring-2 ring-primary ring-offset-1 ring-offset-slate-900'
                                 : 'opacity-50 hover:opacity-80'
                             }`}
                             style={{
-                              backgroundColor: tag.color + '20',
+                              backgroundCor: tag.color + '20',
                               color: tag.color,
                             }}
                           >
-                            {selected && <Check className="size-3 mr-1" />}
+                            {selected && <Check classNome="size-3 mr-1" />}
                             {tag.name}
                           </button>
                         );
@@ -511,57 +511,57 @@ export function ContactDetailView({
                 </div>
               </TabsContent>
 
-              {/* Notes Tab */}
-              <TabsContent value="notes" className="flex-1 flex flex-col min-h-0 px-4 py-3">
-                <div className="space-y-2 mb-3">
+              {/* Notas Tab */}
+              <TabsContent value="notes" classNome="flex-1 flex flex-col min-h-0 px-4 py-3">
+                <div classNome="space-y-2 mb-3">
                   <Textarea
-                    value={newNote}
-                    onChange={(e) => setNewNote(e.target.value)}
+                    value={newNota}
+                    onChange={(e) => setNovoNota(e.target.value)}
                     placeholder="Write a note..."
-                    className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 min-h-[60px] text-sm resize-none"
+                    classNome="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 min-h-[60px] text-sm resize-none"
                   />
                   <Button
-                    onClick={addNote}
-                    disabled={!newNote.trim() || savingNote}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                    onClick={addNota}
+                    disabled={!newNota.trim() || savingNota}
+                    classNome="bg-primary hover:bg-primary/90 text-primary-foreground"
                     size="sm"
                   >
-                    {savingNote ? (
-                      <Loader2 className="size-3.5 animate-spin" />
+                    {savingNota ? (
+                      <Loader2 classNome="size-3.5 animate-spin" />
                     ) : (
-                      <Plus className="size-3.5" />
+                      <Plus classNome="size-3.5" />
                     )}
-                    Add Note
+                    Adicionar Nota
                   </Button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto space-y-2">
-                  {loadingNotes ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="size-5 animate-spin text-slate-500" />
+                <div classNome="flex-1 overflow-y-auto space-y-2">
+                  {loadingNotas ? (
+                    <div classNome="flex items-center justify-center py-8">
+                      <Loader2 classNome="size-5 animate-spin text-slate-500" />
                     </div>
                   ) : notes.length === 0 ? (
-                    <p className="text-sm text-slate-500 text-center py-8">
+                    <p classNome="text-sm text-slate-500 text-center py-8">
                       No notes yet.
                     </p>
                   ) : (
                     notes.map((note) => (
                       <div
                         key={note.id}
-                        className="rounded-lg bg-slate-800/50 border border-slate-700/50 p-3 group"
+                        classNome="rounded-lg bg-slate-800/50 border border-slate-700/50 p-3 group"
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm text-slate-300 whitespace-pre-wrap flex-1">
+                        <div classNome="flex items-start justify-between gap-2">
+                          <p classNome="text-sm text-slate-300 whitespace-pre-wrap flex-1">
                             {note.note_text}
                           </p>
                           <button
-                            onClick={() => deleteNote(note.id)}
-                            className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-red-400 transition-all cursor-pointer shrink-0"
+                            onClick={() => deleteNota(note.id)}
+                            classNome="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-red-400 transition-all cursor-pointer shrink-0"
                           >
-                            <Trash2 className="size-3.5" />
+                            <Trash2 classNome="size-3.5" />
                           </button>
                         </div>
-                        <p className="text-xs text-slate-500 mt-1.5">
+                        <p classNome="text-xs text-slate-500 mt-1.5">
                           {new Date(note.created_at).toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',
@@ -577,76 +577,76 @@ export function ContactDetailView({
               </TabsContent>
 
               {/* Custom Fields Tab */}
-              <TabsContent value="custom" className="flex-1 overflow-y-auto px-4 py-3">
+              <TabsContent value="custom" classNome="flex-1 overflow-y-auto px-4 py-3">
                 {loadingCustom ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="size-5 animate-spin text-slate-500" />
+                  <div classNome="flex items-center justify-center py-8">
+                    <Loader2 classNome="size-5 animate-spin text-slate-500" />
                   </div>
                 ) : customFields.length === 0 ? (
-                  <p className="text-sm text-slate-500 text-center py-8">
-                    No custom fields defined. Create them in Settings.
+                  <p classNome="text-sm text-slate-500 text-center py-8">
+                    No custom fields defined. Criar them in Settings.
                   </p>
                 ) : (
-                  <div className="space-y-3">
+                  <div classNome="space-y-3">
                     {customFields.map((field) => (
-                      <div key={field.id} className="space-y-1.5">
-                        <Label className="text-slate-400 text-xs capitalize">
+                      <div key={field.id} classNome="space-y-1.5">
+                        <Rótulo classNome="text-slate-400 text-xs capitalize">
                           {field.field_name}
-                        </Label>
+                        </Rótulo>
                         <Input
-                          value={customValues[field.id] ?? ''}
+                          value={customValors[field.id] ?? ''}
                           onChange={(e) =>
-                            setCustomValues((prev) => ({
+                            setCustomValors((prev) => ({
                               ...prev,
                               [field.id]: e.target.value,
                             }))
                           }
                           placeholder={`Enter ${field.field_name}...`}
-                          className="bg-slate-800 border-slate-700 text-white h-8 text-sm placeholder:text-slate-500"
+                          classNome="bg-slate-800 border-slate-700 text-white h-8 text-sm placeholder:text-slate-500"
                         />
                       </div>
                     ))}
                     <Button
                       onClick={saveCustomFields}
                       disabled={savingCustom}
-                      className="bg-primary hover:bg-primary/90 text-primary-foreground w-full"
+                      classNome="bg-primary hover:bg-primary/90 text-primary-foreground w-full"
                       size="sm"
                     >
                       {savingCustom ? (
-                        <Loader2 className="size-3.5 animate-spin" />
+                        <Loader2 classNome="size-3.5 animate-spin" />
                       ) : (
-                        <Save className="size-3.5" />
+                        <Salvar classNome="size-3.5" />
                       )}
-                      Save Custom Fields
+                      Salvar Custom Fields
                     </Button>
                   </div>
                 )}
               </TabsContent>
 
               {/* Deals Tab */}
-              <TabsContent value="deals" className="flex-1 overflow-y-auto px-4 py-3">
+              <TabsContent value="deals" classNome="flex-1 overflow-y-auto px-4 py-3">
                 {loadingDeals ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="size-5 animate-spin text-primary" />
+                  <div classNome="flex items-center justify-center py-8">
+                    <Loader2 classNome="size-5 animate-spin text-primary" />
                   </div>
                 ) : deals.length === 0 ? (
-                  <p className="text-xs text-slate-500">No deals yet</p>
+                  <p classNome="text-xs text-slate-500">No deals yet</p>
                 ) : (
-                  <div className="space-y-2">
+                  <div classNome="space-y-2">
                     {deals.map((deal) => (
                       <div
                         key={deal.id}
-                        className="rounded-lg border border-slate-700 bg-slate-800/50 p-3"
+                        classNome="rounded-lg border border-slate-700 bg-slate-800/50 p-3"
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium text-white">
+                        <div classNome="flex items-start justify-between gap-2">
+                          <p classNome="text-sm font-medium text-white">
                             {deal.title}
                           </p>
                           {deal.stage && (
                             <span
-                              className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+                              classNome="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
                               style={{
-                                backgroundColor: `${deal.stage.color}20`,
+                                backgroundCor: `${deal.stage.color}20`,
                                 color: deal.stage.color,
                               }}
                             >
@@ -654,9 +654,9 @@ export function ContactDetailView({
                             </span>
                           )}
                         </div>
-                        <div className="mt-1.5 flex items-center justify-between text-xs text-slate-400">
-                          <span className="flex items-center gap-1">
-                            <DollarSign className="size-3" />
+                        <div classNome="mt-1.5 flex items-center justify-between text-xs text-slate-400">
+                          <span classNome="flex items-center gap-1">
+                            <DollarSign classNome="size-3" />
                             {formatCurrency(
                               deal.value ?? 0,
                               deal.currency || defaultCurrency,
@@ -664,7 +664,7 @@ export function ContactDetailView({
                           </span>
                           {deal.status && deal.status !== 'open' && (
                             <span
-                              className={
+                              classNome={
                                 deal.status === 'won'
                                   ? 'text-primary'
                                   : 'text-red-400'

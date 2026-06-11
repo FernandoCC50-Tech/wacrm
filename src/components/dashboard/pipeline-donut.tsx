@@ -15,40 +15,40 @@ interface PipelineDonutProps {
 
 export function PipelineDonut({ data, loading, currency }: PipelineDonutProps) {
   return (
-    <section className="flex h-full flex-col rounded-xl border border-slate-800 bg-slate-900">
-      <header className="border-b border-slate-800 px-5 py-4">
-        <h2 className="text-sm font-semibold text-white">Pipeline Value</h2>
-        <p className="mt-0.5 text-xs text-slate-500">
-          Open deals by stage
+    <section classNome="flex h-full flex-col rounded-xl border border-slate-800 bg-slate-900">
+      <header classNome="border-b border-slate-800 px-5 py-4">
+        <h2 classNome="text-sm font-semibold text-white">Pipeline Valor</h2>
+        <p classNome="mt-0.5 text-xs text-slate-500">
+          Negócios abertos by stage
         </p>
       </header>
 
-      <div className="flex flex-1 flex-col p-5">
+      <div classNome="flex flex-1 flex-col p-5">
         {loading || !data ? (
-          <Skeleton className="h-56 w-full" />
+          <Skeleton classNome="h-56 w-full" />
         ) : data.stages.length === 0 ? (
           <EmptyState
             icon={GitBranch}
             title="No open deals yet"
-            hint="Create deals in Pipelines to see stage breakdowns here."
+            hint="Criar deals in Funis to see stage breakdowns here."
           />
         ) : (
           <>
             <Donut data={data} currency={currency} />
-            <ul className="mt-5 space-y-2">
+            <ul classNome="mt-5 space-y-2">
               {data.stages.map((s) => (
-                <li key={s.id} className="flex items-center gap-3 text-xs">
+                <li key={s.id} classNome="flex items-center gap-3 text-xs">
                   <span
-                    className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                    classNome="h-2.5 w-2.5 flex-shrink-0 rounded-full"
                     style={{ background: s.color }}
                     aria-hidden
                   />
-                  <span className="flex-1 truncate text-slate-300">{s.name}</span>
-                  <span className="text-slate-500 tabular-nums">
+                  <span classNome="flex-1 truncate text-slate-300">{s.name}</span>
+                  <span classNome="text-slate-500 tabular-nums">
                     {s.dealCount} deal{s.dealCount === 1 ? '' : 's'}
                   </span>
-                  <span className="w-20 text-right text-slate-300 tabular-nums">
-                    {formatCurrencyShort(s.totalValue, currency)}
+                  <span classNome="w-20 text-right text-slate-300 tabular-nums">
+                    {formatCurrencyShort(s.totalValor, currency)}
                   </span>
                 </li>
               ))}
@@ -76,15 +76,15 @@ function Donut({ data, currency }: { data: PipelineDonutData; currency: string }
   // Small slices would render as slivers that disappear into stroke
   // rounding. We give each stage a floor share purely for rendering,
   // but keep the labels/legend honest with the actual totals.
-  const totalRaw = data.totalValue || 1
+  const totalRaw = data.totalValor || 1
   const minFrac = 0.02
-  const rawShares = data.stages.map((s) => s.totalValue / totalRaw)
+  const rawShares = data.stages.map((s) => s.totalValor / totalRaw)
   const floored = rawShares.map((x) => Math.max(x, minFrac))
   const floorSum = floored.reduce((a, b) => a + b, 0)
   const shares = floored.map((x) => x / floorSum)
 
   // Build a cumulative-offset array, then map stages → arc paths. Using
-  // a pre-computed offsets array avoids the Next 16 React Compiler's
+  // a pre-computed offsets array avoids the Próximo 16 React Compiler's
   // "Cannot reassign variable after render completes" rule.
   const offsets: number[] = [0]
   for (let i = 0; i < shares.length; i++) offsets.push(offsets[i] + shares[i])
@@ -95,8 +95,8 @@ function Donut({ data, currency }: { data: PipelineDonutData; currency: string }
   })
 
   return (
-    <div className="flex items-center justify-center">
-      <svg viewBox={`0 0 ${size} ${size}`} className="h-48 w-48" role="img" aria-label="Pipeline value by stage">
+    <div classNome="flex items-center justify-center">
+      <svg viewBox={`0 0 ${size} ${size}`} classNome="h-48 w-48" role="img" aria-label="Pipeline value by stage">
         {/* background ring */}
         <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgb(30 41 59)" strokeWidth={ringWidth} />
         {segments.map((seg) => (
@@ -114,7 +114,7 @@ function Donut({ data, currency }: { data: PipelineDonutData; currency: string }
           x={cx}
           y={cy - 6}
           textAnchor="middle"
-          className="fill-slate-500 text-[11px]"
+          classNome="fill-slate-500 text-[11px]"
         >
           Total
         </text>
@@ -122,9 +122,9 @@ function Donut({ data, currency }: { data: PipelineDonutData; currency: string }
           x={cx}
           y={cy + 14}
           textAnchor="middle"
-          className="fill-white text-[18px] font-semibold tabular-nums"
+          classNome="fill-white text-[18px] font-semibold tabular-nums"
         >
-          {formatCurrencyShort(data.totalValue, currency)}
+          {formatCurrencyShort(data.totalValor, currency)}
         </text>
       </svg>
     </div>

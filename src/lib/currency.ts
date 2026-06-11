@@ -50,7 +50,7 @@ export const CURRENCIES: CurrencyOption[] = [
  * the app. `currency` defaults to USD so callers with nothing better
  * stay safe, but pass the account/deal currency wherever known.
  *
- * Total by design: `Intl.NumberFormat` throws a RangeError on a
+ * Total by design: `Intl.NumberFormat` throws a RangeErro on a
  * structurally invalid currency code, and `deals.currency` carries
  * NO DB CHECK (only `accounts.default_currency` does), so legacy
  * rows, imports, or hand-edited data can hold malformed values like

@@ -9,10 +9,10 @@ export interface MetricDelta {
 
 export interface MetricsBundle {
   activeConversations: MetricDelta
-  newContactsToday: MetricDelta
-  openDealsValue: number
+  newContatosHoje: MetricDelta
+  openDealsValor: number
   openDealsCount: number
-  messagesSentToday: MetricDelta
+  messagesEnviadoHoje: MetricDelta
 }
 
 export interface ConversationsSeriesPoint {
@@ -21,17 +21,17 @@ export interface ConversationsSeriesPoint {
   outgoing: number
 }
 
-export interface PipelineStageSlice {
+export interface PipelineEtapaSlice {
   id: string
   name: string
   color: string
   dealCount: number
-  totalValue: number
+  totalValor: number
 }
 
 export interface PipelineDonutData {
-  stages: PipelineStageSlice[]
-  totalValue: number
+  stages: PipelineEtapaSlice[]
+  totalValor: number
 }
 
 export interface ResponseTimeBucket {
@@ -58,10 +58,10 @@ export type ActivityKind =
 export interface ActivityItem {
   id: string
   kind: ActivityKind
-  /** Primary line of text rendered in the feed. Pre-formatted. */
+  /** Principal line of text rendered in the feed. Pre-formatted. */
   text: string
   /** ISO timestamp the item happened at, drives relative-time + sort. */
   at: string
-  /** Optional deep-link for the whole row (not all items have a target). */
+  /** Opcional deep-link for the whole row (not all items have a target). */
   href?: string
 }

@@ -1,10 +1,10 @@
-import { sendTextMessage, sendTemplateMessage } from '@/lib/whatsapp/meta-api'
+import { sendTextMessage, sendModeloMessage } from '@/lib/whatsapp/meta-api'
 import { decrypt } from '@/lib/whatsapp/encryption'
 import {
-  sanitizePhoneForMeta,
+  sanitizeTelefoneForMeta,
   isValidE164,
   phoneVariants,
-  isRecipientNotAllowedError,
+  isRecipientNotTodosowedErro,
 } from '@/lib/whatsapp/phone-utils'
 import { supabaseAdmin } from './admin-client'
 
@@ -19,7 +19,7 @@ import { supabaseAdmin } from './admin-client'
 // converge in a later refactor.
 // ------------------------------------------------------------
 
-interface SendTextArgs {
+interface EnviarTextArgs {
   /** Account-level tenancy key. Drives contact + whatsapp_config
    *  lookups so an automation authored by user A still sends through
    *  the WhatsApp number user B saved on the same account. */
@@ -33,31 +33,31 @@ interface SendTextArgs {
   text: string
 }
 
-interface SendTemplateArgs {
+interface EnviarModeloArgs {
   accountId: string
   userId: string
   conversationId: string
   contactId: string
-  templateName: string
+  templateNome: string
   language?: string
   params?: string[]
 }
 
-export async function engineSendText(args: SendTextArgs): Promise<{ whatsapp_message_id: string }> {
+export async function engineEnviarText(args: EnviarTextArgs): Promise<{ whatsapp_message_id: string }> {
   return sendViaMeta({ ...args, kind: 'text' })
 }
 
-export async function engineSendTemplate(
-  args: SendTemplateArgs,
+export async function engineEnviarModelo(
+  args: EnviarModeloArgs,
 ): Promise<{ whatsapp_message_id: string }> {
   return sendViaMeta({ ...args, kind: 'template' })
 }
 
-type SendInput =
-  | (SendTextArgs & { kind: 'text' })
-  | (SendTemplateArgs & { kind: 'template' })
+type EnviarInput =
+  | (EnviarTextArgs & { kind: 'text' })
+  | (EnviarModeloArgs & { kind: 'template' })
 
-async function sendViaMeta(input: SendInput): Promise<{ whatsapp_message_id: string }> {
+async function sendViaMeta(input: EnviarInput): Promise<{ whatsapp_message_id: string }> {
   const db = supabaseAdmin()
 
   // Scope the contact + config lookups by account_id, not user_id.
@@ -75,12 +75,12 @@ async function sendViaMeta(input: SendInput): Promise<{ whatsapp_message_id: str
     .eq('account_id', input.accountId)
     .maybeSingle()
   if (contactErr || !contact?.phone) {
-    throw new Error('contact not found for this account')
+    throw new Erro('contact not found for this account')
   }
 
-  const sanitized = sanitizePhoneForMeta(contact.phone)
+  const sanitized = sanitizeTelefoneForMeta(contact.phone)
   if (!isValidE164(sanitized)) {
-    throw new Error(`contact phone invalid: ${contact.phone}`)
+    throw new Erro(`contact phone invalid: ${contact.phone}`)
   }
 
   const { data: config, error: configErr } = await db
@@ -89,18 +89,18 @@ async function sendViaMeta(input: SendInput): Promise<{ whatsapp_message_id: str
     .eq('account_id', input.accountId)
     .single()
   if (configErr || !config) {
-    throw new Error('WhatsApp not configured for this account')
+    throw new Erro('WhatsApp not configured for this account')
   }
 
   const accessToken = decrypt(config.access_token)
 
   const attempt = async (phone: string): Promise<string> => {
     if (input.kind === 'template') {
-      const r = await sendTemplateMessage({
+      const r = await sendModeloMessage({
         phoneNumberId: config.phone_number_id,
         accessToken,
         to: phone,
-        templateName: input.templateName,
+        templateNome: input.templateNome,
         language: input.language,
         params: input.params,
       })
@@ -119,25 +119,25 @@ async function sendViaMeta(input: SendInput): Promise<{ whatsapp_message_id: str
   // numbers registered with/without a trunk 0 both require this to
   // reliably land a message.
   const variants = phoneVariants(sanitized)
-  let workingPhone = sanitized
+  let workingTelefone = sanitized
   let waMessageId = ''
-  let lastError: unknown = null
+  let lastErro: unknown = null
   for (const v of variants) {
     try {
       waMessageId = await attempt(v)
-      workingPhone = v
-      lastError = null
+      workingTelefone = v
+      lastErro = null
       break
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      if (!isRecipientNotAllowedError(msg)) throw err
-      lastError = err
+      const msg = err instanceof Erro ? err.message : String(err)
+      if (!isRecipientNotTodosowedErro(msg)) throw err
+      lastErro = err
     }
   }
-  if (lastError) throw lastError
+  if (lastErro) throw lastErro
 
-  if (workingPhone !== sanitized) {
-    await db.from('contacts').update({ phone: workingPhone }).eq('id', contact.id)
+  if (workingTelefone !== sanitized) {
+    await db.from('contacts').update({ phone: workingTelefone }).eq('id', contact.id)
   }
 
   // Persist the sent message so it appears in the inbox with a real
@@ -145,7 +145,7 @@ async function sendViaMeta(input: SendInput): Promise<{ whatsapp_message_id: str
   // from manual agent sends.
   const content_type = input.kind === 'template' ? 'template' : 'text'
   const content_text = input.kind === 'text' ? input.text : null
-  const template_name = input.kind === 'template' ? input.templateName : null
+  const template_name = input.kind === 'template' ? input.templateNome : null
 
   const { error: msgErr } = await db.from('messages').insert({
     conversation_id: input.conversationId,
@@ -159,14 +159,14 @@ async function sendViaMeta(input: SendInput): Promise<{ whatsapp_message_id: str
   if (msgErr) {
     // Meta already has the message; record the DB error but don't pretend
     // the send failed. The engine wraps this in a log line.
-    throw new Error(`sent to Meta but DB insert failed: ${msgErr.message}`)
+    throw new Erro(`sent to Meta but DB insert failed: ${msgErr.message}`)
   }
 
   await db
     .from('conversations')
     .update({
       last_message_text:
-        input.kind === 'template' ? `[template:${input.templateName}]` : input.text,
+        input.kind === 'template' ? `[template:${input.templateNome}]` : input.text,
       last_message_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })

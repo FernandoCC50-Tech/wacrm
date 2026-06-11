@@ -27,7 +27,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 import {
   Bar,
   CartesianGrid,
-  Label,
+  Rótulo,
   BarChart as RechartsBarChart,
   Legend as RechartsLegend,
   ResponsiveContainer,
@@ -39,10 +39,10 @@ import type { AxisDomain } from "recharts/types/util/types"
 
 import { cn as cx } from "@/lib/utils"
 import {
-  AvailableChartColors,
-  type AvailableChartColorsKeys,
-  constructCategoryColors,
-  getColorClassName,
+  AvailableChartCors,
+  type AvailableChartCorsKeys,
+  constructCategoryCors,
+  getCorClassNome,
 } from "./chart-colors"
 import { getYAxisDomain } from "./get-y-axis-domain"
 import { useOnWindowResize } from "./use-on-window-resize"
@@ -111,8 +111,8 @@ const renderShape = (
 
 interface LegendItemProps {
   name: string
-  color: AvailableChartColorsKeys
-  onClick?: (name: string, color: AvailableChartColorsKeys) => void
+  color: AvailableChartCorsKeys
+  onClick?: (name: string, color: AvailableChartCorsKeys) => void
   activeLegend?: string
 }
 
@@ -122,12 +122,12 @@ const LegendItem = ({
   onClick,
   activeLegend,
 }: LegendItemProps) => {
-  const hasOnValueChange = !!onClick
+  const hasOnValorChange = !!onClick
   return (
     <li
-      className={cx(
+      classNome={cx(
         "group inline-flex flex-nowrap items-center gap-1.5 rounded-sm px-2 py-1 whitespace-nowrap transition",
-        hasOnValueChange
+        hasOnValorChange
           ? "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
           : "cursor-default",
       )}
@@ -137,18 +137,18 @@ const LegendItem = ({
       }}
     >
       <span
-        className={cx(
+        classNome={cx(
           "size-2 shrink-0 rounded-xs",
-          getColorClassName(color, "bg"),
+          getCorClassNome(color, "bg"),
           activeLegend && activeLegend !== name ? "opacity-40" : "opacity-100",
         )}
         aria-hidden={true}
       />
       <p
-        className={cx(
+        classNome={cx(
           "truncate text-xs whitespace-nowrap",
           "text-gray-700 dark:text-gray-300",
-          hasOnValueChange &&
+          hasOnValorChange &&
             "group-hover:text-gray-900 dark:group-hover:text-gray-50",
           activeLegend && activeLegend !== name ? "opacity-40" : "opacity-100",
         )}
@@ -191,7 +191,7 @@ const ScrollButton = ({ icon, onClick, disabled }: ScrollButtonProps) => {
   return (
     <button
       type="button"
-      className={cx(
+      classNome={cx(
         "group inline-flex size-5 items-center truncate rounded-sm transition",
         disabled
           ? "cursor-not-allowed text-gray-400 dark:text-gray-600"
@@ -211,14 +211,14 @@ const ScrollButton = ({ icon, onClick, disabled }: ScrollButtonProps) => {
         setIsPressed(false)
       }}
     >
-      <Icon className="size-full" aria-hidden="true" />
+      <Icon classNome="size-full" aria-hidden="true" />
     </button>
   )
 }
 
 interface LegendProps extends React.OlHTMLAttributes<HTMLOListElement> {
   categories: string[]
-  colors?: AvailableChartColorsKeys[]
+  colors?: AvailableChartCorsKeys[]
   onClickLegendItem?: (category: string, color: string) => void
   activeLegend?: string
   enableLegendSlider?: boolean
@@ -232,8 +232,8 @@ type HasScrollProps = {
 const Legend = React.forwardRef<HTMLOListElement, LegendProps>((props, ref) => {
   const {
     categories,
-    colors = AvailableChartColors,
-    className,
+    colors = AvailableChartCors,
+    classNome,
     onClickLegendItem,
     activeLegend,
     enableLegendSlider = false,
@@ -327,13 +327,13 @@ const Legend = React.forwardRef<HTMLOListElement, LegendProps>((props, ref) => {
   return (
     <ol
       ref={ref}
-      className={cx("relative overflow-hidden", className)}
+      classNome={cx("relative overflow-hidden", classNome)}
       {...other}
     >
       <div
         ref={scrollableRef}
         tabIndex={0}
-        className={cx(
+        classNome={cx(
           "flex h-full",
           enableLegendSlider
             ? hasScroll?.right || hasScroll?.left
@@ -346,7 +346,7 @@ const Legend = React.forwardRef<HTMLOListElement, LegendProps>((props, ref) => {
           <LegendItem
             key={`item-${index}`}
             name={category}
-            color={colors[index] as AvailableChartColorsKeys}
+            color={colors[index] as AvailableChartCorsKeys}
             onClick={onClickLegendItem}
             activeLegend={activeLegend}
           />
@@ -356,7 +356,7 @@ const Legend = React.forwardRef<HTMLOListElement, LegendProps>((props, ref) => {
         <>
           <div
             ref={scrollButtonsRef}
-            className={cx(
+            classNome={cx(
               "absolute top-0 right-0 bottom-0 flex h-full items-center justify-center pr-1",
               "bg-white dark:bg-gray-950",
             )}
@@ -384,12 +384,12 @@ const Legend = React.forwardRef<HTMLOListElement, LegendProps>((props, ref) => {
   )
 })
 
-Legend.displayName = "Legend"
+Legend.displayNome = "Legend"
 
 const ChartLegend = (
   { payload }: any,
-  categoryColors: Map<string, AvailableChartColorsKeys>,
-  setLegendHeight: React.Dispatch<React.SetStateAction<number>>,
+  categoryCors: Map<string, AvailableChartCorsKeys>,
+  setLegendHeight: React.Dispatch<React.SetStateAção<number>>,
   activeLegend: string | undefined,
   onClick?: (category: string, color: string) => void,
   enableLegendSlider?: boolean,
@@ -413,7 +413,7 @@ const ChartLegend = (
     <div
       style={{ paddingLeft: paddingLeft }}
       ref={legendRef}
-      className={cx(
+      classNome={cx(
         "flex items-center",
         { "justify-center": legendPosition === "center" },
         {
@@ -425,7 +425,7 @@ const ChartLegend = (
       <Legend
         categories={filteredPayload.map((entry: any) => entry.value)}
         colors={filteredPayload.map((entry: any) =>
-          categoryColors.get(entry.value),
+          categoryCors.get(entry.value),
         )}
         onClickLegendItem={onClick}
         activeLegend={activeLegend}
@@ -443,7 +443,7 @@ type PayloadItem = {
   category: string
   value: number
   index: string
-  color: AvailableChartColorsKeys
+  color: AvailableChartCorsKeys
   type?: string
   payload: any
 }
@@ -468,35 +468,35 @@ const ChartTooltip = ({
   if (active && payload && payload.length) {
     return (
       <div
-        className={cx(
+        classNome={cx(
           "rounded-md border text-sm shadow-md",
           "border-gray-200 dark:border-gray-800",
           "bg-white dark:bg-gray-950",
         )}
       >
-        <div className={cx("border-b border-inherit px-4 py-2")}>
+        <div classNome={cx("border-b border-inherit px-4 py-2")}>
           <p
-            className={cx("font-medium", "text-gray-900 dark:text-gray-50")}
+            classNome={cx("font-medium", "text-gray-900 dark:text-gray-50")}
           >
             {label}
           </p>
         </div>
-        <div className={cx("space-y-1 px-4 py-2")}>
+        <div classNome={cx("space-y-1 px-4 py-2")}>
           {payload.map(({ value, category, color }, index) => (
             <div
               key={`id-${index}`}
-              className="flex items-center justify-between space-x-8"
+              classNome="flex items-center justify-between space-x-8"
             >
-              <div className="flex items-center space-x-2">
+              <div classNome="flex items-center space-x-2">
                 <span
                   aria-hidden="true"
-                  className={cx(
+                  classNome={cx(
                     "size-2 shrink-0 rounded-xs",
-                    getColorClassName(color, "bg"),
+                    getCorClassNome(color, "bg"),
                   )}
                 />
                 <p
-                  className={cx(
+                  classNome={cx(
                     "text-right whitespace-nowrap",
                     "text-gray-700 dark:text-gray-300",
                   )}
@@ -505,7 +505,7 @@ const ChartTooltip = ({
                 </p>
               </div>
               <p
-                className={cx(
+                classNome={cx(
                   "text-right font-medium whitespace-nowrap tabular-nums",
                   "text-gray-900 dark:text-gray-50",
                 )}
@@ -535,7 +535,7 @@ interface BarChartProps extends React.HTMLAttributes<HTMLDivElement> {
   data: Record<string, any>[]
   index: string
   categories: string[]
-  colors?: AvailableChartColorsKeys[]
+  colors?: AvailableChartCorsKeys[]
   valueFormatter?: (value: number) => string
   startEndOnly?: boolean
   showXAxis?: boolean
@@ -545,16 +545,16 @@ interface BarChartProps extends React.HTMLAttributes<HTMLDivElement> {
   intervalType?: "preserveStartEnd" | "equidistantPreserveStart"
   showTooltip?: boolean
   showLegend?: boolean
-  autoMinValue?: boolean
-  minValue?: number
-  maxValue?: number
+  autoMinValor?: boolean
+  minValor?: number
+  maxValor?: number
   allowDecimals?: boolean
-  onValueChange?: (value: BarChartEventProps) => void
+  onValorChange?: (value: BarChartEventProps) => void
   enableLegendSlider?: boolean
   tickGap?: number
   barCategoryGap?: string | number
-  xAxisLabel?: string
-  yAxisLabel?: string
+  xAxisRótulo?: string
+  yAxisRótulo?: string
   layout?: "vertical" | "horizontal"
   type?: "default" | "stacked" | "percent"
   legendPosition?: "left" | "center" | "right"
@@ -568,7 +568,7 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
       data = [],
       categories = [],
       index,
-      colors = AvailableChartColors,
+      colors = AvailableChartCors,
       valueFormatter = (value: number) => value.toString(),
       startEndOnly = false,
       showXAxis = true,
@@ -578,17 +578,17 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
       intervalType = "equidistantPreserveStart",
       showTooltip = true,
       showLegend = true,
-      autoMinValue = false,
-      minValue,
-      maxValue,
+      autoMinValor = false,
+      minValor,
+      maxValor,
       allowDecimals = true,
-      className,
-      onValueChange,
+      classNome,
+      onValorChange,
       enableLegendSlider = false,
       barCategoryGap,
       tickGap = 5,
-      xAxisLabel,
-      yAxisLabel,
+      xAxisRótulo,
+      yAxisRótulo,
       layout = "horizontal",
       type = "default",
       legendPosition = "right",
@@ -597,22 +597,22 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
       ...other
     } = props
     const CustomTooltip = customTooltip
-    const paddingValue =
+    const paddingValor =
       (!showXAxis && !showYAxis) || (startEndOnly && !showYAxis) ? 0 : 20
     const [legendHeight, setLegendHeight] = React.useState(60)
-    const [activeLegend, setActiveLegend] = React.useState<string | undefined>(
+    const [activeLegend, setAtivoLegend] = React.useState<string | undefined>(
       undefined,
     )
-    const categoryColors = constructCategoryColors(categories, colors)
-    const [activeBar, setActiveBar] = React.useState<any | undefined>(undefined)
-    const yAxisDomain = getYAxisDomain(autoMinValue, minValue, maxValue)
-    const hasOnValueChange = !!onValueChange
+    const categoryCors = constructCategoryCors(categories, colors)
+    const [activeBar, setAtivoBar] = React.useState<any | undefined>(undefined)
+    const yAxisDomain = getYAxisDomain(autoMinValor, minValor, maxValor)
+    const hasOnValorChange = !!onValorChange
     const stacked = type === "stacked" || type === "percent"
 
-    const prevActiveRef = React.useRef<boolean | undefined>(undefined)
+    const prevAtivoRef = React.useRef<boolean | undefined>(undefined)
     // Widened from `string | undefined` to match the recharts 3.x
     // `label` type (see the ChartTooltipProps note below).
-    const prevLabelRef = React.useRef<string | number | undefined>(undefined)
+    const prevRótuloRef = React.useRef<string | number | undefined>(undefined)
 
     function valueToPercent(value: number) {
       return `${(value * 100).toFixed(0)}%`
@@ -620,18 +620,18 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
 
     function onBarClick(data: any, _: any, event: React.MouseEvent) {
       event.stopPropagation()
-      if (!onValueChange) return
+      if (!onValorChange) return
       if (deepEqual(activeBar, { ...data.payload, value: data.value })) {
-        setActiveLegend(undefined)
-        setActiveBar(undefined)
-        onValueChange?.(null)
+        setAtivoLegend(undefined)
+        setAtivoBar(undefined)
+        onValorChange?.(null)
       } else {
-        setActiveLegend(data.tooltipPayload?.[0]?.dataKey)
-        setActiveBar({
+        setAtivoLegend(data.tooltipPayload?.[0]?.dataKey)
+        setAtivoBar({
           ...data.payload,
           value: data.value,
         })
-        onValueChange?.({
+        onValorChange?.({
           eventType: "bar",
           categoryClicked: data.tooltipPayload?.[0]?.dataKey,
           ...data.payload,
@@ -640,24 +640,24 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
     }
 
     function onCategoryClick(dataKey: string) {
-      if (!hasOnValueChange) return
+      if (!hasOnValorChange) return
       if (dataKey === activeLegend && !activeBar) {
-        setActiveLegend(undefined)
-        onValueChange?.(null)
+        setAtivoLegend(undefined)
+        onValorChange?.(null)
       } else {
-        setActiveLegend(dataKey)
-        onValueChange?.({
+        setAtivoLegend(dataKey)
+        onValorChange?.({
           eventType: "category",
           categoryClicked: dataKey,
         })
       }
-      setActiveBar(undefined)
+      setAtivoBar(undefined)
     }
 
     return (
       <div
         ref={forwardedRef}
-        className={cx("h-80 w-full", className)}
+        classNome={cx("h-80 w-full", classNome)}
         tremor-id="tremor-raw"
         {...other}
       >
@@ -665,18 +665,18 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
           <RechartsBarChart
             data={data}
             onClick={
-              hasOnValueChange && (activeLegend || activeBar)
+              hasOnValorChange && (activeLegend || activeBar)
                 ? () => {
-                    setActiveBar(undefined)
-                    setActiveLegend(undefined)
-                    onValueChange?.(null)
+                    setAtivoBar(undefined)
+                    setAtivoLegend(undefined)
+                    onValorChange?.(null)
                   }
                 : undefined
             }
             margin={{
-              bottom: xAxisLabel ? 30 : undefined,
-              left: yAxisLabel ? 20 : undefined,
-              right: yAxisLabel ? 5 : undefined,
+              bottom: xAxisRótulo ? 30 : undefined,
+              left: yAxisRótulo ? 20 : undefined,
+              right: yAxisRótulo ? 5 : undefined,
               top: 5,
             }}
             stackOffset={type === "percent" ? "expand" : undefined}
@@ -685,7 +685,7 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
           >
             {showGridLines ? (
               <CartesianGrid
-                className={cx("stroke-gray-200 stroke-1 dark:stroke-gray-800")}
+                classNome={cx("stroke-gray-200 stroke-1 dark:stroke-gray-800")}
                 horizontal={layout !== "vertical"}
                 vertical={layout === "vertical"}
               />
@@ -698,7 +698,7 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
               }}
               fill=""
               stroke=""
-              className={cx(
+              classNome={cx(
                 "text-xs",
                 "fill-gray-500 dark:fill-gray-500",
                 { "mt-4": layout !== "vertical" },
@@ -709,8 +709,8 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
               {...(layout !== "vertical"
                 ? {
                     padding: {
-                      left: paddingValue,
-                      right: paddingValue,
+                      left: paddingValor,
+                      right: paddingValor,
                     },
                     dataKey: index,
                     interval: startEndOnly ? "preserveStartEnd" : intervalType,
@@ -726,14 +726,14 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
                     allowDecimals: allowDecimals,
                   })}
             >
-              {xAxisLabel && (
-                <Label
+              {xAxisRótulo && (
+                <Rótulo
                   position="insideBottom"
                   offset={-20}
-                  className="fill-gray-800 text-sm font-medium dark:fill-gray-200"
+                  classNome="fill-gray-800 text-sm font-medium dark:fill-gray-200"
                 >
-                  {xAxisLabel}
-                </Label>
+                  {xAxisRótulo}
+                </Rótulo>
               )}
             </XAxis>
             <YAxis
@@ -743,7 +743,7 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
               tickLine={false}
               fill=""
               stroke=""
-              className={cx(
+              classNome={cx(
                 "text-xs",
                 "fill-gray-500 dark:fill-gray-500",
               )}
@@ -770,21 +770,21 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
                     interval: "equidistantPreserveStart",
                   })}
             >
-              {yAxisLabel && (
-                <Label
+              {yAxisRótulo && (
+                <Rótulo
                   position="insideLeft"
                   style={{ textAnchor: "middle" }}
                   angle={-90}
                   offset={-15}
-                  className="fill-gray-800 text-sm font-medium dark:fill-gray-200"
+                  classNome="fill-gray-800 text-sm font-medium dark:fill-gray-200"
                 >
-                  {yAxisLabel}
-                </Label>
+                  {yAxisRótulo}
+                </Rótulo>
               )}
             </YAxis>
             <Tooltip
               wrapperStyle={{ outline: "none" }}
-              isAnimationActive={true}
+              isAnimationAtivo={true}
               animationDuration={100}
               cursor={{ fill: "#d1d5db", opacity: "0.15" }}
               offset={20}
@@ -798,9 +798,9 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
                       category: item.dataKey,
                       value: item.value,
                       index: item.payload[index],
-                      color: categoryColors.get(
+                      color: categoryCors.get(
                         item.dataKey,
-                      ) as AvailableChartColorsKeys,
+                      ) as AvailableChartCorsKeys,
                       type: item.type,
                       payload: item.payload,
                     }))
@@ -808,12 +808,12 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
 
                 if (
                   tooltipCallback &&
-                  (active !== prevActiveRef.current ||
-                    label !== prevLabelRef.current)
+                  (active !== prevAtivoRef.current ||
+                    label !== prevRótuloRef.current)
                 ) {
                   tooltipCallback({ active, payload: cleanPayload, label })
-                  prevActiveRef.current = active
-                  prevLabelRef.current = label
+                  prevAtivoRef.current = active
+                  prevRótuloRef.current = label
                 }
 
                 return showTooltip && active ? (
@@ -841,10 +841,10 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
                 content={({ payload }) =>
                   ChartLegend(
                     { payload },
-                    categoryColors,
+                    categoryCors,
                     setLegendHeight,
                     activeLegend,
-                    hasOnValueChange
+                    hasOnValorChange
                       ? (clickedLegendItem: string) =>
                           onCategoryClick(clickedLegendItem)
                       : undefined,
@@ -857,19 +857,19 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
             ) : null}
             {categories.map((category) => (
               <Bar
-                className={cx(
-                  getColorClassName(
-                    categoryColors.get(category) as AvailableChartColorsKeys,
+                classNome={cx(
+                  getCorClassNome(
+                    categoryCors.get(category) as AvailableChartCorsKeys,
                     "fill",
                   ),
-                  onValueChange ? "cursor-pointer" : "",
+                  onValorChange ? "cursor-pointer" : "",
                 )}
                 key={category}
                 name={category}
                 type="linear"
                 dataKey={category}
                 stackId={stacked ? "stack" : undefined}
-                isAnimationActive={false}
+                isAnimationAtivo={false}
                 fill=""
                 shape={(props: any) =>
                   renderShape(props, activeBar, activeLegend, layout)
@@ -884,6 +884,6 @@ const BarChart = React.forwardRef<HTMLDivElement, BarChartProps>(
   },
 )
 
-BarChart.displayName = "BarChart"
+BarChart.displayNome = "BarChart"
 
 export { BarChart, type BarChartEventProps, type BarChartProps, type TooltipProps }

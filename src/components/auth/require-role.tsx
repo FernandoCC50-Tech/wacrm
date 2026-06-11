@@ -3,12 +3,12 @@
 import type { ReactNode } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
-import { hasMinRole, type AccountRole } from "@/lib/auth/roles";
+import { hasMinFunção, type AccountFunção } from "@/lib/auth/roles";
 
-interface RequireRoleProps {
+interface RequireFunçãoProps {
   /** Minimum role to render `children`. Uses the standard hierarchy
    *  owner > admin > agent > viewer. */
-  min: AccountRole;
+  min: AccountFunção;
   /** What to render while the role is below `min` OR while we don't
    *  yet know the role (`profileLoading` is true). Defaults to
    *  `null` — most call sites just want the gated element to be
@@ -19,7 +19,7 @@ interface RequireRoleProps {
 }
 
 /**
- * `<RequireRole min="admin">…</RequireRole>` — conditional render
+ * `<RequireFunção min="admin">…</RequireFunção>` — conditional render
  * helper for UI gated by account role.
  *
  * Three states:
@@ -29,19 +29,19 @@ interface RequireRoleProps {
  *   2. role ≥ min     → render `children`.
  *   3. role < min     → render `fallback`.
  *
- * Mirrors the server-side `requireRole(min)` from `@/lib/auth/account`
+ * Mirrors the server-side `requireFunção(min)` from `@/lib/auth/account`
  * so client and server gates stay aligned by construction.
  */
-export function RequireRole({
+export function RequireFunção({
   min,
   fallback = null,
   children,
-}: RequireRoleProps) {
-  const { profileLoading, accountRole } = useAuth();
+}: RequireFunçãoProps) {
+  const { profileLoading, accountFunção } = useAuth();
 
   if (profileLoading) return <>{fallback}</>;
-  if (!accountRole) return <>{fallback}</>;
-  if (!hasMinRole(accountRole, min)) return <>{fallback}</>;
+  if (!accountFunção) return <>{fallback}</>;
+  if (!hasMinFunção(accountFunção, min)) return <>{fallback}</>;
 
   return <>{children}</>;
 }

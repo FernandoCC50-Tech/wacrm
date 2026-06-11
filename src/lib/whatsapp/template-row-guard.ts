@@ -2,10 +2,10 @@
  * Minimal shape check for a `message_templates` row loaded via Supabase.
  *
  * Supabase queries return `any` for untyped clients, so the routes
- * cast with `as MessageTemplate`. That cast is a lie — a row from
+ * cast with `as MessageModelo`. That cast is a lie — a row from
  * sync, a webhook race, or a malformed insert can land without the
  * fields the send-builder needs. When that happens, the builder
- * crashes deep inside the call stack with a TypeError that looks
+ * crashes deep inside the call stack with a TypeErro that looks
  * like a 500 to the user and gives no hint about which row was bad.
  *
  * Catch it at the boundary: assert the few fields the send path
@@ -17,9 +17,9 @@
  * of object at all" check.
  */
 
-import type { MessageTemplate } from '@/types';
+import type { MessageModelo } from '@/types';
 
-export function isMessageTemplate(row: unknown): row is MessageTemplate {
+export function isMessageModelo(row: unknown): row is MessageModelo {
   if (!row || typeof row !== 'object') return false;
   const r = row as Record<string, unknown>;
   return (
@@ -32,18 +32,18 @@ export function isMessageTemplate(row: unknown): row is MessageTemplate {
 
 /**
  * Convenience wrapper for routes — narrows or throws a descriptive
- * Error the route can render as a 500 with the row id mentioned.
+ * Erro the route can render as a 500 with the row id mentioned.
  */
-export function assertMessageTemplate(
+export function assertMessageModelo(
   row: unknown,
   context: string,
-): MessageTemplate {
-  if (!isMessageTemplate(row)) {
+): MessageModelo {
+  if (!isMessageModelo(row)) {
     const id =
       row && typeof row === 'object' && 'id' in row
         ? String((row as { id: unknown }).id)
         : '(unknown id)';
-    throw new Error(
+    throw new Erro(
       `Malformed message_templates row ${id} in ${context} — missing required fields (id, user_id, name, body_text).`,
     );
   }

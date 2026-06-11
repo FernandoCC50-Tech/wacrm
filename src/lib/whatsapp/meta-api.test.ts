@@ -5,7 +5,7 @@ import {
   sendInteractiveList,
 } from "./meta-api";
 
-// All assertions in this file run BEFORE the network call. We stub fetch
+// Todos assertions in this file run BEFORE the network call. We stub fetch
 // to a never-resolving mock so a test that accidentally falls through to
 // the request body would hang (and fail) rather than silently hit
 // graph.facebook.com.
@@ -26,7 +26,7 @@ describe("sendInteractiveButtons — validation", () => {
     vi.stubGlobal("fetch", vi.fn(neverFetch));
   });
   afterEach(() => {
-    vi.unstubAllGlobals();
+    vi.unstubTodosGlobals();
   });
 
   it("rejects an empty buttons array", async () => {
@@ -146,7 +146,7 @@ describe("sendInteractiveList — validation", () => {
     vi.stubGlobal("fetch", vi.fn(neverFetch));
   });
   afterEach(() => {
-    vi.unstubAllGlobals();
+    vi.unstubTodosGlobals();
   });
 
   const ROW = { id: "r1", title: "Row 1" };
@@ -155,7 +155,7 @@ describe("sendInteractiveList — validation", () => {
     await expect(
       sendInteractiveList({
         ...BASE_ARGS,
-        buttonLabel: "Open",
+        buttonRótulo: "Aberto",
         sections: [],
       }),
     ).rejects.toThrow(/1-10 sections/);
@@ -169,7 +169,7 @@ describe("sendInteractiveList — validation", () => {
     await expect(
       sendInteractiveList({
         ...BASE_ARGS,
-        buttonLabel: "Open",
+        buttonRótulo: "Aberto",
         sections: [{ rows }],
       }),
     ).rejects.toThrow(/1-10 rows total/);
@@ -179,7 +179,7 @@ describe("sendInteractiveList — validation", () => {
     await expect(
       sendInteractiveList({
         ...BASE_ARGS,
-        buttonLabel: "Open",
+        buttonRótulo: "Aberto",
         sections: [
           {
             rows: [
@@ -198,7 +198,7 @@ describe("sendInteractiveList — validation", () => {
     await expect(
       sendInteractiveList({
         ...BASE_ARGS,
-        buttonLabel: "Open",
+        buttonRótulo: "Aberto",
         sections: [
           { rows: [{ id: "dupe", title: "First" }] },
           { rows: [{ id: "dupe", title: "Second" }] },
@@ -207,14 +207,14 @@ describe("sendInteractiveList — validation", () => {
     ).rejects.toThrow(/duplicate row id/);
   });
 
-  it("rejects an empty buttonLabel", async () => {
+  it("rejects an empty buttonRótulo", async () => {
     await expect(
       sendInteractiveList({
         ...BASE_ARGS,
-        buttonLabel: "",
+        buttonRótulo: "",
         sections: [{ rows: [ROW] }],
       }),
-    ).rejects.toThrow(/requires a buttonLabel/);
+    ).rejects.toThrow(/requires a buttonRótulo/);
   });
 
   it("sends the right payload shape when valid", async () => {
@@ -232,7 +232,7 @@ describe("sendInteractiveList — validation", () => {
 
     const result = await sendInteractiveList({
       ...BASE_ARGS,
-      buttonLabel: "Open menu",
+      buttonRótulo: "Aberto menu",
       sections: [
         {
           title: "Orders",
@@ -252,7 +252,7 @@ describe("sendInteractiveList — validation", () => {
         type: "list",
         body: { text: "Body text" },
         action: {
-          button: "Open menu",
+          button: "Aberto menu",
           sections: [
             {
               title: "Orders",

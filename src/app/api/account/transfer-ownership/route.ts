@@ -18,26 +18,26 @@
 //   silently hand their account away.
 // ============================================================
 
-import { NextResponse } from "next/server";
-import type { PostgrestError } from "@supabase/supabase-js";
+import { PróximoResponse } from "next/server";
+import type { PostgrestErro } from "@supabase/supabase-js";
 
-import { requireRole, toErrorResponse } from "@/lib/auth/account";
+import { requireFunção, toErroResponse } from "@/lib/auth/account";
 import {
   checkRateLimit,
   rateLimitResponse,
   RATE_LIMITS,
 } from "@/lib/rate-limit";
 
-function rpcErrorToResponse(err: PostgrestError): NextResponse {
+function rpcErroToResponse(err: PostgrestErro): PróximoResponse {
   if (err.code === "42501") {
-    return NextResponse.json({ error: err.message }, { status: 403 });
+    return PróximoResponse.json({ error: err.message }, { status: 403 });
   }
   if (err.code === "22023") {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    return PróximoResponse.json({ error: err.message }, { status: 400 });
   }
   console.error("[transfer-ownership] unexpected RPC error:", err);
-  return NextResponse.json(
-    { error: "Failed to transfer ownership" },
+  return PróximoResponse.json(
+    { error: "Falhou to transfer ownership" },
     { status: 500 },
   );
 }
@@ -54,10 +54,10 @@ function looksLikeUuid(v: unknown): v is string {
 
 export async function POST(request: Request) {
   try {
-    // `requireRole('owner')` is belt-and-braces — the RPC checks
+    // `requireFunção('owner')` is belt-and-braces — the RPC checks
     // this too, but failing fast here saves a Supabase round trip
     // on the obvious "admin trying to transfer" case.
-    const ctx = await requireRole("owner");
+    const ctx = await requireFunção("owner");
 
     // Rate-limit owner-only transfers. Legitimate use is one click
     // every few months at most; a script run in a loop would
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     // pace and bounds the noise.
     const limit = checkRateLimit(
       `admin:transferOwnership:${ctx.userId}`,
-      RATE_LIMITS.adminAction,
+      RATE_LIMITS.adminAção,
     );
     if (!limit.success) return rateLimitResponse(limit);
 
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     const newOwnerUserId = body?.newOwnerUserId;
 
     if (!looksLikeUuid(newOwnerUserId)) {
-      return NextResponse.json(
+      return PróximoResponse.json(
         { error: "'newOwnerUserId' must be a valid UUID" },
         { status: 400 },
       );
@@ -85,10 +85,10 @@ export async function POST(request: Request) {
       p_new_owner_user_id: newOwnerUserId,
     });
 
-    if (error) return rpcErrorToResponse(error);
+    if (error) return rpcErroToResponse(error);
 
-    return NextResponse.json({ ok: true });
+    return PróximoResponse.json({ ok: true });
   } catch (err) {
-    return toErrorResponse(err);
+    return toErroResponse(err);
   }
 }

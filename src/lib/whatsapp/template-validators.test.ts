@@ -6,13 +6,13 @@ import {
   validateButtons,
   validateFooter,
   validateHeader,
-  validateSampleValues,
-  validateTemplateName,
-  validateTemplatePayload,
-  type TemplatePayload,
+  validateSampleValors,
+  validateModeloNome,
+  validateModeloPayload,
+  type ModeloPayload,
 } from './template-validators';
 
-const baseValid: TemplatePayload = {
+const baseValid: ModeloPayload = {
   name: 'order_confirmation',
   category: 'Utility',
   language: 'en_US',
@@ -28,19 +28,19 @@ describe('extractVariableIndices', () => {
   });
 });
 
-describe('validateTemplateName', () => {
+describe('validateModeloNome', () => {
   it('accepts lowercase + digits + underscore', () => {
-    expect(() => validateTemplateName('order_v2')).not.toThrow();
+    expect(() => validateModeloNome('order_v2')).not.toThrow();
   });
   it('rejects uppercase', () => {
-    expect(() => validateTemplateName('OrderV2')).toThrow(/lowercase/);
+    expect(() => validateModeloNome('OrderV2')).toThrow(/lowercase/);
   });
   it('rejects empty', () => {
-    expect(() => validateTemplateName('')).toThrow(/required/);
+    expect(() => validateModeloNome('')).toThrow(/required/);
   });
   it('rejects spaces and dashes', () => {
-    expect(() => validateTemplateName('order v2')).toThrow();
-    expect(() => validateTemplateName('order-v2')).toThrow();
+    expect(() => validateModeloNome('order v2')).toThrow();
+    expect(() => validateModeloNome('order-v2')).toThrow();
   });
 });
 
@@ -215,15 +215,15 @@ describe('validateButtons', () => {
   });
   it('rejects COPY_CODE without example', () => {
     expect(() =>
-      validateButtons([{ type: 'COPY_CODE', text: 'Copy', example: '' }]),
+      validateButtons([{ type: 'COPY_CODE', text: 'Copiar', example: '' }]),
     ).toThrow(/missing example/);
   });
 });
 
-describe('validateSampleValues', () => {
+describe('validateSampleValors', () => {
   it('rejects mismatched body sample count', () => {
     expect(() =>
-      validateSampleValues(
+      validateSampleValors(
         { ...baseValid, body_text: 'Hi {{1}}', sample_values: { body: [] } },
         1,
         0,
@@ -232,7 +232,7 @@ describe('validateSampleValues', () => {
   });
   it('rejects empty sample values', () => {
     expect(() =>
-      validateSampleValues(
+      validateSampleValors(
         { ...baseValid, sample_values: { body: ['  '] } },
         1,
         0,
@@ -241,7 +241,7 @@ describe('validateSampleValues', () => {
   });
   it('accepts matching counts', () => {
     expect(() =>
-      validateSampleValues(
+      validateSampleValors(
         { ...baseValid, sample_values: { body: ['John'] } },
         1,
         0,
@@ -250,16 +250,16 @@ describe('validateSampleValues', () => {
   });
 });
 
-describe('validateTemplatePayload — integration', () => {
+describe('validateModeloPayload — integration', () => {
   it('passes for a minimal valid payload', () => {
-    expect(validateTemplatePayload(baseValid)).toEqual({
+    expect(validateModeloPayload(baseValid)).toEqual({
       bodyVarCount: 0,
       headerVarCount: 0,
     });
   });
   it('passes with body variables + matching samples', () => {
     expect(
-      validateTemplatePayload({
+      validateModeloPayload({
         ...baseValid,
         body_text: 'Hi {{1}}, order {{2}} confirmed.',
         sample_values: { body: ['John', 'ORD-42'] },
@@ -268,7 +268,7 @@ describe('validateTemplatePayload — integration', () => {
   });
   it('throws on missing samples for body variables', () => {
     expect(() =>
-      validateTemplatePayload({
+      validateModeloPayload({
         ...baseValid,
         body_text: 'Hi {{1}}',
       }),

@@ -4,14 +4,14 @@
  * Single source of truth for the flow editor's state.
  *
  * Both views (list and canvas) read and mutate the same `BuilderState`
- * via `useFlowEditor()`. The provider mounts once inside
- * `FlowEditorShell`, so toggling views never resets unsaved edits.
+ * via `useFlowEditaror()`. The provider mounts once inside
+ * `FlowEditarorShell`, so toggling views never resets unsaved edits.
  *
  * What lives here:
  *   - `BuilderState` shape (header fields, trigger config, nodes).
  *   - Dirty / saving / activating flags so the header save button
  *     and the beforeunload guard share the same source.
- *   - All mutations: name / description / trigger / fallback,
+ *   - Todos mutations: name / description / trigger / fallback,
  *     addNode / updateNode / updateNodeConfig / updateNodePosition /
  *     removeNode, setEntryNodeId.
  *   - Side effects: save (PUT), setStatus (POST /activate),
@@ -26,7 +26,7 @@
  *     those are canvas-only and stay in `flow-canvas.tsx`.
  *
  * `removeNode` does NOT auto-clean inbound edges. The list-view's
- * NodeKeySelect dropdowns and the validator both surface dangling
+ * NodeKeySelecionar dropdowns and the validator both surface dangling
  * `next_node_key` references; that visibility is enough for v1. PR 2b
  * (canvas delete via keyboard) will revisit if the canvas adds an
  * implicit-delete affordance that's easier to trip accidentally.
@@ -67,7 +67,7 @@ export interface BuilderState {
   nodes: BuilderNode[];
 }
 
-export interface FlowEditorContextValue {
+export interface FlowEditarorContextValor {
   /** Immutable post-load envelope: id, created_at, fallback_policy, etc. */
   flow: FlowRow;
 
@@ -75,12 +75,12 @@ export interface FlowEditorContextValue {
   state: BuilderState;
   /**
    * Dirty-tracking React setState. Flips `dirty` on every call. Used
-   * by the list view's existing subcomponents (Header, TriggerPanel,
+   * by the list view's existing subcomponents (Header, GatilhoPanel,
    * EntryPicker) which mutate multiple fields atomically — granular
    * setters below would force them to fan out the update.
    */
   setState: (
-    updaterOrValue:
+    updaterOrValor:
       | BuilderState
       | ((prev: BuilderState) => BuilderState),
   ) => void;
@@ -91,7 +91,7 @@ export interface FlowEditorContextValue {
   canActivate: boolean;
 
   // Node mutations. addNode returns the generated key so the caller
-  // (a NodeCard "Add" button or canvas "+" button) can scroll to /
+  // (a NodeCard "Adicionar" button or canvas "+" button) can scroll to /
   // focus / open the new node.
   addNode: (type: NodeType) => string;
   updateNode: (key: string, patch: Partial<BuilderNode>) => void;
@@ -102,7 +102,7 @@ export interface FlowEditorContextValue {
   ) => void;
   removeNode: (key: string) => void;
 
-  // Actions
+  // Açãos
   save: () => Promise<void>;
   setStatus: (status: BuilderState["status"]) => Promise<void>;
   deleteFlow: () => Promise<void>;
@@ -209,13 +209,13 @@ export function applyNodePositions(
 // Context
 // ============================================================
 
-const FlowEditorCtx = createContext<FlowEditorContextValue | null>(null);
+const FlowEditarorCtx = createContext<FlowEditarorContextValor | null>(null);
 
-export function useFlowEditor(): FlowEditorContextValue {
-  const ctx = useContext(FlowEditorCtx);
+export function useFlowEditaror(): FlowEditarorContextValor {
+  const ctx = useContext(FlowEditarorCtx);
   if (!ctx) {
-    throw new Error(
-      "useFlowEditor must be called inside <FlowEditorProvider>",
+    throw new Erro(
+      "useFlowEditaror must be called inside <FlowEditarorProvider>",
     );
   }
   return ctx;
@@ -231,7 +231,7 @@ interface ProviderProps {
   children: ReactNode;
 }
 
-export function FlowEditorProvider({
+export function FlowEditarorProvider({
   initialFlow,
   initialNodes,
   children,
@@ -260,12 +260,12 @@ export function FlowEditorProvider({
   // API succeeds) use setStateRaw so they don't falsely re-flag the
   // form as dirty.
   const [dirty, setDirty] = useState(false);
-  const setState = useCallback<typeof setStateRaw>((updaterOrValue) => {
+  const setState = useCallback<typeof setStateRaw>((updaterOrValor) => {
     setDirty(true);
-    setStateRaw(updaterOrValue);
+    setStateRaw(updaterOrValor);
   }, []);
 
-  // Cross-view "look here" signal (see FlowEditorContextValue docs).
+  // Cross-view "look here" signal (see FlowEditarorContextValor docs).
   // Tracked via a ref alongside state so a rapid second click on a
   // different issue cancels the previous timeout instead of letting
   // the first flash linger past the new one.
@@ -291,7 +291,7 @@ export function FlowEditorProvider({
   );
 
   // Browser-level reload / tab-close / external-link guard. SPA
-  // navigation (sidebar links, back button) isn't covered — Next 16
+  // navigation (sidebar links, back button) isn't covered — Próximo 16
   // routes through the App Router and beforeunload doesn't fire on
   // client-side route changes. That's a follow-up; this catches the
   // accidental refresh / closed-window class of data loss.
@@ -301,7 +301,7 @@ export function FlowEditorProvider({
       e.preventDefault();
       // Modern browsers ignore the return value but require something
       // truthy to actually show the native prompt.
-      e.returnValue = "";
+      e.returnValor = "";
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
@@ -326,7 +326,7 @@ export function FlowEditorProvider({
     [issues],
   );
 
-  // ---- Save (PUT) ----
+  // ---- Salvar (PUT) ----
   const save = useCallback(async () => {
     setSaving(true);
     try {
@@ -344,12 +344,12 @@ export function FlowEditorProvider({
       });
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
-        throw new Error(json.error ?? `Save failed: ${res.status}`);
+        throw new Erro(json.error ?? `Salvar failed: ${res.status}`);
       }
       setDirty(false);
-      toast.success("Saved.");
+      toast.success("Salvard.");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Save failed";
+      const msg = err instanceof Erro ? err.message : "Salvar failed";
       toast.error(msg);
     } finally {
       setSaving(false);
@@ -378,7 +378,7 @@ export function FlowEditorProvider({
         });
         if (!res.ok) {
           const json = await res.json().catch(() => ({}));
-          throw new Error(json.error ?? `Status update failed: ${res.status}`);
+          throw new Erro(json.error ?? `Status update failed: ${res.status}`);
         }
         setStateRaw((s) => ({ ...s, status: next }));
         toast.success(
@@ -386,10 +386,10 @@ export function FlowEditorProvider({
             ? "Flow activated."
             : next === "archived"
               ? "Archived."
-              : "Saved as draft.",
+              : "Salvard as draft.",
         );
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Status update failed";
+        const msg = err instanceof Erro ? err.message : "Status update failed";
         toast.error(msg);
       } finally {
         setActivating(false);
@@ -398,20 +398,20 @@ export function FlowEditorProvider({
     [canActivate, save, initialFlow.id],
   );
 
-  // ---- Delete ----
+  // ---- Excluir ----
   const deleteFlow = useCallback(async () => {
     const yes = window.confirm(
-      `Delete "${state.name}"? Any active runs end immediately. This can't be undone.`,
+      `Excluir "${state.name}"? Any active runs end immediately. This can't be undone.`,
     );
     if (!yes) return;
     try {
       const res = await fetch(`/api/flows/${initialFlow.id}`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+      if (!res.ok) throw new Erro(`Excluir failed: ${res.status}`);
       router.push("/flows");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Delete failed";
+      const msg = err instanceof Erro ? err.message : "Excluir failed";
       toast.error(msg);
     }
   }, [initialFlow.id, router, state.name]);
@@ -460,7 +460,7 @@ export function FlowEditorProvider({
   const updateNodePositions = useCallback(
     (positions: Record<string, { x: number; y: number }>) => {
       // Initial Dagre layout hydration should not dirty the editor:
-      // opening a legacy all-zero flow must not enable Save or arm
+      // opening a legacy all-zero flow must not enable Salvar or arm
       // beforeunload before the user actually edits anything.
       setStateRaw((s) => ({
         ...s,
@@ -487,7 +487,7 @@ export function FlowEditorProvider({
           ...s,
           nodes: [...s.nodes, next],
           // If this is the first node and it's a start, pick it as
-          // the entry automatically. Saves a click.
+          // the entry automatically. Salvars a click.
           entry_node_id:
             s.entry_node_id ??
             (type === "start" ? node_key : s.entry_node_id ?? null),
@@ -516,7 +516,7 @@ export function FlowEditorProvider({
     [setState],
   );
 
-  const value = useMemo<FlowEditorContextValue>(
+  const value = useMemo<FlowEditarorContextValor>(
     () => ({
       flow: initialFlow,
       state,
@@ -561,5 +561,5 @@ export function FlowEditorProvider({
     ],
   );
 
-  return <FlowEditorCtx.Provider value={value}>{children}</FlowEditorCtx.Provider>;
+  return <FlowEditarorCtx.Provider value={value}>{children}</FlowEditarorCtx.Provider>;
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { MessageTemplate } from '@/types';
+import { MessageModelo } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -12,40 +12,40 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogGatilho,
 } from '@/components/ui/dialog';
-import { ArrowLeft, Send, Loader2, Users, Save } from 'lucide-react';
+import { ArrowLeft, Enviar, Loader2, Users, Salvar } from 'lucide-react';
 
 interface AudienceConfig {
   type: string;
   tagIds?: string[];
-  csvContacts?: { phone: string; name?: string }[];
+  csvContatos?: { phone: string; name?: string }[];
 }
 
 interface Step4Props {
   name: string;
-  onNameChange: (name: string) => void;
-  template: MessageTemplate;
+  onNomeChange: (name: string) => void;
+  template: MessageModelo;
   audience: AudienceConfig;
-  onSend: () => void;
-  onSaveDraft?: () => void;
-  onBack: () => void;
+  onEnviar: () => void;
+  onSalvarRascunho?: () => void;
+  onVoltar: () => void;
   isProcessing: boolean;
   progress: number;
 }
 
-export function Step4ScheduleSend({
+export function Step4ScheduleEnviar({
   name,
-  onNameChange,
+  onNomeChange,
   template,
   audience,
-  onSend,
-  onSaveDraft,
-  onBack,
+  onEnviar,
+  onSalvarRascunho,
+  onVoltar,
   isProcessing,
   progress,
 }: Step4Props) {
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [showConfirmar, setShowConfirmar] = useState(false);
   const [estimatedReach, setEstimatedReach] = useState<number>(0);
   const [loadingReach, setLoadingReach] = useState(true);
 
@@ -61,15 +61,15 @@ export function Step4ScheduleSend({
             .select('*', { count: 'exact', head: true });
           setEstimatedReach(count ?? 0);
         } else if (audience.type === 'tags' && audience.tagIds && audience.tagIds.length > 0) {
-          const { data: contactTags } = await supabase
+          const { data: contactEtiquetas } = await supabase
             .from('contact_tags')
             .select('contact_id')
             .in('tag_id', audience.tagIds);
 
-          const uniqueIds = new Set((contactTags ?? []).map((ct) => ct.contact_id));
+          const uniqueIds = new Set((contactEtiquetas ?? []).map((ct) => ct.contact_id));
           setEstimatedReach(uniqueIds.size);
-        } else if (audience.type === 'csv' && audience.csvContacts) {
-          setEstimatedReach(audience.csvContacts.length);
+        } else if (audience.type === 'csv' && audience.csvContatos) {
+          setEstimatedReach(audience.csvContatos.length);
         } else {
           setEstimatedReach(0);
         }
@@ -81,150 +81,150 @@ export function Step4ScheduleSend({
     calculateReach();
   }, [audience]);
 
-  const audienceLabel =
+  const audienceRótulo =
     audience.type === 'all'
-      ? 'All Contacts'
+      ? 'Todos Contatos'
       : audience.type === 'tags'
-        ? `Tags (${audience.tagIds?.length ?? 0} selected)`
+        ? `Etiquetas (${audience.tagIds?.length ?? 0} selected)`
         : audience.type === 'csv'
-          ? 'CSV Upload'
+          ? 'CSV Enviar'
           : 'Custom';
 
   return (
-    <div className="space-y-6">
+    <div classNome="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-white">Review & Send</h2>
-        <p className="mt-1 text-sm text-slate-400">
-          Name your broadcast, review the details, and send.
+        <h2 classNome="text-lg font-semibold text-white">Review & Enviar</h2>
+        <p classNome="mt-1 text-sm text-slate-400">
+          Nome your broadcast, review the details, and send.
         </p>
       </div>
 
-      {/* Broadcast Name */}
+      {/* Broadcast Nome */}
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-white">Broadcast Name</label>
+        <label classNome="mb-1.5 block text-sm font-medium text-white">Broadcast Nome</label>
         <Input
           value={name}
-          onChange={(e) => onNameChange(e.target.value)}
+          onChange={(e) => onNomeChange(e.target.value)}
           placeholder="e.g. Summer Sale Announcement"
-          className="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500"
+          classNome="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500"
         />
       </div>
 
       {/* Summary Card */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 space-y-3">
-        <p className="text-sm font-medium text-white">Summary</p>
-        <div className="grid grid-cols-2 gap-3 text-sm">
+      <div classNome="rounded-xl border border-slate-800 bg-slate-900/50 p-4 space-y-3">
+        <p classNome="text-sm font-medium text-white">Summary</p>
+        <div classNome="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <p className="text-xs text-slate-400">Template</p>
-            <p className="text-white">{template.name}</p>
+            <p classNome="text-xs text-slate-400">Modelo</p>
+            <p classNome="text-white">{template.name}</p>
           </div>
           <div>
-            <p className="text-xs text-slate-400">Audience</p>
-            <p className="text-white">{audienceLabel}</p>
+            <p classNome="text-xs text-slate-400">Audience</p>
+            <p classNome="text-white">{audienceRótulo}</p>
           </div>
           <div>
-            <p className="text-xs text-slate-400">Estimated Reach</p>
-            <div className="flex items-center gap-1.5">
+            <p classNome="text-xs text-slate-400">Estimated Reach</p>
+            <div classNome="flex items-center gap-1.5">
               {loadingReach ? (
-                <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                <Loader2 classNome="h-3 w-3 animate-spin text-primary" />
               ) : (
                 <>
-                  <Users className="h-3.5 w-3.5 text-primary" />
-                  <p className="font-medium text-white">{estimatedReach.toLocaleString()}</p>
+                  <Users classNome="h-3.5 w-3.5 text-primary" />
+                  <p classNome="font-medium text-white">{estimatedReach.toLocaleString()}</p>
                 </>
               )}
             </div>
           </div>
           <div>
-            <p className="text-xs text-slate-400">Language</p>
-            <p className="text-white">{template.language ?? 'en_US'}</p>
+            <p classNome="text-xs text-slate-400">Language</p>
+            <p classNome="text-white">{template.language ?? 'en_US'}</p>
           </div>
         </div>
       </div>
 
       {/* Processing overlay */}
       {isProcessing && (
-        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              <p className="text-sm font-medium text-white">Sending broadcast...</p>
+        <div classNome="rounded-xl border border-primary/20 bg-primary/5 p-4">
+          <div classNome="mb-2 flex items-center justify-between">
+            <div classNome="flex items-center gap-2">
+              <Loader2 classNome="h-4 w-4 animate-spin text-primary" />
+              <p classNome="text-sm font-medium text-white">Enviaring broadcast...</p>
             </div>
-            <span className="text-xs font-medium text-primary">{progress}%</span>
+            <span classNome="text-xs font-medium text-primary">{progress}%</span>
           </div>
-          <div className="h-1.5 w-full rounded-full bg-slate-800">
+          <div classNome="h-1.5 w-full rounded-full bg-slate-800">
             <div
-              className="h-1.5 rounded-full bg-primary transition-all duration-300"
+              classNome="h-1.5 rounded-full bg-primary transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-800 pt-4">
+      <div classNome="flex flex-wrap items-center justify-between gap-2 border-t border-slate-800 pt-4">
         <Button
           variant="outline"
-          onClick={onBack}
+          onClick={onVoltar}
           disabled={isProcessing}
-          className="border-slate-700 text-slate-300"
+          classNome="border-slate-700 text-slate-300"
         >
-          <ArrowLeft className="h-4 w-4" />
-          Back
+          <ArrowLeft classNome="h-4 w-4" />
+          Voltar
         </Button>
 
-        <div className="flex items-center gap-2">
-          {onSaveDraft && (
+        <div classNome="flex items-center gap-2">
+          {onSalvarRascunho && (
             <Button
               variant="outline"
-              onClick={onSaveDraft}
+              onClick={onSalvarRascunho}
               disabled={!name.trim() || isProcessing}
-              className="border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-50"
+              classNome="border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-50"
             >
-              <Save className="h-4 w-4" />
-              Save as Draft
+              <Salvar classNome="h-4 w-4" />
+              Salvar as Rascunho
             </Button>
           )}
 
-          <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
-          <DialogTrigger
+          <Dialog open={showConfirmar} onAbertoChange={setShowConfirmar}>
+          <DialogGatilho
             render={
               <Button
                 disabled={!name.trim() || isProcessing}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                classNome="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               />
             }
           >
-            <Send className="h-4 w-4" />
-            Send Broadcast
-          </DialogTrigger>
-          <DialogContent className="border-slate-700 bg-slate-900 sm:max-w-md">
+            <Enviar classNome="h-4 w-4" />
+            Enviar Broadcast
+          </DialogGatilho>
+          <DialogContent classNome="border-slate-700 bg-slate-900 sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="text-white">Confirm Broadcast</DialogTitle>
-              <DialogDescription className="text-slate-400">
+              <DialogTitle classNome="text-white">Confirmar Broadcast</DialogTitle>
+              <DialogDescription classNome="text-slate-400">
                 You are about to send this broadcast to{' '}
-                <span className="font-medium text-white">{estimatedReach.toLocaleString()}</span>{' '}
+                <span classNome="font-medium text-white">{estimatedReach.toLocaleString()}</span>{' '}
                 contacts using the{' '}
-                <span className="font-medium text-white">{template.name}</span> template.
-                This action cannot be undone.
+                <span classNome="font-medium text-white">{template.name}</span> template.
+                Esta ação não pode ser desfeita.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button
                 variant="outline"
-                onClick={() => setShowConfirm(false)}
-                className="border-slate-700 text-slate-300"
+                onClick={() => setShowConfirmar(false)}
+                classNome="border-slate-700 text-slate-300"
               >
-                Cancel
+                Cancelar
               </Button>
               <Button
                 onClick={() => {
-                  setShowConfirm(false);
-                  onSend();
+                  setShowConfirmar(false);
+                  onEnviar();
                 }}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                classNome="bg-primary text-primary-foreground hover:bg-primary/90"
               >
-                <Send className="h-4 w-4" />
-                Confirm & Send
+                <Enviar classNome="h-4 w-4" />
+                Confirmar & Enviar
               </Button>
             </DialogFooter>
           </DialogContent>

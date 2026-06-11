@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { PróximoResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/flows/admin-client'
 import { validateFlowForActivation } from '@/lib/flows/validate'
@@ -9,7 +9,7 @@ import { validateFlowForActivation } from '@/lib/flows/validate'
  * Body: { status: 'draft' | 'active' | 'archived' }
  *
  * Activating runs the full validator and refuses on any 'error'
- * severity issue. Drafts and archives are unconditional — users
+ * severity issue. Rascunhos and archives are unconditional — users
  * need to be able to save broken-work-in-progress and pause flows
  * without first fixing them.
  *
@@ -28,7 +28,7 @@ export async function POST(
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return PróximoResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const body = (await request.json().catch(() => null)) as
@@ -36,7 +36,7 @@ export async function POST(
     | null
   const status = body?.status
   if (!status || !['draft', 'active', 'archived'].includes(status)) {
-    return NextResponse.json(
+    return PróximoResponse.json(
       { error: "status must be one of 'draft' | 'active' | 'archived'" },
       { status: 400 },
     )
@@ -49,7 +49,7 @@ export async function POST(
     .eq('id', id)
     .maybeSingle()
   if (!existing) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return PróximoResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
   const admin = supabaseAdmin()
@@ -68,7 +68,7 @@ export async function POST(
         .eq('flow_id', id),
     ])
     if (!flow) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      return PróximoResponse.json({ error: 'Not found' }, { status: 404 })
     }
     const issues = validateFlowForActivation(
       flow as {
@@ -85,7 +85,7 @@ export async function POST(
     )
     const blockers = issues.filter((i) => i.severity === 'error')
     if (blockers.length > 0) {
-      return NextResponse.json(
+      return PróximoResponse.json(
         {
           error: 'Cannot activate flow — fix the issues below first.',
           issues,
@@ -102,7 +102,7 @@ export async function POST(
     .select()
     .maybeSingle()
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return PróximoResponse.json({ error: error.message }, { status: 500 })
   }
-  return NextResponse.json({ flow: updated })
+  return PróximoResponse.json({ flow: updated })
 }

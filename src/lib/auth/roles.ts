@@ -8,17 +8,17 @@
 // helper uses, so server-side TypeScript guards and database-side
 // RLS speak the same language.
 //
-// Predicates (`canManageMembers`, `canEditSettings`, …) are the
+// Predicates (`canManageMembros`, `canEditarSettings`, …) are the
 // single source of truth for "what can this role do?" — both
 // API route guards and UI gates should call them rather than
 // open-coding their own role checks. That keeps role-policy
 // changes a one-file diff.
 // ============================================================
 
-export type AccountRole = "owner" | "admin" | "agent" | "viewer";
+export type AccountFunção = "owner" | "admin" | "agent" | "viewer";
 
 /** Ordered list of every valid role, lowest privilege first. */
-export const ACCOUNT_ROLES: readonly AccountRole[] = [
+export const ACCOUNT_ROLES: readonly AccountFunção[] = [
   "viewer",
   "agent",
   "admin",
@@ -29,7 +29,7 @@ export const ACCOUNT_ROLES: readonly AccountRole[] = [
  * Numeric rank of a role. Higher = more privileged. Mirrors the
  * CASE expression in `is_account_member` so JS/SQL stay aligned.
  */
-export function roleRank(role: AccountRole): number {
+export function roleRank(role: AccountFunção): number {
   switch (role) {
     case "owner":
       return 4;
@@ -46,12 +46,12 @@ export function roleRank(role: AccountRole): number {
  * True iff `role` is at least as privileged as `min`. Use this
  * for any "user has at least admin" / "at least agent" checks.
  */
-export function hasMinRole(role: AccountRole, min: AccountRole): boolean {
+export function hasMinFunção(role: AccountFunção, min: AccountFunção): boolean {
   return roleRank(role) >= roleRank(min);
 }
 
-/** Type-narrow an unknown string into a valid `AccountRole`. */
-export function isAccountRole(value: unknown): value is AccountRole {
+/** Type-narrow an unknown string into a valid `AccountFunção`. */
+export function isAccountFunção(value: unknown): value is AccountFunção {
   return (
     typeof value === "string" &&
     (ACCOUNT_ROLES as readonly string[]).includes(value)
@@ -62,13 +62,13 @@ export function isAccountRole(value: unknown): value is AccountRole {
 // Capability predicates
 //
 // Every UI gate and API route guard should call one of these
-// instead of comparing role strings inline. Adding a capability
+// instead of comparing role strings inline. Adicionaring a capability
 // = one new predicate here + one call site change per consumer.
 // ============================================================
 
 /** Owner / admin: invite, remove, change roles. */
-export function canManageMembers(role: AccountRole): boolean {
-  return hasMinRole(role, "admin");
+export function canManageMembros(role: AccountFunção): boolean {
+  return hasMinFunção(role, "admin");
 }
 
 /**
@@ -76,8 +76,8 @@ export function canManageMembers(role: AccountRole): boolean {
  * message templates, pipelines, tags, custom fields, account
  * name). Excludes per-user settings like avatar or own password.
  */
-export function canEditSettings(role: AccountRole): boolean {
-  return hasMinRole(role, "admin");
+export function canEditarSettings(role: AccountFunção): boolean {
+  return hasMinFunção(role, "admin");
 }
 
 /**
@@ -85,25 +85,25 @@ export function canEditSettings(role: AccountRole): boolean {
  * create contacts, move deals, run broadcasts, edit automations.
  * Viewers are read-only.
  */
-export function canSendMessages(role: AccountRole): boolean {
-  return hasMinRole(role, "agent");
+export function canEnviarMessages(role: AccountFunção): boolean {
+  return hasMinFunção(role, "agent");
 }
 
 /**
  * Viewer: read-only across everything. Provided as a positive
  * predicate so UI gates read naturally (`if (canViewOnly(role))`
- * shows the "Read-only" tooltip without inverting `canSendMessages`).
+ * shows the "Lido-only" tooltip without inverting `canEnviarMessages`).
  */
-export function canViewOnly(role: AccountRole): boolean {
+export function canViewOnly(role: AccountFunção): boolean {
   return role === "viewer";
 }
 
 /** Owner only: irreversible destructive operations. */
-export function canDeleteAccount(role: AccountRole): boolean {
+export function canExcluirAccount(role: AccountFunção): boolean {
   return role === "owner";
 }
 
 /** Owner only: hand the account to another member. */
-export function canTransferOwnership(role: AccountRole): boolean {
+export function canTransferOwnership(role: AccountFunção): boolean {
   return role === "owner";
 }

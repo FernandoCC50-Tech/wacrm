@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { buildSendComponents } from './template-send-builder';
-import type { MessageTemplate } from '@/types';
+import { buildEnviarComponents } from './template-send-builder';
+import type { MessageModelo } from '@/types';
 
-function row(overrides: Partial<MessageTemplate> = {}): MessageTemplate {
+function row(overrides: Partial<MessageModelo> = {}): MessageModelo {
   return {
     id: 'row-1',
     user_id: 'user-1',
@@ -15,13 +15,13 @@ function row(overrides: Partial<MessageTemplate> = {}): MessageTemplate {
   };
 }
 
-describe('buildSendComponents — body', () => {
+describe('buildEnviarComponents — body', () => {
   it('returns [] for a fully-static template (no vars, no media header)', () => {
-    expect(buildSendComponents(row())).toEqual([]);
+    expect(buildEnviarComponents(row())).toEqual([]);
   });
 
   it('emits a body component when the template has variables', () => {
-    const components = buildSendComponents(
+    const components = buildEnviarComponents(
       row({ body_text: 'Hi {{1}}, order {{2}} confirmed.' }),
       { body: ['John', 'ORD-42'] },
     );
@@ -38,7 +38,7 @@ describe('buildSendComponents — body', () => {
 
   it('throws when body has variables but caller supplied too few values', () => {
     expect(() =>
-      buildSendComponents(
+      buildEnviarComponents(
         row({ body_text: 'Hi {{1}} {{2}}' }),
         { body: ['just one'] },
       ),
@@ -46,7 +46,7 @@ describe('buildSendComponents — body', () => {
   });
 
   it('trims extra body values silently (legacy callers may overshoot)', () => {
-    const components = buildSendComponents(
+    const components = buildEnviarComponents(
       row({ body_text: 'Hi {{1}}' }),
       { body: ['John', 'extra', 'extra2'] },
     );
@@ -56,17 +56,17 @@ describe('buildSendComponents — body', () => {
   });
 });
 
-describe('buildSendComponents — header', () => {
+describe('buildEnviarComponents — header', () => {
   it('skips static TEXT headers (template carries them)', () => {
     expect(
-      buildSendComponents(
-        row({ header_type: 'text', header_content: 'Order Confirmation' }),
+      buildEnviarComponents(
+        row({ header_type: 'text', header_content: 'Order Confirmaration' }),
       ),
     ).toEqual([]);
   });
 
   it('emits a TEXT header component when {{1}} is present', () => {
-    const components = buildSendComponents(
+    const components = buildEnviarComponents(
       row({ header_type: 'text', header_content: 'Hello {{1}}' }),
       { headerText: 'Sara' },
     );
@@ -77,14 +77,14 @@ describe('buildSendComponents — header', () => {
 
   it('throws when TEXT header has {{1}} but no value was supplied', () => {
     expect(() =>
-      buildSendComponents(
+      buildEnviarComponents(
         row({ header_type: 'text', header_content: 'Hello {{1}}' }),
       ),
     ).toThrow(/Header text variable \{\{1\}\}/);
   });
 
   it('auto-includes IMAGE header from the stored sample URL', () => {
-    const components = buildSendComponents(
+    const components = buildEnviarComponents(
       row({
         header_type: 'image',
         header_media_url: 'https://example.com/sample.jpg',
@@ -101,7 +101,7 @@ describe('buildSendComponents — header', () => {
   });
 
   it('prefers caller override URL over template sample', () => {
-    const components = buildSendComponents(
+    const components = buildEnviarComponents(
       row({
         header_type: 'video',
         header_media_url: 'https://example.com/default.mp4',
@@ -117,7 +117,7 @@ describe('buildSendComponents — header', () => {
   });
 
   it('prefers media id over url when both are available', () => {
-    const components = buildSendComponents(
+    const components = buildEnviarComponents(
       row({
         header_type: 'document',
         header_handle: '4::aBc',
@@ -132,14 +132,14 @@ describe('buildSendComponents — header', () => {
 
   it('throws on media header with no link OR id available', () => {
     expect(() =>
-      buildSendComponents(row({ header_type: 'image' })),
+      buildEnviarComponents(row({ header_type: 'image' })),
     ).toThrow(/requires a media link or id/);
   });
 });
 
-describe('buildSendComponents — buttons', () => {
+describe('buildEnviarComponents — buttons', () => {
   it('omits URL buttons without variables (template carries the URL)', () => {
-    const components = buildSendComponents(
+    const components = buildEnviarComponents(
       row({
         buttons: [
           { type: 'URL', text: 'Visit', url: 'https://example.com' },
@@ -150,7 +150,7 @@ describe('buildSendComponents — buttons', () => {
   });
 
   it('emits a URL button component when the URL has {{1}}', () => {
-    const components = buildSendComponents(
+    const components = buildEnviarComponents(
       row({
         buttons: [
           { type: 'URL', text: 'Track', url: 'https://x.com/{{1}}' },
@@ -170,7 +170,7 @@ describe('buildSendComponents — buttons', () => {
 
   it('throws when URL button has {{1}} but no buttonParam was provided', () => {
     expect(() =>
-      buildSendComponents(
+      buildEnviarComponents(
         row({
           buttons: [
             { type: 'URL', text: 'Track', url: 'https://x.com/{{1}}' },
@@ -182,12 +182,12 @@ describe('buildSendComponents — buttons', () => {
 
   it('uses the correct index when QR buttons precede the URL button', () => {
     // sub_type:url at index "2" because two QUICK_REPLY buttons came first.
-    const components = buildSendComponents(
+    const components = buildEnviarComponents(
       row({
         buttons: [
           { type: 'QUICK_REPLY', text: 'Yes' },
           { type: 'QUICK_REPLY', text: 'No' },
-          { type: 'URL', text: 'Open', url: 'https://x.com/{{1}}' },
+          { type: 'URL', text: 'Aberto', url: 'https://x.com/{{1}}' },
         ],
       }),
       { buttonParams: { 2: 'ORD-42' } },
@@ -202,10 +202,10 @@ describe('buildSendComponents — buttons', () => {
   });
 
   it('falls back to the template example for COPY_CODE buttons', () => {
-    const components = buildSendComponents(
+    const components = buildEnviarComponents(
       row({
         buttons: [
-          { type: 'COPY_CODE', text: 'Copy', example: 'SUMMER20' },
+          { type: 'COPY_CODE', text: 'Copiar', example: 'SUMMER20' },
         ],
       }),
     );
@@ -220,9 +220,9 @@ describe('buildSendComponents — buttons', () => {
   });
 
   it('overrides COPY_CODE code when caller supplies one', () => {
-    const components = buildSendComponents(
+    const components = buildEnviarComponents(
       row({
-        buttons: [{ type: 'COPY_CODE', text: 'Copy', example: 'STATIC' }],
+        buttons: [{ type: 'COPY_CODE', text: 'Copiar', example: 'STATIC' }],
       }),
       { buttonParams: { 0: 'PERSONAL_CODE' } },
     );
@@ -231,7 +231,7 @@ describe('buildSendComponents — buttons', () => {
   });
 
   it('skips PHONE_NUMBER buttons entirely (no send-time params allowed)', () => {
-    const components = buildSendComponents(
+    const components = buildEnviarComponents(
       row({
         buttons: [
           { type: 'PHONE_NUMBER', text: 'Call', phone_number: '+15551234567' },
@@ -242,9 +242,9 @@ describe('buildSendComponents — buttons', () => {
   });
 });
 
-describe('buildSendComponents — end-to-end mix', () => {
+describe('buildEnviarComponents — end-to-end mix', () => {
   it('orders components header → body → buttons and includes all', () => {
-    const components = buildSendComponents(
+    const components = buildEnviarComponents(
       row({
         header_type: 'image',
         header_media_url: 'https://x.com/img.jpg',

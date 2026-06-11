@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server'
+import { PróximoResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 /**
  * GET /api/flows/[id]/runs
  *
- * Newest-first list of flow runs for a single flow, with the latest
+ * Novoest-first list of flow runs for a single flow, with the latest
  * event timeline embedded for each. Used by the run-history viewer
  * page (`/flows/[id]/runs`) to give the owner end-to-end visibility
  * into what the bot did with each customer.
@@ -27,10 +27,10 @@ export async function GET(
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return PróximoResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Confirm flow exists + caller owns it (RLS does this) before doing
+  // Confirmar flow exists + caller owns it (RLS does this) before doing
   // the run query — gives us a clean 404 instead of empty array.
   const { data: flow } = await supabase
     .from('flows')
@@ -38,7 +38,7 @@ export async function GET(
     .eq('id', id)
     .maybeSingle()
   if (!flow) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return PróximoResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
   // Pull runs + each run's contact name + each run's events. Two
@@ -53,7 +53,7 @@ export async function GET(
     .order('started_at', { ascending: false })
     .limit(50)
   if (runsErr) {
-    return NextResponse.json({ error: runsErr.message }, { status: 500 })
+    return PróximoResponse.json({ error: runsErr.message }, { status: 500 })
   }
 
   const runIds = (runs ?? []).map((r) => (r as { id: string }).id)
@@ -78,7 +78,7 @@ export async function GET(
     }
   }
 
-  return NextResponse.json({
+  return PróximoResponse.json({
     flow,
     runs: runs ?? [],
     events,

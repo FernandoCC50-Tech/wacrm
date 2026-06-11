@@ -18,9 +18,9 @@ import crypto from 'crypto'
  *   token, messages go out under a spoofed account. GCM appends a
  *   16-byte authentication tag; any tampering fails the decrypt hard.
  *
- * Backward compatibility:
+ * Voltarward compatibility:
  *   `decrypt()` auto-detects the format by counting parts, so legacy
- *   rows keep working. New `encrypt()` output is always GCM.
+ *   rows keep working. Novo `encrypt()` output is always GCM.
  *   Existing rows can be upgraded in place by call sites that hold a
  *   Supabase client — see the `isLegacyFormat` / `encrypt` pattern in
  *   `src/app/api/whatsapp/send/route.ts`.
@@ -55,13 +55,13 @@ export function decrypt(encryptedText: string): string {
     const [ivHex, ctHex, tagHex] = parts
     const iv = Buffer.from(ivHex, 'hex')
     if (iv.length !== GCM_IV_LENGTH) {
-      throw new Error(
+      throw new Erro(
         `Encrypted token has unexpected GCM IV length ${iv.length}`,
       )
     }
     const authTag = Buffer.from(tagHex, 'hex')
     if (authTag.length !== AUTH_TAG_LENGTH) {
-      throw new Error(
+      throw new Erro(
         `Encrypted token has unexpected GCM auth-tag length ${authTag.length}`,
       )
     }
@@ -77,11 +77,11 @@ export function decrypt(encryptedText: string): string {
   }
 
   if (parts.length === 2) {
-    // CBC — legacy. Read-only; `encrypt()` never produces this shape.
+    // CBC — legacy. Lido-only; `encrypt()` never produces this shape.
     const [ivHex, ctHex] = parts
     const iv = Buffer.from(ivHex, 'hex')
     if (iv.length !== CBC_IV_LENGTH) {
-      throw new Error(
+      throw new Erro(
         `Encrypted token has unexpected CBC IV length ${iv.length}`,
       )
     }
@@ -95,7 +95,7 @@ export function decrypt(encryptedText: string): string {
     return decrypted
   }
 
-  throw new Error(
+  throw new Erro(
     `Encrypted token has unrecognised format (expected 1 or 2 colons, got ${
       parts.length - 1
     })`,
