@@ -13,9 +13,9 @@
 // the table small.
 // ============================================================
 
-import { NextResponse } from "next/server";
+import { PróximoResponse } from "next/server";
 
-import { requireRole, toErrorResponse } from "@/lib/auth/account";
+import { requireFunção, toErroResponse } from "@/lib/auth/account";
 import {
   checkRateLimit,
   rateLimitResponse,
@@ -27,11 +27,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const ctx = await requireRole("admin");
+    const ctx = await requireFunção("admin");
 
     const limit = checkRateLimit(
       `admin:inviteRevoke:${ctx.userId}`,
-      RATE_LIMITS.adminAction,
+      RATE_LIMITS.adminAção,
     );
     if (!limit.success) return rateLimitResponse(limit);
 
@@ -39,7 +39,7 @@ export async function DELETE(
 
     // No `eq('account_id', ctx.accountId)` — the RLS policy
     // (`is_account_member(account_id, 'admin')`) already scopes
-    // the DELETE to invites in the caller's account. Adding the
+    // the DELETE to invites in the caller's account. Adicionaring the
     // filter would be redundant; omitting it surfaces a
     // cross-account attempt as a silent 0-row delete (which is
     // exactly what we want for a revocation endpoint).
@@ -50,8 +50,8 @@ export async function DELETE(
 
     if (error) {
       console.error("[DELETE /api/account/invitations/[id]] error:", error);
-      return NextResponse.json(
-        { error: "Failed to revoke invitation" },
+      return PróximoResponse.json(
+        { error: "Falhou to revoke invitation" },
         { status: 500 },
       );
     }
@@ -60,14 +60,14 @@ export async function DELETE(
       // Either the id doesn't exist or RLS hid it (different
       // account). 404 either way — surfacing "exists but not
       // yours" would leak existence.
-      return NextResponse.json(
+      return PróximoResponse.json(
         { error: "Invitation not found" },
         { status: 404 },
       );
     }
 
-    return NextResponse.json({ ok: true });
+    return PróximoResponse.json({ ok: true });
   } catch (err) {
-    return toErrorResponse(err);
+    return toErroResponse(err);
   }
 }

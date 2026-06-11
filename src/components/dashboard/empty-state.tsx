@@ -12,25 +12,25 @@ export function EmptyState({
   title = 'Not enough data yet',
   hint,
   icon: Icon = BarChart3,
-  className,
+  classNome,
 }: {
   title?: string
   hint?: string
-  icon?: ComponentType<{ className?: string }>
-  className?: string
+  icon?: ComponentType<{ classNome?: string }>
+  classNome?: string
 }) {
   return (
     <div
-      className={cn(
+      classNome={cn(
         'flex h-full min-h-40 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-800 bg-slate-900/40 px-4 py-6 text-center',
-        className,
+        classNome,
       )}
     >
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 text-slate-500">
-        <Icon className="h-5 w-5" />
+      <div classNome="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 text-slate-500">
+        <Icon classNome="h-5 w-5" />
       </div>
-      <p className="text-sm font-medium text-slate-300">{title}</p>
-      {hint && <p className="max-w-xs text-xs text-slate-500">{hint}</p>}
+      <p classNome="text-sm font-medium text-slate-300">{title}</p>
+      {hint && <p classNome="max-w-xs text-xs text-slate-500">{hint}</p>}
     </div>
   )
 }

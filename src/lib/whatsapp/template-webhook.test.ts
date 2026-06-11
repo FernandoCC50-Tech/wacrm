@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
-  handleTemplateWebhookChange,
-  isTemplateWebhookField,
+  handleModeloWebhookChange,
+  isModeloWebhookField,
 } from './template-webhook';
 
 // Tiny mock that records the .update payload and the .eq filter for
@@ -40,7 +40,7 @@ function makeSupabaseStub(
                     v: { error: { message: string } | null },
                   ) => unknown,
                 ) {
-                  // Allow `await supabase.update().eq()` (no .select()).
+                  // Todosow `await supabase.update().eq()` (no .select()).
                   return Promise.resolve({ error: selectResult.error }).then(
                     onFulfilled,
                   );
@@ -56,21 +56,21 @@ function makeSupabaseStub(
   return { stub: stub as unknown as SupabaseClient, calls };
 }
 
-describe('isTemplateWebhookField', () => {
+describe('isModeloWebhookField', () => {
   it('recognises the three template fields', () => {
-    expect(isTemplateWebhookField('message_template_status_update')).toBe(true);
-    expect(isTemplateWebhookField('message_template_quality_update')).toBe(true);
-    expect(isTemplateWebhookField('message_template_components_update')).toBe(
+    expect(isModeloWebhookField('message_template_status_update')).toBe(true);
+    expect(isModeloWebhookField('message_template_quality_update')).toBe(true);
+    expect(isModeloWebhookField('message_template_components_update')).toBe(
       true,
     );
   });
   it('rejects messaging fields', () => {
-    expect(isTemplateWebhookField('messages')).toBe(false);
-    expect(isTemplateWebhookField('message_status')).toBe(false);
+    expect(isModeloWebhookField('messages')).toBe(false);
+    expect(isModeloWebhookField('message_status')).toBe(false);
   });
 });
 
-describe('handleTemplateWebhookChange — status update', () => {
+describe('handleModeloWebhookChange — status update', () => {
   let supabaseCalls: ReturnType<typeof makeSupabaseStub>['calls'];
 
   beforeEach(() => {
@@ -82,7 +82,7 @@ describe('handleTemplateWebhookChange — status update', () => {
   it('flips status to APPROVED and clears any rejection_reason', async () => {
     const { stub, calls } = makeSupabaseStub();
     supabaseCalls = calls;
-    await handleTemplateWebhookChange(
+    await handleModeloWebhookChange(
       {
         field: 'message_template_status_update',
         value: {
@@ -109,26 +109,26 @@ describe('handleTemplateWebhookChange — status update', () => {
 
   it('persists the reason field on REJECTED', async () => {
     const { stub, calls } = makeSupabaseStub();
-    await handleTemplateWebhookChange(
+    await handleModeloWebhookChange(
       {
         field: 'message_template_status_update',
         value: {
           event: 'REJECTED',
           message_template_id: 'TMPL_99',
-          reason: 'Template uses non-compliant language.',
+          reason: 'Modelo uses non-compliant language.',
         },
       },
       stub,
     );
     expect(calls[0].update?.status).toBe('REJECTED');
     expect(calls[0].update?.rejection_reason).toBe(
-      'Template uses non-compliant language.',
+      'Modelo uses non-compliant language.',
     );
   });
 
   it('falls back to a generic reason when REJECTED has no `reason`', async () => {
     const { stub, calls } = makeSupabaseStub();
-    await handleTemplateWebhookChange(
+    await handleModeloWebhookChange(
       {
         field: 'message_template_status_update',
         value: { event: 'REJECTED', message_template_id: '7' },
@@ -140,7 +140,7 @@ describe('handleTemplateWebhookChange — status update', () => {
 
   it('normalises PENDING_REVIEW → PENDING (via shared normalizeStatus)', async () => {
     const { stub, calls } = makeSupabaseStub();
-    await handleTemplateWebhookChange(
+    await handleModeloWebhookChange(
       {
         field: 'message_template_status_update',
         value: { event: 'PENDING_REVIEW', message_template_id: '1' },
@@ -152,7 +152,7 @@ describe('handleTemplateWebhookChange — status update', () => {
 
   it('logs and exits when meta_template_id is missing (no UPDATE issued)', async () => {
     const { stub, calls } = makeSupabaseStub();
-    await handleTemplateWebhookChange(
+    await handleModeloWebhookChange(
       {
         field: 'message_template_status_update',
         value: { event: 'APPROVED' },
@@ -165,7 +165,7 @@ describe('handleTemplateWebhookChange — status update', () => {
   it('logs a warning when the row is unknown locally (zero matches)', async () => {
     const warn = vi.spyOn(console, 'warn');
     const { stub } = makeSupabaseStub({ data: [], error: null });
-    await handleTemplateWebhookChange(
+    await handleModeloWebhookChange(
       {
         field: 'message_template_status_update',
         value: {
@@ -180,10 +180,10 @@ describe('handleTemplateWebhookChange — status update', () => {
   });
 });
 
-describe('handleTemplateWebhookChange — quality update', () => {
+describe('handleModeloWebhookChange — quality update', () => {
   it('sets quality_score from new_quality_score', async () => {
     const { stub, calls } = makeSupabaseStub();
-    await handleTemplateWebhookChange(
+    await handleModeloWebhookChange(
       {
         field: 'message_template_quality_update',
         value: {
@@ -203,7 +203,7 @@ describe('handleTemplateWebhookChange — quality update', () => {
 
   it('stores null for unrecognised quality scores', async () => {
     const { stub, calls } = makeSupabaseStub();
-    await handleTemplateWebhookChange(
+    await handleModeloWebhookChange(
       {
         field: 'message_template_quality_update',
         value: {
@@ -217,11 +217,11 @@ describe('handleTemplateWebhookChange — quality update', () => {
   });
 });
 
-describe('handleTemplateWebhookChange — components update', () => {
+describe('handleModeloWebhookChange — components update', () => {
   it('is an info-log no-op (does not write to DB)', async () => {
     const info = vi.spyOn(console, 'info').mockImplementation(() => {});
     const { stub, calls } = makeSupabaseStub();
-    await handleTemplateWebhookChange(
+    await handleModeloWebhookChange(
       {
         field: 'message_template_components_update',
         value: {
@@ -236,12 +236,12 @@ describe('handleTemplateWebhookChange — components update', () => {
   });
 });
 
-describe('handleTemplateWebhookChange — unknown field', () => {
+describe('handleModeloWebhookChange — unknown field', () => {
   it('is a defensive no-op', async () => {
     const { stub, calls } = makeSupabaseStub();
-    await handleTemplateWebhookChange(
+    await handleModeloWebhookChange(
       // Pretend Meta added a new template_* field we don't know about.
-      // The route handler pre-filters via isTemplateWebhookField, but
+      // The route handler pre-filters via isModeloWebhookField, but
       // the dispatch should still be safe if the filter is bypassed.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { field: 'message_template_future_field' as any, value: {} },

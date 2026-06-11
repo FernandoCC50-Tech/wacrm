@@ -5,28 +5,28 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
-import { MessageTemplate } from '@/types';
-import { Step1ChooseTemplate } from '@/components/broadcasts/step1-choose-template';
-import { Step2SelectAudience } from '@/components/broadcasts/step2-select-audience';
+import { MessageModelo } from '@/types';
+import { Step1ChooseModelo } from '@/components/broadcasts/step1-choose-template';
+import { Step2SelecionarAudience } from '@/components/broadcasts/step2-select-audience';
 import { Step3Personalize } from '@/components/broadcasts/step3-personalize';
-import { Step4ScheduleSend } from '@/components/broadcasts/step4-schedule-send';
-import { useBroadcastSending } from '@/hooks/use-broadcast-sending';
+import { Step4ScheduleEnviar } from '@/components/broadcasts/step4-schedule-send';
+import { useBroadcastEnviaring } from '@/hooks/use-broadcast-sending';
 import { Check } from 'lucide-react';
 
 const steps = [
-  { label: 'Template', key: 'template' },
+  { label: 'Modelo', key: 'template' },
   { label: 'Audience', key: 'audience' },
   { label: 'Personalize', key: 'personalize' },
-  { label: 'Send', key: 'send' },
+  { label: 'Enviar', key: 'send' },
 ] as const;
 
-export default function NewBroadcastPage() {
+export default function NovoBroadcastPage() {
   const router = useRouter();
   const { accountId } = useAuth();
-  const { createAndSendBroadcast, isProcessing, progress } = useBroadcastSending();
+  const { createAndEnviarBroadcast, isProcessing, progress } = useBroadcastEnviaring();
 
   const [currentStep, setCurrentStep] = useState(0);
-  const [template, setTemplate] = useState<MessageTemplate | null>(null);
+  const [template, setModelo] = useState<MessageModelo | null>(null);
   const [audience, setAudience] = useState<{
     type: 'all' | 'tags' | 'custom_field' | 'csv';
     tagIds?: string[];
@@ -35,35 +35,35 @@ export default function NewBroadcastPage() {
       operator: 'is' | 'is_not' | 'contains';
       value: string;
     };
-    csvContacts?: { phone: string; name?: string }[];
+    csvContatos?: { phone: string; name?: string }[];
     excludeTagIds?: string[];
   }>({ type: 'all' });
   const [variables, setVariables] = useState<
     Record<string, { type: 'static' | 'field' | 'custom_field'; value: string }>
   >({});
-  const [name, setName] = useState('');
+  const [name, setNome] = useState('');
 
-  async function handleSend() {
+  async function handleEnviar() {
     if (!template) return;
 
     try {
-      const broadcastId = await createAndSendBroadcast({
+      const broadcastId = await createAndEnviarBroadcast({
         name,
         template,
         audience: {
           type: audience.type,
           tagIds: audience.tagIds,
           customField: audience.customField,
-          csvContacts: audience.csvContacts,
+          csvContatos: audience.csvContatos,
           excludeTagIds: audience.excludeTagIds,
         },
         variables,
       });
       router.push(`/broadcasts/${broadcastId}`);
     } catch (err) {
-      // Previously swallowed with console.error — the wizard would
+      // Anteriorly swallowed with console.error — the wizard would
       // just no-op, leaving the user confused. Surface the reason.
-      const message = err instanceof Error ? err.message : 'Broadcast failed';
+      const message = err instanceof Erro ? err.message : 'Broadcast failed';
       console.error('Broadcast failed:', err);
       toast.error(message);
     }
@@ -78,7 +78,7 @@ export default function NewBroadcastPage() {
    * recognize the draft but not to exactly round-trip into the wizard.
    * A full resume-draft UX is a future polish.
    */
-  async function handleSaveDraft() {
+  async function handleSalvarRascunho() {
     if (!template || !name.trim()) {
       toast.error('Give the broadcast a name before saving a draft.');
       return;
@@ -118,46 +118,46 @@ export default function NewBroadcastPage() {
     });
 
     if (error) {
-      toast.error(`Failed to save draft: ${error.message}`);
+      toast.error(`Falhou to save draft: ${error.message}`);
       return;
     }
-    toast.success('Draft saved');
+    toast.success('Rascunho saved');
     router.push('/broadcasts');
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div classNome="mx-auto max-w-3xl space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">New Broadcast</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Create and send a broadcast message to your contacts.
+        <h1 classNome="text-2xl font-bold text-white">Novo Broadcast</h1>
+        <p classNome="mt-1 text-sm text-slate-400">
+          Criar and send a broadcast message to your contacts.
         </p>
       </div>
 
       {/* Step Indicator */}
-      <div className="flex items-center justify-between">
+      <div classNome="flex items-center justify-between">
         {steps.map((step, index) => {
-          const isActive = index === currentStep;
+          const isAtivo = index === currentStep;
           const isCompleted = index < currentStep;
 
           return (
-            <div key={step.key} className="flex flex-1 items-center">
-              <div className="flex items-center gap-2">
+            <div key={step.key} classNome="flex flex-1 items-center">
+              <div classNome="flex items-center gap-2">
                 <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium transition-all ${
+                  classNome={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium transition-all ${
                     isCompleted
                       ? 'bg-primary text-primary-foreground'
-                      : isActive
+                      : isAtivo
                         ? 'border-2 border-primary bg-primary/10 text-primary'
                         : 'border border-slate-700 bg-slate-800 text-slate-500'
                   }`}
                 >
-                  {isCompleted ? <Check className="h-4 w-4" /> : index + 1}
+                  {isCompleted ? <Check classNome="h-4 w-4" /> : index + 1}
                 </div>
                 <span
-                  className={`hidden text-sm font-medium sm:block ${
-                    isActive ? 'text-white' : isCompleted ? 'text-primary' : 'text-slate-500'
+                  classNome={`hidden text-sm font-medium sm:block ${
+                    isAtivo ? 'text-white' : isCompleted ? 'text-primary' : 'text-slate-500'
                   }`}
                 >
                   {step.label}
@@ -165,7 +165,7 @@ export default function NewBroadcastPage() {
               </div>
               {index < steps.length - 1 && (
                 <div
-                  className={`mx-3 h-px flex-1 ${
+                  classNome={`mx-3 h-px flex-1 ${
                     index < currentStep ? 'bg-primary' : 'bg-slate-800'
                   }`}
                 />
@@ -176,28 +176,28 @@ export default function NewBroadcastPage() {
       </div>
 
       {/* Step Content */}
-      <div className="relative min-h-[400px]">
+      <div classNome="relative min-h-[400px]">
         <div
-          className="transition-all duration-300 ease-in-out"
+          classNome="transition-all duration-300 ease-in-out"
           style={{
             opacity: isProcessing ? 0.6 : 1,
             pointerEvents: isProcessing ? 'none' : 'auto',
           }}
         >
           {currentStep === 0 && (
-            <Step1ChooseTemplate
-              selectedTemplate={template}
-              onSelect={setTemplate}
-              onNext={() => setCurrentStep(1)}
-              onBack={() => router.push('/broadcasts')}
+            <Step1ChooseModelo
+              selectedModelo={template}
+              onSelecionar={setModelo}
+              onPróximo={() => setCurrentStep(1)}
+              onVoltar={() => router.push('/broadcasts')}
             />
           )}
           {currentStep === 1 && (
-            <Step2SelectAudience
+            <Step2SelecionarAudience
               audience={audience}
               onUpdate={setAudience}
-              onNext={() => setCurrentStep(2)}
-              onBack={() => setCurrentStep(0)}
+              onPróximo={() => setCurrentStep(2)}
+              onVoltar={() => setCurrentStep(0)}
             />
           )}
           {currentStep === 2 && template && (
@@ -205,19 +205,19 @@ export default function NewBroadcastPage() {
               template={template}
               variables={variables}
               onUpdate={setVariables}
-              onNext={() => setCurrentStep(3)}
-              onBack={() => setCurrentStep(1)}
+              onPróximo={() => setCurrentStep(3)}
+              onVoltar={() => setCurrentStep(1)}
             />
           )}
           {currentStep === 3 && template && (
-            <Step4ScheduleSend
+            <Step4ScheduleEnviar
               name={name}
-              onNameChange={setName}
+              onNomeChange={setNome}
               template={template}
               audience={audience}
-              onSend={handleSend}
-              onSaveDraft={handleSaveDraft}
-              onBack={() => setCurrentStep(2)}
+              onEnviar={handleEnviar}
+              onSalvarRascunho={handleSalvarRascunho}
+              onVoltar={() => setCurrentStep(2)}
               isProcessing={isProcessing}
               progress={progress}
             />

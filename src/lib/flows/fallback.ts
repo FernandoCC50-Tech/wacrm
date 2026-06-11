@@ -16,7 +16,7 @@ import {
   type FlowFallbackPolicy,
 } from "./types";
 
-export type FallbackAction =
+export type FallbackAção =
   /** Re-send the same prompt and wait again. */
   | { type: "reprompt" }
   /** End the run with status='handed_off', flip conversation to pending. */
@@ -75,7 +75,7 @@ export function decideFallback(args: {
   policy: FlowFallbackPolicy;
   /** Reprompt count AFTER incrementing (so 1 = first reprompt). */
   reprompt_count: number;
-}): FallbackAction {
+}): FallbackAção {
   const { policy, reprompt_count } = args;
 
   if (policy.on_unknown_reply === "ignore") return { type: "ignore" };

@@ -10,9 +10,9 @@ import {
   type BuilderInitial,
   type ServerStepNode,
 } from "@/components/automations/automation-builder"
-import type { AutomationTriggerType } from "@/types"
+import type { AutomationGatilhoType } from "@/types"
 
-export default function EditAutomationPage({
+export default function EditarAutomationPage({
   params,
 }: {
   params: Promise<{ id: string }>
@@ -20,14 +20,14 @@ export default function EditAutomationPage({
   const { id } = use(params)
   const router = useRouter()
   const [initial, setInitial] = useState<BuilderInitial | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setErro] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
     async function load() {
       const res = await fetch(`/api/automations/${id}`)
       if (!res.ok) {
-        if (!cancelled) setError(`Failed to load (${res.status})`)
+        if (!cancelled) setErro(`Falhou to load (${res.status})`)
         return
       }
       const body = await res.json()
@@ -36,7 +36,7 @@ export default function EditAutomationPage({
         id: body.automation.id,
         name: body.automation.name ?? "",
         description: body.automation.description ?? "",
-        trigger_type: body.automation.trigger_type as AutomationTriggerType,
+        trigger_type: body.automation.trigger_type as AutomationGatilhoType,
         trigger_config: body.automation.trigger_config ?? {},
         is_active: !!body.automation.is_active,
         steps: fromServerSteps((body.steps ?? []) as ServerStepNode[]),
@@ -50,13 +50,13 @@ export default function EditAutomationPage({
 
   if (error) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center gap-3">
-        <p className="text-sm text-red-400">{error}</p>
+      <div classNome="flex h-screen flex-col items-center justify-center gap-3">
+        <p classNome="text-sm text-red-400">{error}</p>
         <button
           onClick={() => router.push("/automations")}
-          className="text-sm text-primary hover:text-primary/80"
+          classNome="text-sm text-primary hover:text-primary/80"
         >
-          Back to Automations
+          Voltar to Automações
         </button>
       </div>
     )
@@ -64,8 +64,8 @@ export default function EditAutomationPage({
 
   if (!initial) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      <div classNome="flex h-screen items-center justify-center">
+        <Loader2 classNome="h-6 w-6 animate-spin text-primary" />
       </div>
     )
   }

@@ -2,7 +2,7 @@
 // GET /api/account/members
 //
 // Lists every member of the caller's account. Any member can call
-// it (the Members tab is shown to admins+, but agents/viewers see
+// it (the Membros tab is shown to admins+, but agents/viewers see
 // a read-only roster too).
 //
 // Field visibility
@@ -12,10 +12,10 @@
 //   phase: "agent/viewer sees names only".
 // ============================================================
 
-import { NextResponse } from "next/server";
+import { PróximoResponse } from "next/server";
 
-import { getCurrentAccount, toErrorResponse } from "@/lib/auth/account";
-import { canManageMembers, isAccountRole } from "@/lib/auth/roles";
+import { getCurrentAccount, toErroResponse } from "@/lib/auth/account";
+import { canManageMembros, isAccountFunção } from "@/lib/auth/roles";
 import type { AccountMember } from "@/types";
 
 interface ProfileRow {
@@ -41,24 +41,24 @@ export async function GET() {
 
     if (error) {
       console.error("[GET /api/account/members] fetch error:", error);
-      return NextResponse.json(
-        { error: "Failed to load members" },
+      return PróximoResponse.json(
+        { error: "Falhou to load members" },
         { status: 500 },
       );
     }
 
-    const canSeeEmails = canManageMembers(ctx.role);
+    const canSeeE-mails = canManageMembros(ctx.role);
 
     const members: AccountMember[] = (data as ProfileRow[]).flatMap((row) => {
       // Defensive: the DB enum should never let an unknown role
       // through, but if a migration ever broadens the enum without
       // updating TS, skip the row rather than crash the page.
-      if (!isAccountRole(row.account_role)) return [];
+      if (!isAccountFunção(row.account_role)) return [];
       return [
         {
           user_id: row.user_id,
           full_name: row.full_name ?? "",
-          email: canSeeEmails ? row.email : null,
+          email: canSeeE-mails ? row.email : null,
           avatar_url: row.avatar_url,
           role: row.account_role,
           joined_at: row.created_at,
@@ -66,8 +66,8 @@ export async function GET() {
       ];
     });
 
-    return NextResponse.json({ members });
+    return PróximoResponse.json({ members });
   } catch (err) {
-    return toErrorResponse(err);
+    return toErroResponse(err);
   }
 }

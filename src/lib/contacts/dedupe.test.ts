@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
-  dedupeByPhone,
+  dedupeByTelefone,
   findExistingContact,
   isExactMatch,
   isUniqueViolation,
@@ -45,9 +45,9 @@ describe("isUniqueViolation", () => {
   });
 });
 
-describe("dedupeByPhone", () => {
+describe("dedupeByTelefone", () => {
   it("keeps the first occurrence and counts in-file duplicates", () => {
-    const { unique, duplicates } = dedupeByPhone([
+    const { unique, duplicates } = dedupeByTelefone([
       { phone: "+1 555-1111", name: "A" },
       { phone: "15551111", name: "B" }, // same digits as #1
       { phone: "+1 555-2222", name: "C" },
@@ -57,7 +57,7 @@ describe("dedupeByPhone", () => {
   });
 
   it("drops rows with no digits", () => {
-    const { unique, duplicates } = dedupeByPhone([
+    const { unique, duplicates } = dedupeByTelefone([
       { phone: "   " },
       { phone: "+1 555-3333" },
     ]);

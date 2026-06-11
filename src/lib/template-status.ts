@@ -7,19 +7,19 @@
  * inbox picker, and broadcast picker stay aligned.
  */
 
-import type { MessageTemplateStatus } from '@/types';
+import type { MessageModeloStatus } from '@/types';
 
-export interface TemplateStatusDisplay {
+export interface ModeloStatusDisplay {
   label: string;
   classes: string;
 }
 
 export const templateStatusConfig: Record<
-  MessageTemplateStatus,
-  TemplateStatusDisplay
+  MessageModeloStatus,
+  ModeloStatusDisplay
 > = {
   DRAFT: {
-    label: 'Draft',
+    label: 'Rascunho',
     classes: 'bg-slate-600/20 text-slate-400 border-slate-600/30',
   },
   PENDING: {
@@ -39,7 +39,7 @@ export const templateStatusConfig: Record<
     classes: 'bg-orange-600/20 text-orange-400 border-orange-600/30',
   },
   DISABLED: {
-    label: 'Disabled',
+    label: 'Desativard',
     classes: 'bg-red-900/30 text-red-500 border-red-900/40',
   },
   IN_APPEAL: {

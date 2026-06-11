@@ -3,11 +3,11 @@
 // Source: https://github.com/tremorlabs/tremor/blob/main/src/utils/getYAxisDomain.ts
 
 export const getYAxisDomain = (
-  autoMinValue: boolean,
-  minValue: number | undefined,
-  maxValue: number | undefined,
+  autoMinValor: boolean,
+  minValor: number | undefined,
+  maxValor: number | undefined,
 ) => {
-  const minDomain = autoMinValue ? "auto" : (minValue ?? 0)
-  const maxDomain = maxValue ?? "auto"
+  const minDomain = autoMinValor ? "auto" : (minValor ?? 0)
+  const maxDomain = maxValor ?? "auto"
   return [minDomain, maxDomain]
 }

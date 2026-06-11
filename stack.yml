@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  app:
+    image: wacrm:latest
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - META_APP_SECRET=${META_APP_SECRET}
+      - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
+      - AUTOMATION_CRON_SECRET=${AUTOMATION_CRON_SECRET}
+    networks:
+      - rede_o2_public
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.50'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.wacrm.entrypoints=web
+        - traefik.http.routers.wacrm.rule=Host(`whatsapp.gestordocs.com.br`)
+        - traefik.http.routers.wacrm-secure.entrypoints=websecure
+        - traefik.http.routers.wacrm-secure.rule=Host(`whatsapp.gestordocs.com.br`)
+        - traefik.http.routers.wacrm-secure.tls=true
+        - traefik.http.routers.wacrm-secure.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.wacrm-secure.service=wacrm
+        - traefik.http.services.wacrm.loadbalancer.server.port=3000
+
+networks:
+  rede_o2_public:
+    external: true

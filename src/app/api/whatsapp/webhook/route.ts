@@ -1,15 +1,15 @@
-import { NextResponse } from 'next/server'
+import { PróximoResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { decrypt, encrypt, isLegacyFormat } from '@/lib/whatsapp/encryption'
 import { getMediaUrl, downloadMedia } from '@/lib/whatsapp/meta-api'
-import { normalizePhone } from '@/lib/whatsapp/phone-utils'
+import { normalizeTelefone } from '@/lib/whatsapp/phone-utils'
 import { findExistingContact, isUniqueViolation } from '@/lib/contacts/dedupe'
 import { verifyMetaWebhookSignature } from '@/lib/whatsapp/webhook-signature'
-import { runAutomationsForTrigger } from '@/lib/automations/engine'
+import { runAutomaçõesForGatilho } from '@/lib/automations/engine'
 import { dispatchInboundToFlows } from '@/lib/flows/engine'
 import {
-  handleTemplateWebhookChange,
-  isTemplateWebhookField,
+  handleModeloWebhookChange,
+  isModeloWebhookField,
 } from '@/lib/whatsapp/template-webhook'
 
 // Lazy-initialized to avoid build-time crash when env vars are missing
@@ -87,20 +87,20 @@ export async function GET(request: Request) {
     const verifyToken = searchParams.get('hub.verify_token')
 
     if (mode !== 'subscribe' || !challenge || !verifyToken) {
-      return NextResponse.json(
+      return PróximoResponse.json(
         { error: 'Missing verification parameters' },
         { status: 400 }
       )
     }
 
     // Fetch all whatsapp configs to check verify tokens
-    const { data: configs, error: configError } = await supabaseAdmin()
+    const { data: configs, error: configErro } = await supabaseAdmin()
       .from('whatsapp_config')
       .select('id, verify_token')
 
-    if (configError || !configs) {
-      console.error('Error fetching configs for verification:', configError)
-      return NextResponse.json(
+    if (configErro || !configs) {
+      console.error('Erro fetching configs for verification:', configErro)
+      return PróximoResponse.json(
         { error: 'Verification failed' },
         { status: 403 }
       )
@@ -147,13 +147,13 @@ export async function GET(request: Request) {
       })
     }
 
-    return NextResponse.json(
+    return PróximoResponse.json(
       { error: 'Verification token mismatch' },
       { status: 403 }
     )
   } catch (error) {
-    console.error('Error in webhook GET verification:', error)
-    return NextResponse.json(
+    console.error('Erro in webhook GET verification:', error)
+    return PróximoResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     )
@@ -162,7 +162,7 @@ export async function GET(request: Request) {
 
 // POST - Receive messages
 export async function POST(request: Request) {
-  // Read raw body first so we can HMAC-verify the exact bytes Meta
+  // Lido raw body first so we can HMAC-verify the exact bytes Meta
   // signed. request.json() would re-encode and break the signature.
   const rawBody = await request.text()
   const signature = request.headers.get('x-hub-signature-256')
@@ -172,22 +172,22 @@ export async function POST(request: Request) {
     // loudly if a misconfiguration causes signatures to stop matching,
     // rather than silently eating events.
     console.warn('[webhook] rejected request with invalid signature')
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    return PróximoResponse.json({ error: 'Invalid signature' }, { status: 401 })
   }
 
   let body: { entry?: WhatsAppWebhookEntry[] }
   try {
     body = JSON.parse(rawBody)
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    return PróximoResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
   // Process asynchronously so we can ack Meta within their timeout.
   processWebhook(body).catch((error) => {
-    console.error('Error processing webhook:', error)
+    console.error('Erro processing webhook:', error)
   })
 
-  return NextResponse.json({ status: 'received' }, { status: 200 })
+  return PróximoResponse.json({ status: 'received' }, { status: 200 })
 }
 
 async function processWebhook(body: { entry?: WhatsAppWebhookEntry[] }) {
@@ -195,13 +195,13 @@ async function processWebhook(body: { entry?: WhatsAppWebhookEntry[] }) {
 
   for (const entry of body.entry) {
     for (const change of entry.changes) {
-      // Template-lifecycle events (status / quality / components
+      // Modelo-lifecycle events (status / quality / components
       // updates from Meta) come in on a different change.field and
       // have a different value shape — route them through the
       // dedicated handler. Skip the messaging branches below so we
       // don't try to read message-shaped fields off a template event.
-      if (isTemplateWebhookField(change.field)) {
-        await handleTemplateWebhookChange(
+      if (isModeloWebhookField(change.field)) {
+        await handleModeloWebhookChange(
           { field: change.field, value: change.value as unknown },
           supabaseAdmin(),
         )
@@ -227,16 +227,16 @@ async function processWebhook(body: { entry?: WhatsAppWebhookEntry[] }) {
       // operators see the real cause in logs. ≥2 rows shouldn't happen
       // post-migration 013 (UNIQUE constraint), but a row created
       // before the constraint, or a race, would still surface here.
-      const { data: configRows, error: configError } = await supabaseAdmin()
+      const { data: configRows, error: configErro } = await supabaseAdmin()
         .from('whatsapp_config')
         .select('*')
         .eq('phone_number_id', phoneNumberId)
 
-      if (configError) {
+      if (configErro) {
         console.error(
-          'Error fetching whatsapp_config for phone_number_id:',
+          'Erro fetching whatsapp_config for phone_number_id:',
           phoneNumberId,
-          configError
+          configErro
         )
         continue
       }
@@ -250,7 +250,7 @@ async function processWebhook(body: { entry?: WhatsAppWebhookEntry[] }) {
         console.error(
           `Multiple configs (${configRows.length}) found for phone_number_id:`,
           phoneNumberId,
-          '— inbound message dropped. Resolve duplicates so each number maps to a single account.',
+          '— inbound message dropped. Resolver duplicates so each number maps to a single account.',
           'Account owners:',
           configRows.map((r: { account_id: string; user_id: string }) => `${r.account_id} (admin ${r.user_id})`)
         )
@@ -338,7 +338,7 @@ async function handleStatusUpdate(status: {
     .eq('message_id', status.id)
 
   if (msgErr) {
-    console.error('Error updating message status:', msgErr)
+    console.error('Erro updating message status:', msgErr)
   }
 
   // 2) Mirror onto broadcast_recipients via whatsapp_message_id
@@ -354,7 +354,7 @@ async function handleStatusUpdate(status: {
     .maybeSingle()
 
   if (recFetchErr) {
-    console.error('Error fetching broadcast recipient:', recFetchErr)
+    console.error('Erro fetching broadcast recipient:', recFetchErr)
     return
   }
   if (!recipient) return // message wasn't part of a broadcast — fine
@@ -374,7 +374,7 @@ async function handleStatusUpdate(status: {
     .eq('id', recipient.id)
 
   if (recUpdateErr) {
-    console.error('Error updating broadcast recipient status:', recUpdateErr)
+    console.error('Erro updating broadcast recipient status:', recUpdateErr)
   }
 }
 
@@ -410,7 +410,7 @@ async function flagBroadcastReplyIfAny(accountId: string, contactId: string) {
       .eq('id', row.id)
 
     if (updErr) {
-      console.error('Error marking broadcast recipient replied:', updErr)
+      console.error('Erro marking broadcast recipient replied:', updErr)
     }
   } catch (err) {
     console.error('flagBroadcastReplyIfAny failed:', err)
@@ -418,7 +418,7 @@ async function flagBroadcastReplyIfAny(accountId: string, contactId: string) {
 }
 
 /**
- * Resolve a Meta-side message_id into the matching internal UUID, scoped
+ * Resolver a Meta-side message_id into the matching internal UUID, scoped
  * to one conversation. Returns null when we never received the parent
  * (e.g. a swipe-reply to a message older than this CRM install).
  */
@@ -469,19 +469,19 @@ async function handleReaction(
 
   // Empty emoji = removal (per Meta's Cloud API spec).
   if (!reaction.emoji) {
-    const { error: delError } = await supabaseAdmin()
+    const { error: delErro } = await supabaseAdmin()
       .from('message_reactions')
       .delete()
       .eq('message_id', targetInternalId)
       .eq('actor_type', 'customer')
       .eq('actor_id', contactId)
-    if (delError) {
-      console.error('[webhook] reaction delete failed:', delError.message)
+    if (delErro) {
+      console.error('[webhook] reaction delete failed:', delErro.message)
     }
     return
   }
 
-  const { error: upsertError } = await supabaseAdmin()
+  const { error: upsertErro } = await supabaseAdmin()
     .from('message_reactions')
     .upsert(
       {
@@ -493,39 +493,39 @@ async function handleReaction(
       },
       { onConflict: 'message_id,actor_type,actor_id' }
     )
-  if (upsertError) {
-    console.error('[webhook] reaction upsert failed:', upsertError.message)
+  if (upsertErro) {
+    console.error('[webhook] reaction upsert failed:', upsertErro.message)
   }
 }
 
 async function processMessage(
   message: WhatsAppMessage,
   contact: { profile: { name: string }; wa_id: string },
-  // Tenancy. Resolved from the matched whatsapp_config row; every
+  // Tenancy. Resolvido from the matched whatsapp_config row; every
   // contact / conversation / message row created downstream is
   // stamped with this so any member of the account can see it.
   accountId: string,
-  // Sender-of-record for inserts that need a NOT NULL user_id FK
+  // Enviarer-of-record for inserts that need a NOT NULL user_id FK
   // (contacts, conversations). Always the admin who saved the
   // WhatsApp config; the choice is arbitrary post-017 but stable.
   configOwnerUserId: string,
   accessToken: string
 ) {
-  const senderPhone = normalizePhone(message.from)
-  const contactName = contact.profile.name
+  const senderTelefone = normalizeTelefone(message.from)
+  const contactNome = contact.profile.name
 
   // Find or create contact
-  const contactOutcome = await findOrCreateContact(
+  const contactOutcome = await findOrCriarContact(
     accountId,
     configOwnerUserId,
-    senderPhone,
-    contactName
+    senderTelefone,
+    contactNome
   )
   if (!contactOutcome) return
   const contactRecord = contactOutcome.contact
 
   // Find or create conversation
-  const conversation = await findOrCreateConversation(
+  const conversation = await findOrCriarConversation(
     accountId,
     configOwnerUserId,
     contactRecord.id
@@ -544,7 +544,7 @@ async function processMessage(
   const { contentText, mediaUrl, mediaType, interactiveReplyId } =
     await parseMessageContent(message, accessToken)
 
-  // Resolve swipe-reply context if present. A missing parent is fine —
+  // Resolver swipe-reply context if present. A missing parent is fine —
   // we just store NULL and the UI renders the message without a quote.
   let replyToInternalId: string | null = null
   if (message.context?.id) {
@@ -595,7 +595,7 @@ async function processMessage(
     .eq('sender_type', 'customer')
   const isFirstInboundMessage = (priorCustomerMsgCount ?? 0) === 0
 
-  const { error: msgError } = await supabaseAdmin().from('messages').insert({
+  const { error: msgErro } = await supabaseAdmin().from('messages').insert({
     conversation_id: conversation.id,
     sender_type: 'customer',
     content_type: contentType,
@@ -611,13 +611,13 @@ async function processMessage(
     interactive_reply_id: interactiveReplyId,
   })
 
-  if (msgError) {
-    console.error('Error inserting message:', msgError)
+  if (msgErro) {
+    console.error('Erro inserting message:', msgErro)
     return
   }
 
   // Update conversation
-  const { error: convError } = await supabaseAdmin()
+  const { error: convErro } = await supabaseAdmin()
     .from('conversations')
     .update({
       last_message_text: contentText || `[${message.type}]`,
@@ -627,8 +627,8 @@ async function processMessage(
     })
     .eq('id', conversation.id)
 
-  if (convError) {
-    console.error('Error updating conversation:', convError)
+  if (convErro) {
+    console.error('Erro updating conversation:', convErro)
   }
 
   // If this contact was a recent broadcast recipient, flag the reply
@@ -677,13 +677,13 @@ async function processMessage(
   })
   const flowConsumed = flowResult.consumed
 
-  // Fire any automations that react to this webhook event. All dispatches
+  // Fire any automations that react to this webhook event. Todos dispatches
   // run here (not earlier) so the contact, conversation, and inbound
   // message all exist before any step — including send_message — runs.
   // Fire-and-forget: a slow or failing automation must not block the
   // webhook's 200 OK response to Meta.
   const inboundText = contentText ?? message.text?.body ?? ''
-  const automationTriggers: (
+  const automationGatilhos: (
     | 'new_contact_created'
     | 'first_inbound_message'
     | 'new_message_received'
@@ -692,7 +692,7 @@ async function processMessage(
   // Content-level triggers are suppressed when a flow consumed the
   // message — see the comment block above.
   if (!flowConsumed) {
-    automationTriggers.push('new_message_received', 'keyword_match')
+    automationGatilhos.push('new_message_received', 'keyword_match')
   }
   // new_contact_created fires only when the webhook just auto-created the
   // contact row. first_inbound_message fires whenever this is the contact's
@@ -700,10 +700,10 @@ async function processMessage(
   // manually-imported contacts sending for the first time. We dispatch both
   // so users can pick whichever semantic they want; an automation that
   // listens to only one trigger runs only when that trigger matches.
-  if (contactOutcome.wasCreated) automationTriggers.unshift('new_contact_created')
-  if (isFirstInboundMessage) automationTriggers.unshift('first_inbound_message')
-  for (const triggerType of automationTriggers) {
-    runAutomationsForTrigger({
+  if (contactOutcome.wasCriard) automationGatilhos.unshift('new_contact_created')
+  if (isFirstInboundMessage) automationGatilhos.unshift('first_inbound_message')
+  for (const triggerType of automationGatilhos) {
+    runAutomaçõesForGatilho({
       accountId,
       triggerType,
       contactId: contactRecord.id,
@@ -743,8 +743,8 @@ async function parseMessageContent(
       return `/api/whatsapp/media/${mediaId}`
     } catch (error) {
       console.error(
-        `Failed to verify media ${mediaId} with Meta:`,
-        error instanceof Error ? error.message : error
+        `Falhou to verify media ${mediaId} with Meta:`,
+        error instanceof Erro ? error.message : error
       )
       return null
     }
@@ -867,10 +867,10 @@ interface ContactOutcome {
   contact: ContactRow
   /** True when this call created the row; drives new_contact_created
    *  automation dispatch in processMessage. */
-  wasCreated: boolean
+  wasCriard: boolean
 }
 
-async function findOrCreateContact(
+async function findOrCriarContact(
   accountId: string,
   configOwnerUserId: string,
   phone: string,
@@ -896,14 +896,14 @@ async function findOrCreateContact(
         .update({ name, updated_at: new Date().toISOString() })
         .eq('id', existingContact.id)
     }
-    return { contact: existingContact, wasCreated: false }
+    return { contact: existingContact, wasCriard: false }
   }
 
-  // Create new contact. account_id is the tenancy column;
+  // Criar new contact. account_id is the tenancy column;
   // user_id is the NOT NULL FK audit column (no inbound message
   // has a single "user who created" it — we attribute to the
   // WhatsApp config owner as a stable default).
-  const { data: newContact, error: createError } = await supabaseAdmin()
+  const { data: newContact, error: createErro } = await supabaseAdmin()
     .from('contacts')
     .insert({
       account_id: accountId,
@@ -914,42 +914,42 @@ async function findOrCreateContact(
     .select()
     .single()
 
-  if (createError) {
-    // Lost a race: a concurrent inbound delivery (or another path)
+  if (createErro) {
+    // Perdido a race: a concurrent inbound delivery (or another path)
     // created this contact between our lookup and insert, and the
     // unique index (migration 022) rejected the duplicate. Re-resolve
     // the existing row instead of dropping the message.
-    if (isUniqueViolation(createError)) {
+    if (isUniqueViolation(createErro)) {
       const raced = await findExistingContact(supabaseAdmin(), accountId, phone)
-      if (raced) return { contact: raced, wasCreated: false }
+      if (raced) return { contact: raced, wasCriard: false }
     }
-    console.error('Error creating contact:', createError)
+    console.error('Erro creating contact:', createErro)
     return null
   }
 
-  return { contact: newContact, wasCreated: true }
+  return { contact: newContact, wasCriard: true }
 }
 
-async function findOrCreateConversation(
+async function findOrCriarConversation(
   accountId: string,
   configOwnerUserId: string,
   contactId: string,
 ) {
   // Look for existing conversation in this account
-  const { data: existing, error: findError } = await supabaseAdmin()
+  const { data: existing, error: findErro } = await supabaseAdmin()
     .from('conversations')
     .select('*')
     .eq('account_id', accountId)
     .eq('contact_id', contactId)
     .single()
 
-  if (!findError && existing) {
+  if (!findErro && existing) {
     return existing
   }
 
-  // Create new conversation. Same tenancy + audit split as
-  // findOrCreateContact above.
-  const { data: newConv, error: createError } = await supabaseAdmin()
+  // Criar new conversation. Same tenancy + audit split as
+  // findOrCriarContact above.
+  const { data: newConv, error: createErro } = await supabaseAdmin()
     .from('conversations')
     .insert({
       account_id: accountId,
@@ -959,8 +959,8 @@ async function findOrCreateConversation(
     .select()
     .single()
 
-  if (createError) {
-    console.error('Error creating conversation:', createError)
+  if (createErro) {
+    console.error('Erro creating conversation:', createErro)
     return null
   }
 

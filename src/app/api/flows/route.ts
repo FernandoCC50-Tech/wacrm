@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server'
+import { PróximoResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/flows/admin-client'
-import { getFlowTemplate } from '@/lib/flows/templates'
+import { getFlowModelo } from '@/lib/flows/templates'
 
 /**
  * GET /api/flows — list the caller's flows.
@@ -30,7 +30,7 @@ async function requireUser(): Promise<
 export async function GET() {
   const guard = await requireUser()
   if (!guard.ok) {
-    return NextResponse.json(guard.body, { status: guard.status })
+    return PróximoResponse.json(guard.body, { status: guard.status })
   }
   const { supabase } = guard
 
@@ -39,19 +39,19 @@ export async function GET() {
     .select('*')
     .order('created_at', { ascending: false })
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return PróximoResponse.json({ error: error.message }, { status: 500 })
   }
-  return NextResponse.json({ flows: data ?? [] })
+  return PróximoResponse.json({ flows: data ?? [] })
 }
 
 export async function POST(request: Request) {
   const guard = await requireUser()
   if (!guard.ok) {
-    return NextResponse.json(guard.body, { status: guard.status })
+    return PróximoResponse.json(guard.body, { status: guard.status })
   }
   const { userId, supabase } = guard
 
-  // Resolve the caller's account_id — `flows.account_id` is NOT NULL
+  // Resolver the caller's account_id — `flows.account_id` is NOT NULL
   // post-017, so an INSERT without it trips the not-null constraint
   // even though the admin client below bypasses RLS.
   const { data: profile } = await supabase
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     .single()
   const accountId = profile?.account_id as string | undefined
   if (!accountId) {
-    return NextResponse.json(
+    return PróximoResponse.json(
       { error: 'Your profile is not linked to an account.' },
       { status: 403 },
     )
@@ -83,16 +83,16 @@ export async function POST(request: Request) {
       }
     | null
   if (!body) {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    return PróximoResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
   const admin = supabaseAdmin()
 
-  // -------- Template clone path --------
+  // -------- Modelo clone path --------
   if (body.template_slug) {
-    const template = getFlowTemplate(body.template_slug)
+    const template = getFlowModelo(body.template_slug)
     if (!template) {
-      return NextResponse.json(
+      return PróximoResponse.json(
         { error: `Unknown template_slug "${body.template_slug}"` },
         { status: 400 },
       )
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
       .select()
       .single()
     if (flowErr || !flow) {
-      return NextResponse.json(
+      return PróximoResponse.json(
         { error: flowErr?.message ?? 'flow insert failed' },
         { status: 500 },
       )
@@ -131,18 +131,18 @@ export async function POST(request: Request) {
         // sit as an empty draft. CASCADE on flow_id removes the
         // (probably zero) nodes too.
         await admin.from('flows').delete().eq('id', flow.id)
-        return NextResponse.json(
+        return PróximoResponse.json(
           { error: nodesErr.message },
           { status: 500 },
         )
       }
     }
-    return NextResponse.json({ flow }, { status: 201 })
+    return PróximoResponse.json({ flow }, { status: 201 })
   }
 
   // -------- Plain (empty) create path --------
   if (!body.name?.trim()) {
-    return NextResponse.json({ error: 'name is required' }, { status: 400 })
+    return PróximoResponse.json({ error: 'name is required' }, { status: 400 })
   }
   const trigger_type = body.trigger_type ?? 'keyword'
 
@@ -160,10 +160,10 @@ export async function POST(request: Request) {
     .select()
     .single()
   if (error || !data) {
-    return NextResponse.json(
+    return PróximoResponse.json(
       { error: error?.message ?? 'insert failed' },
       { status: 500 },
     )
   }
-  return NextResponse.json({ flow: data }, { status: 201 })
+  return PróximoResponse.json({ flow: data }, { status: 201 })
 }

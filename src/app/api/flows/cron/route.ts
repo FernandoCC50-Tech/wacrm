@@ -1,12 +1,12 @@
 import { timingSafeEqual } from 'node:crypto'
-import { NextResponse } from 'next/server'
+import { PróximoResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/flows/admin-client'
 import { resolveFallbackPolicy } from '@/lib/flows/fallback'
 
 /**
  * Sweep abandoned active flow runs.
  *
- * Reads each active run's parent-flow `fallback_policy.on_timeout_hours`
+ * Lidos each active run's parent-flow `fallback_policy.on_timeout_hours`
  * to compute the staleness cutoff (default 24h), then marks any run
  * past its cutoff as `timed_out`. Writes a matching `flow_run_events`
  * row for the audit trail.
@@ -21,7 +21,7 @@ import { resolveFallbackPolicy } from '@/lib/flows/fallback'
  * and this one) are independent operations; we keep them on separate
  * URLs so one failing doesn't block the other.
  *
- * Hosting: hit on a schedule (Vercel Cron / GitHub Actions / external
+ * Hosting: hit on a schedule (Vercel Cron / GitHub Açãos / external
  * pinger). A 5-minute interval is more than enough for a 24h timeout
  * default; once per hour would also be acceptable for low-volume
  * tenants.
@@ -29,7 +29,7 @@ import { resolveFallbackPolicy } from '@/lib/flows/fallback'
 export async function GET(request: Request) {
   const expected = process.env.AUTOMATION_CRON_SECRET
   if (!expected) {
-    return NextResponse.json({ error: 'cron not configured' }, { status: 503 })
+    return PróximoResponse.json({ error: 'cron not configured' }, { status: 503 })
   }
   // Constant-time compare so an attacker who can hit the endpoint
   // can't recover the secret byte-by-byte from response-time deltas.
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     suppliedBuf.length !== expectedBuf.length ||
     !timingSafeEqual(suppliedBuf, expectedBuf)
   ) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return PróximoResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const admin = supabaseAdmin()
@@ -60,9 +60,9 @@ export async function GET(request: Request) {
 
   if (error) {
     console.error('[flows-cron] active-run scan failed:', error.message)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return PróximoResponse.json({ error: error.message }, { status: 500 })
   }
-  if (!runs?.length) return NextResponse.json({ swept: 0 })
+  if (!runs?.length) return PróximoResponse.json({ swept: 0 })
 
   type Row = {
     id: string
@@ -108,5 +108,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ swept })
+  return PróximoResponse.json({ swept })
 }

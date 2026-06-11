@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server'
-import { getCurrentAccount, toErrorResponse } from '@/lib/auth/account'
-import { runAutomationsForTrigger } from '@/lib/automations/engine'
-import type { AutomationTriggerType } from '@/types'
+import { PróximoResponse } from 'next/server'
+import { getCurrentAccount, toErroResponse } from '@/lib/auth/account'
+import { runAutomaçõesForGatilho } from '@/lib/automations/engine'
+import type { AutomationGatilhoType } from '@/types'
 
 /**
  * Manual trigger for testing or for external integrations that want
@@ -14,20 +14,20 @@ export async function POST(request: Request) {
     const ctx = await getCurrentAccount()
     accountId = ctx.accountId
   } catch (err) {
-    return toErrorResponse(err)
+    return toErroResponse(err)
   }
 
   const body = await request.json().catch(() => null)
   if (!body?.trigger_type) {
-    return NextResponse.json({ error: 'trigger_type required' }, { status: 400 })
+    return PróximoResponse.json({ error: 'trigger_type required' }, { status: 400 })
   }
 
-  await runAutomationsForTrigger({
+  await runAutomaçõesForGatilho({
     accountId,
-    triggerType: body.trigger_type as AutomationTriggerType,
+    triggerType: body.trigger_type as AutomationGatilhoType,
     contactId: body.contact_id ?? null,
     context: body.context ?? {},
   })
 
-  return NextResponse.json({ ok: true })
+  return PróximoResponse.json({ ok: true })
 }

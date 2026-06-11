@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { PróximoResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/automations/admin-client'
 
@@ -11,7 +11,7 @@ export async function POST(
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return PróximoResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const admin = supabaseAdmin()
   const { data: original, error: origErr } = await admin
@@ -20,8 +20,8 @@ export async function POST(
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle()
-  if (origErr) return NextResponse.json({ error: origErr.message }, { status: 500 })
-  if (!original) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (origErr) return PróximoResponse.json({ error: origErr.message }, { status: 500 })
+  if (!original) return PróximoResponse.json({ error: 'Not found' }, { status: 404 })
 
   const { data: copy, error: copyErr } = await admin
     .from('automations')
@@ -30,7 +30,7 @@ export async function POST(
       // NULL post-017, so the INSERT fails the constraint without it.
       account_id: original.account_id,
       user_id: user.id,
-      name: `${original.name} (Copy)`,
+      name: `${original.name} (Copiar)`,
       description: original.description,
       trigger_type: original.trigger_type,
       trigger_config: original.trigger_config,
@@ -39,7 +39,7 @@ export async function POST(
     .select()
     .single()
   if (copyErr || !copy) {
-    return NextResponse.json({ error: copyErr?.message ?? 'copy failed' }, { status: 500 })
+    return PróximoResponse.json({ error: copyErr?.message ?? 'copy failed' }, { status: 500 })
   }
 
   const { data: steps } = await admin
@@ -68,8 +68,8 @@ export async function POST(
       position: row.position,
     }))
     const { error: insErr } = await admin.from('automation_steps').insert(rows)
-    if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 })
+    if (insErr) return PróximoResponse.json({ error: insErr.message }, { status: 500 })
   }
 
-  return NextResponse.json({ automation: copy }, { status: 201 })
+  return PróximoResponse.json({ automation: copy }, { status: 201 })
 }

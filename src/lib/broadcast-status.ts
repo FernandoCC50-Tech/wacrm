@@ -1,11 +1,11 @@
 /**
  * Shared status badge config for broadcasts + recipients.
  *
- * Previously `statusConfig` was defined inline in both
+ * Anteriorly `statusConfig` was defined inline in both
  * /broadcasts/page.tsx and /broadcasts/[id]/page.tsx with slight
  * drift risk. One source of truth now.
  *
- * Dark-theme only — bg-*-500/10 + text-*-400 + border-*-500/20.
+ * Escuro-theme only — bg-*-500/10 + text-*-400 + border-*-500/20.
  */
 
 import type { BroadcastStatus, RecipientStatus } from "@/types";
@@ -22,24 +22,24 @@ export interface StatusDisplay {
 
 export const broadcastStatusConfig: Record<BroadcastStatus, StatusDisplay> = {
   draft: {
-    label: "Draft",
+    label: "Rascunho",
     classes: "bg-slate-500/10 text-slate-400 border-slate-500/20",
   },
   scheduled: {
-    label: "Scheduled",
+    label: "Agendado",
     classes: "bg-blue-500/10 text-blue-400 border-blue-500/20",
   },
   sending: {
-    label: "Sending",
+    label: "Enviaring",
     classes: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
     pulse: true,
   },
   sent: {
-    label: "Sent",
+    label: "Enviado",
     classes: "bg-primary/10 text-primary border-primary/20",
   },
   failed: {
-    label: "Failed",
+    label: "Falhou",
     classes: "bg-red-500/10 text-red-400 border-red-500/20",
   },
 };
@@ -50,15 +50,15 @@ export const recipientStatusConfig: Record<RecipientStatus, StatusDisplay> = {
     classes: "bg-slate-500/10 text-slate-400 border-slate-500/20",
   },
   sent: {
-    label: "Sent",
+    label: "Enviado",
     classes: "bg-blue-500/10 text-blue-400 border-blue-500/20",
   },
   delivered: {
-    label: "Delivered",
+    label: "Entregue",
     classes: "bg-primary/10 text-primary border-primary/20",
   },
   read: {
-    label: "Read",
+    label: "Lido",
     classes: "bg-primary/10 text-primary border-primary/20",
   },
   replied: {
@@ -66,7 +66,7 @@ export const recipientStatusConfig: Record<RecipientStatus, StatusDisplay> = {
     classes: "bg-purple-500/10 text-purple-400 border-purple-500/20",
   },
   failed: {
-    label: "Failed",
+    label: "Falhou",
     classes: "bg-red-500/10 text-red-400 border-red-500/20",
   },
 };

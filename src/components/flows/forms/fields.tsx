@@ -3,11 +3,11 @@
 /**
  * Reusable field components shared across every per-node form.
  *
- * `NodeKeySelect` — picks a node from the flow's node list, rendered
+ * `NodeKeySelecionar` — picks a node from the flow's node list, rendered
  * with the source node's icon so the dropdown reads as
  * "destination = ◇ menu" rather than an opaque slug.
  *
- * `NextNodeRow` — wraps NodeKeySelect with a label; the most common
+ * `PróximoNodeRow` — wraps NodeKeySelecionar with a label; the most common
  * per-node form row ("after this node, advance to…").
  *
  * `TextRow` — wraps Input or Textarea behind a label. Pure UI sugar
@@ -21,11 +21,11 @@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Selecionar,
+  SelecionarContent,
+  SelecionarItem,
+  SelecionarGatilho,
+  SelecionarValor,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { NODE_META, type BuilderNode } from "../shared";
@@ -43,26 +43,26 @@ export function TextRow({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-xs text-slate-400">{label}</label>
+      <label classNome="mb-1 block text-xs text-slate-400">{label}</label>
       {rows > 1 ? (
         <Textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
           rows={rows}
-          className="bg-slate-800"
+          classNome="bg-slate-800"
         />
       ) : (
         <Input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="bg-slate-800"
+          classNome="bg-slate-800"
         />
       )}
     </div>
   );
 }
 
-export function NextNodeRow({
+export function PróximoNodeRow({
   value,
   allNodes,
   currentKey,
@@ -77,8 +77,8 @@ export function NextNodeRow({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-xs text-slate-400">{label}</label>
-      <NodeKeySelect
+      <label classNome="mb-1 block text-xs text-slate-400">{label}</label>
+      <NodeKeySelecionar
         value={value || null}
         nodes={allNodes}
         excludeKey={currentKey}
@@ -89,46 +89,46 @@ export function NextNodeRow({
   );
 }
 
-export function NodeKeySelect({
+export function NodeKeySelecionar({
   value,
   nodes,
   excludeKey,
   onChange,
   placeholder,
-  className,
+  classNome,
 }: {
   value: string | null;
   nodes: BuilderNode[];
   excludeKey?: string;
   onChange: (v: string | null) => void;
   placeholder?: string;
-  className?: string;
+  classNome?: string;
 }) {
   const options = nodes.filter((n) => n.node_key !== excludeKey);
   return (
-    <Select
+    <Selecionar
       value={value ?? "__none__"}
-      onValueChange={(v) => onChange(v === "__none__" ? null : v)}
+      onValorChange={(v) => onChange(v === "__none__" ? null : v)}
     >
-      <SelectTrigger className={cn("bg-slate-800", className)}>
-        <SelectValue placeholder={placeholder ?? "—"} />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="__none__">— None —</SelectItem>
+      <SelecionarGatilho classNome={cn("bg-slate-800", classNome)}>
+        <SelecionarValor placeholder={placeholder ?? "—"} />
+      </SelecionarGatilho>
+      <SelecionarContent>
+        <SelecionarItem value="__none__">— Nenhum —</SelecionarItem>
         {options.map((n) => {
           const Icon = NODE_META[n.node_type].icon;
           return (
-            <SelectItem key={n.node_key} value={n.node_key}>
-              <span className="inline-flex items-center gap-1.5">
+            <SelecionarItem key={n.node_key} value={n.node_key}>
+              <span classNome="inline-flex items-center gap-1.5">
                 <Icon
-                  className={cn("h-3 w-3", NODE_META[n.node_type].color)}
+                  classNome={cn("h-3 w-3", NODE_META[n.node_type].color)}
                 />
                 {n.node_key}
               </span>
-            </SelectItem>
+            </SelecionarItem>
           );
         })}
-      </SelectContent>
-    </Select>
+      </SelecionarContent>
+    </Selecionar>
   );
 }

@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Rótulo } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
@@ -35,14 +35,14 @@ export function TagManager() {
   const { user, accountId, loading: authLoading } = useAuth();
 
   const [loading, setLoading] = useState(true);
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [tagToDelete, setTagToDelete] = useState<Tag | null>(null);
+  const [tags, setEtiquetas] = useState<Tag[]>([]);
+  const [dialogAberto, setDialogAberto] = useState(false);
+  const [deleteDialogAberto, setExcluirDialogAberto] = useState(false);
+  const [tagToExcluir, setTagToExcluir] = useState<Tag | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [newTagName, setNewTagName] = useState('');
-  const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[3].value);
+  const [newTagNome, setNovoTagNome] = useState('');
+  const [selectedCor, setSelecionaredCor] = useState(PRESET_COLORS[3].value);
 
   useEffect(() => {
     if (authLoading) return;
@@ -50,11 +50,11 @@ export function TagManager() {
       setLoading(false);
       return;
     }
-    fetchTags(user.id);
+    fetchEtiquetas(user.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user?.id]);
 
-  async function fetchTags(userId: string) {
+  async function fetchEtiquetas(userId: string) {
     try {
       setLoading(true);
 
@@ -65,17 +65,17 @@ export function TagManager() {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setTags(data || []);
+      setEtiquetas(data || []);
     } catch (err) {
-      console.error('Failed to fetch tags:', err);
-      toast.error('Failed to load tags');
+      console.error('Falhou to fetch tags:', err);
+      toast.error('Falhou to load tags');
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleCreate() {
-    if (!newTagName.trim()) {
+  async function handleCriar() {
+    if (!newTagNome.trim()) {
       toast.error('Tag name is required');
       return;
     }
@@ -92,49 +92,49 @@ export function TagManager() {
         .insert({
           user_id: user.id,
           account_id: accountId,
-          name: newTagName.trim(),
-          color: selectedColor,
+          name: newTagNome.trim(),
+          color: selectedCor,
         });
 
       if (error) throw error;
 
       toast.success('Tag created successfully');
-      setDialogOpen(false);
-      setNewTagName('');
-      setSelectedColor(PRESET_COLORS[3].value);
-      if (user) await fetchTags(user.id);
+      setDialogAberto(false);
+      setNovoTagNome('');
+      setSelecionaredCor(PRESET_COLORS[3].value);
+      if (user) await fetchEtiquetas(user.id);
     } catch (err) {
-      console.error('Create error:', err);
-      toast.error('Failed to create tag');
+      console.error('Criar error:', err);
+      toast.error('Falhou to create tag');
     } finally {
       setSaving(false);
     }
   }
 
-  function confirmDelete(tag: Tag) {
-    setTagToDelete(tag);
-    setDeleteDialogOpen(true);
+  function confirmExcluir(tag: Tag) {
+    setTagToExcluir(tag);
+    setExcluirDialogAberto(true);
   }
 
-  async function handleDelete() {
-    if (!tagToDelete) return;
+  async function handleExcluir() {
+    if (!tagToExcluir) return;
 
     try {
       setDeleting(true);
       const { error } = await supabase
         .from('tags')
         .delete()
-        .eq('id', tagToDelete.id);
+        .eq('id', tagToExcluir.id);
 
       if (error) throw error;
 
       toast.success('Tag deleted');
-      setTags((prev) => prev.filter((t) => t.id !== tagToDelete.id));
-      setDeleteDialogOpen(false);
-      setTagToDelete(null);
+      setEtiquetas((prev) => prev.filter((t) => t.id !== tagToExcluir.id));
+      setExcluirDialogAberto(false);
+      setTagToExcluir(null);
     } catch (err) {
-      console.error('Delete error:', err);
-      toast.error('Failed to delete tag');
+      console.error('Excluir error:', err);
+      toast.error('Falhou to delete tag');
     } finally {
       setDeleting(false);
     }
@@ -142,63 +142,63 @@ export function TagManager() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="size-6 animate-spin text-primary" />
+      <div classNome="flex items-center justify-center py-12">
+        <Loader2 classNome="size-6 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 mt-4">
-      <div className="flex items-center justify-between">
+    <div classNome="space-y-4 mt-4">
+      <div classNome="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-white">Tags</h2>
-          <p className="text-sm text-slate-400">Organize your contacts with color-coded tags.</p>
+          <h2 classNome="text-lg font-semibold text-white">Etiquetas</h2>
+          <p classNome="text-sm text-slate-400">Organize your contacts with color-coded tags.</p>
         </div>
         <Button
           onClick={() => {
-            setNewTagName('');
-            setSelectedColor(PRESET_COLORS[3].value);
-            setDialogOpen(true);
+            setNovoTagNome('');
+            setSelecionaredCor(PRESET_COLORS[3].value);
+            setDialogAberto(true);
           }}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          classNome="bg-primary hover:bg-primary/90 text-primary-foreground"
         >
-          <Plus className="size-4" />
-          New Tag
+          <Plus classNome="size-4" />
+          Novo Tag
         </Button>
       </div>
 
       {tags.length === 0 ? (
-        <Card className="bg-slate-900 border-slate-700 ring-0 ring-transparent">
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <p className="text-slate-400 text-sm">No tags yet.</p>
-            <p className="text-slate-500 text-xs mt-1">Create tags to categorize your contacts.</p>
+        <Card classNome="bg-slate-900 border-slate-700 ring-0 ring-transparent">
+          <CardContent classNome="flex flex-col items-center justify-center py-12 text-center">
+            <p classNome="text-slate-400 text-sm">Nenhuma etiqueta yet.</p>
+            <p classNome="text-slate-500 text-xs mt-1">Criar etiquetas to categorize your contacts.</p>
           </CardContent>
         </Card>
       ) : (
-        <Card className="bg-slate-900 border-slate-700 ring-0 ring-transparent">
-          <CardContent className="pt-4">
-            <div className="flex flex-wrap gap-2">
+        <Card classNome="bg-slate-900 border-slate-700 ring-0 ring-transparent">
+          <CardContent classNome="pt-4">
+            <div classNome="flex flex-wrap gap-2">
               {tags.map((tag) => (
                 <span
                   key={tag.id}
-                  className="group inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors"
+                  classNome="group inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors"
                   style={{
-                    backgroundColor: `${tag.color}20`,
+                    backgroundCor: `${tag.color}20`,
                     color: tag.color,
                     border: `1px solid ${tag.color}40`,
                   }}
                 >
                   <span
-                    className="size-2 rounded-full"
-                    style={{ backgroundColor: tag.color }}
+                    classNome="size-2 rounded-full"
+                    style={{ backgroundCor: tag.color }}
                   />
                   {tag.name}
                   <button
-                    onClick={() => confirmDelete(tag)}
-                    className="ml-0.5 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/10"
+                    onClick={() => confirmExcluir(tag)}
+                    classNome="ml-0.5 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/10"
                   >
-                    <X className="size-3" />
+                    <X classNome="size-3" />
                   </button>
                 </span>
               ))}
@@ -207,41 +207,41 @@ export function TagManager() {
         </Card>
       )}
 
-      {/* New Tag Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-slate-900 border-slate-700 sm:max-w-sm">
+      {/* Novo Tag Dialog */}
+      <Dialog open={dialogAberto} onAbertoChange={setDialogAberto}>
+        <DialogContent classNome="bg-slate-900 border-slate-700 sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-white">New Tag</DialogTitle>
-            <DialogDescription className="text-slate-400">
-              Create a new tag with a name and color.
+            <DialogTitle classNome="text-white">Novo Tag</DialogTitle>
+            <DialogDescription classNome="text-slate-400">
+              Criar a new tag with a name and color.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label className="text-slate-300">Tag Name</Label>
+          <div classNome="space-y-4 py-2">
+            <div classNome="space-y-2">
+              <Rótulo classNome="text-slate-300">Tag Nome</Rótulo>
               <Input
                 placeholder="e.g. VIP Customer"
-                value={newTagName}
-                onChange={(e) => setNewTagName(e.target.value)}
-                className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                value={newTagNome}
+                onChange={(e) => setNovoTagNome(e.target.value)}
+                classNome="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleCreate();
+                  if (e.key === 'Enter') handleCriar();
                 }}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-slate-300">Color</Label>
-              <div className="flex gap-2 flex-wrap">
+            <div classNome="space-y-2">
+              <Rótulo classNome="text-slate-300">Cor</Rótulo>
+              <div classNome="flex gap-2 flex-wrap">
                 {PRESET_COLORS.map((color) => (
                   <button
                     key={color.value}
-                    onClick={() => setSelectedColor(color.value)}
-                    className="relative size-8 rounded-full transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900"
+                    onClick={() => setSelecionaredCor(color.value)}
+                    classNome="relative size-8 rounded-full transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900"
                     style={{
-                      backgroundColor: color.value,
-                      boxShadow: selectedColor === color.value ? `0 0 0 2px rgb(15 23 42), 0 0 0 4px ${color.value}` : 'none',
+                      backgroundCor: color.value,
+                      boxShadow: selectedCor === color.value ? `0 0 0 2px rgb(15 23 42), 0 0 0 4px ${color.value}` : 'none',
                     }}
                     title={color.name}
                   />
@@ -250,83 +250,83 @@ export function TagManager() {
             </div>
 
             {/* Preview */}
-            <div className="space-y-2">
-              <Label className="text-slate-300">Preview</Label>
+            <div classNome="space-y-2">
+              <Rótulo classNome="text-slate-300">Preview</Rótulo>
               <div>
                 <span
-                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium"
+                  classNome="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium"
                   style={{
-                    backgroundColor: `${selectedColor}20`,
-                    color: selectedColor,
-                    border: `1px solid ${selectedColor}40`,
+                    backgroundCor: `${selectedCor}20`,
+                    color: selectedCor,
+                    border: `1px solid ${selectedCor}40`,
                   }}
                 >
                   <span
-                    className="size-2 rounded-full"
-                    style={{ backgroundColor: selectedColor }}
+                    classNome="size-2 rounded-full"
+                    style={{ backgroundCor: selectedCor }}
                   />
-                  {newTagName || 'Tag Name'}
+                  {newTagNome || 'Tag Nome'}
                 </span>
               </div>
             </div>
           </div>
 
-          <DialogFooter className="bg-slate-900 border-slate-700">
+          <DialogFooter classNome="bg-slate-900 border-slate-700">
             <Button
               variant="outline"
-              onClick={() => setDialogOpen(false)}
-              className="border-slate-700 text-slate-300 hover:bg-slate-800"
+              onClick={() => setDialogAberto(false)}
+              classNome="border-slate-700 text-slate-300 hover:bg-slate-800"
             >
-              Cancel
+              Cancelar
             </Button>
             <Button
-              onClick={handleCreate}
+              onClick={handleCriar}
               disabled={saving}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              classNome="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {saving ? (
                 <>
-                  <Loader2 className="size-4 animate-spin" />
+                  <Loader2 classNome="size-4 animate-spin" />
                   Creating...
                 </>
               ) : (
-                'Create Tag'
+                'Criar Tag'
               )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="bg-slate-900 border-slate-700 sm:max-w-sm">
+      {/* Excluir Confirmaration Dialog */}
+      <Dialog open={deleteDialogAberto} onAbertoChange={setExcluirDialogAberto}>
+        <DialogContent classNome="bg-slate-900 border-slate-700 sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-white">Delete Tag</DialogTitle>
-            <DialogDescription className="text-slate-400">
-              Are you sure you want to delete the tag &quot;{tagToDelete?.name}&quot;? This will remove
-              it from all contacts. This action cannot be undone.
+            <DialogTitle classNome="text-white">Excluir Tag</DialogTitle>
+            <DialogDescription classNome="text-slate-400">
+              Are you sure you want to delete the tag &quot;{tagToExcluir?.name}&quot;? This will remove
+              it from all contacts. Esta ação não pode ser desfeita.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="bg-slate-900 border-slate-700">
+          <DialogFooter classNome="bg-slate-900 border-slate-700">
             <Button
               variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
-              className="border-slate-700 text-slate-300 hover:bg-slate-800"
+              onClick={() => setExcluirDialogAberto(false)}
+              classNome="border-slate-700 text-slate-300 hover:bg-slate-800"
             >
-              Cancel
+              Cancelar
             </Button>
             <Button
-              onClick={handleDelete}
+              onClick={handleExcluir}
               disabled={deleting}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              classNome="bg-red-600 hover:bg-red-700 text-white"
             >
               {deleting ? (
                 <>
-                  <Loader2 className="size-4 animate-spin" />
+                  <Loader2 classNome="size-4 animate-spin" />
                   Deleting...
                 </>
               ) : (
-                'Delete Tag'
+                'Excluir Tag'
               )}
             </Button>
           </DialogFooter>

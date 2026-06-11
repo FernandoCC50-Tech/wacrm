@@ -1,5 +1,5 @@
 // ============================================================
-// Tremor chartColors [v0.1.0] — copied from tremorlabs/tremor.
+// Tremor chartCors [v0.1.0] — copied from tremorlabs/tremor.
 //
 // The Tremor charts source uses these helpers to map a category
 // name to a stable Tailwind color class (`bg-violet-500`,
@@ -7,13 +7,13 @@
 // — there is no `@tremor/raw` npm package — so the canonical
 // approach is to vendor the file unchanged and customise locally.
 //
-// Source: https://github.com/tremorlabs/tremor/blob/main/src/utils/chartColors.ts
+// Source: https://github.com/tremorlabs/tremor/blob/main/src/utils/chartCors.ts
 // License: Apache 2.0 (Tremor)
 // ============================================================
 
-export type ColorUtility = "bg" | "stroke" | "fill" | "text"
+export type CorUtility = "bg" | "stroke" | "fill" | "text"
 
-export const chartColors = {
+export const chartCors = {
   blue: {
     bg: "bg-blue-500",
     stroke: "stroke-blue-500",
@@ -70,36 +70,36 @@ export const chartColors = {
   },
 } as const satisfies {
   [color: string]: {
-    [key in ColorUtility]: string
+    [key in CorUtility]: string
   }
 }
 
-export type AvailableChartColorsKeys = keyof typeof chartColors
+export type AvailableChartCorsKeys = keyof typeof chartCors
 
-export const AvailableChartColors: AvailableChartColorsKeys[] = Object.keys(
-  chartColors,
-) as Array<AvailableChartColorsKeys>
+export const AvailableChartCors: AvailableChartCorsKeys[] = Object.keys(
+  chartCors,
+) as Array<AvailableChartCorsKeys>
 
-export const constructCategoryColors = (
+export const constructCategoryCors = (
   categories: string[],
-  colors: AvailableChartColorsKeys[],
-): Map<string, AvailableChartColorsKeys> => {
-  const categoryColors = new Map<string, AvailableChartColorsKeys>()
+  colors: AvailableChartCorsKeys[],
+): Map<string, AvailableChartCorsKeys> => {
+  const categoryCors = new Map<string, AvailableChartCorsKeys>()
   categories.forEach((category, index) => {
-    categoryColors.set(category, colors[index % colors.length])
+    categoryCors.set(category, colors[index % colors.length])
   })
-  return categoryColors
+  return categoryCors
 }
 
-export const getColorClassName = (
-  color: AvailableChartColorsKeys,
-  type: ColorUtility,
+export const getCorClassNome = (
+  color: AvailableChartCorsKeys,
+  type: CorUtility,
 ): string => {
-  const fallbackColor = {
+  const fallbackCor = {
     bg: "bg-gray-500",
     stroke: "stroke-gray-500",
     fill: "fill-gray-500",
     text: "text-gray-500",
   }
-  return chartColors[color]?.[type] ?? fallbackColor[type]
+  return chartCors[color]?.[type] ?? fallbackCor[type]
 }

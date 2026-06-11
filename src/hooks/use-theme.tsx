@@ -31,12 +31,12 @@ import {
  * deserve a different theme than your laptop.
  */
 
-interface ThemeContextValue {
+interface ThemeContextValor {
   theme: ThemeId;
   setTheme: (next: ThemeId) => void;
 }
 
-const ThemeContext = createContext<ThemeContextValue | null>(null);
+const ThemeContext = createContext<ThemeContextValor | null>(null);
 
 function readInitialTheme(): ThemeId {
   if (typeof window === "undefined") return DEFAULT_THEME;
@@ -75,9 +75,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     function onStorage(e: StorageEvent) {
       if (e.key !== STORAGE_KEY) return;
-      if (isThemeId(e.newValue) && e.newValue !== theme) {
-        setThemeState(e.newValue);
-        document.documentElement.dataset.theme = e.newValue;
+      if (isThemeId(e.newValor) && e.newValor !== theme) {
+        setThemeState(e.newValor);
+        document.documentElement.dataset.theme = e.newValor;
       }
     }
     window.addEventListener("storage", onStorage);
@@ -91,7 +91,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useTheme(): ThemeContextValue {
+export function useTheme(): ThemeContextValor {
   const ctx = useContext(ThemeContext);
   if (!ctx) {
     // Fallback for components rendered outside the provider — return a

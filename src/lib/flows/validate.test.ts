@@ -94,7 +94,7 @@ describe("validateFlowForActivation — flow-level", () => {
     expect(
       issues.some(
         (i) =>
-          i.message.includes("Duplicate node_key") &&
+          i.message.includes("Duplicar node_key") &&
           i.node_key === "a",
       ),
     ).toBe(true);
@@ -314,7 +314,7 @@ describe("validateFlowForActivation — nodes", () => {
       nodes,
     );
     expect(
-      issues.some((i) => i.message.includes("Duplicate button reply id")),
+      issues.some((i) => i.message.includes("Duplicar button reply id")),
     ).toBe(true);
   });
 
@@ -539,7 +539,7 @@ describe("reachableFromEntry", () => {
         node_type: "send_buttons",
         config: {
           text: "Loop",
-          buttons: [{ reply_id: "x", title: "Back", next_node_key: "a" }],
+          buttons: [{ reply_id: "x", title: "Voltar", next_node_key: "a" }],
         },
       },
     ];

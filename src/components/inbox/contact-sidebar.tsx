@@ -4,16 +4,16 @@ import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
-import type { Contact, Deal, ContactNote, Tag } from "@/types";
+import type { Contact, Deal, ContactNota, Tag } from "@/types";
 import {
-  Phone,
+  Telefone,
   Mail,
-  Copy,
+  Copiar,
   Check,
   User,
   Tag as TagIcon,
   DollarSign,
-  StickyNote,
+  StickyNota,
   Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,10 +28,10 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
   const { accountId } = useAuth();
   const [copied, setCopied] = useState(false);
   const [deals, setDeals] = useState<Deal[]>([]);
-  const [notes, setNotes] = useState<ContactNote[]>([]);
-  const [tags, setTags] = useState<(Tag & { contact_tag_id: string })[]>([]);
-  const [newNote, setNewNote] = useState("");
-  const [addingNote, setAddingNote] = useState(false);
+  const [notes, setNotas] = useState<ContactNota[]>([]);
+  const [tags, setEtiquetas] = useState<(Tag & { contact_tag_id: string })[]>([]);
+  const [newNota, setNovoNota] = useState("");
+  const [addingNota, setAdicionaringNota] = useState(false);
 
   const fetchContactData = useCallback(async () => {
     if (!contact) return;
@@ -57,7 +57,7 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
     ]);
 
     if (dealsRes.data) setDeals(dealsRes.data);
-    if (notesRes.data) setNotes(notesRes.data);
+    if (notesRes.data) setNotas(notesRes.data);
     if (tagsRes.data) {
       const mapped = tagsRes.data
         .filter((ct: Record<string, unknown>) => ct.tags)
@@ -65,18 +65,18 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
           ...(ct.tags as Tag),
           contact_tag_id: ct.id as string,
         }));
-      setTags(mapped);
+      setEtiquetas(mapped);
     }
   }, [contact]);
 
-  // Load on contact change. setContactData/setTags run inside async
+  // Load on contact change. setContactData/setEtiquetas run inside async
   // Supabase callbacks, not synchronously in the effect body.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchContactData();
   }, [fetchContactData]);
 
-  const handleCopyPhone = useCallback(async () => {
+  const handleCopiarTelefone = useCallback(async () => {
     if (!contact?.phone) return;
     await navigator.clipboard.writeText(contact.phone);
     setCopied(true);
@@ -86,10 +86,10 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
     // fixes the `preserve-manual-memoization` lint error.
   }, [contact]);
 
-  const handleAddNote = useCallback(async () => {
-    if (!contact || !newNote.trim()) return;
+  const handleAdicionarNota = useCallback(async () => {
+    if (!contact || !newNota.trim()) return;
     if (!accountId) return;
-    setAddingNote(true);
+    setAdicionaringNota(true);
 
     const supabase = createClient();
     const {
@@ -103,96 +103,96 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
         contact_id: contact.id,
         account_id: accountId,
         user_id: user?.id,
-        note_text: newNote.trim(),
+        note_text: newNota.trim(),
       })
       .select()
       .single();
 
     if (!error && data) {
-      setNotes((prev) => [data, ...prev]);
-      setNewNote("");
+      setNotas((prev) => [data, ...prev]);
+      setNovoNota("");
     }
-    setAddingNote(false);
-  }, [contact, newNote, accountId]);
+    setAdicionaringNota(false);
+  }, [contact, newNota, accountId]);
 
   if (!contact) {
     return (
-      <div className="flex h-full w-70 items-center justify-center border-l border-slate-800 bg-slate-900">
-        <p className="text-sm text-slate-500">Select a conversation</p>
+      <div classNome="flex h-full w-70 items-center justify-center border-l border-slate-800 bg-slate-900">
+        <p classNome="text-sm text-slate-500">Selecionar a conversation</p>
       </div>
     );
   }
 
-  const displayName = contact.name || contact.phone;
-  const initials = displayName.charAt(0).toUpperCase();
+  const displayNome = contact.name || contact.phone;
+  const initials = displayNome.charAt(0).toUpperCase();
 
   return (
-    <div className="flex h-full w-70 flex-col border-l border-slate-800 bg-slate-900">
-      <ScrollArea className="flex-1">
-        <div className="p-4">
+    <div classNome="flex h-full w-70 flex-col border-l border-slate-800 bg-slate-900">
+      <ScrollArea classNome="flex-1">
+        <div classNome="p-4">
           {/* Contact Info */}
-          <div className="flex flex-col items-center text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-700 text-lg font-semibold text-white">
+          <div classNome="flex flex-col items-center text-center">
+            <div classNome="flex h-16 w-16 items-center justify-center rounded-full bg-slate-700 text-lg font-semibold text-white">
               {contact.avatar_url ? (
                 <img
                   src={contact.avatar_url}
-                  alt={displayName}
-                  className="h-16 w-16 rounded-full object-cover"
+                  alt={displayNome}
+                  classNome="h-16 w-16 rounded-full object-cover"
                 />
               ) : (
                 initials
               )}
             </div>
-            <h3 className="mt-3 text-sm font-semibold text-white">
-              {displayName}
+            <h3 classNome="mt-3 text-sm font-semibold text-white">
+              {displayNome}
             </h3>
             {contact.company && (
-              <p className="text-xs text-slate-400">{contact.company}</p>
+              <p classNome="text-xs text-slate-400">{contact.company}</p>
             )}
           </div>
 
-          {/* Phone */}
-          <div className="mt-4 space-y-2">
+          {/* Telefone */}
+          <div classNome="mt-4 space-y-2">
             <button
-              onClick={handleCopyPhone}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-slate-800"
+              onClick={handleCopiarTelefone}
+              classNome="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-slate-800"
             >
-              <Phone className="h-4 w-4 text-slate-500" />
-              <span className="flex-1 text-left">{contact.phone}</span>
+              <Telefone classNome="h-4 w-4 text-slate-500" />
+              <span classNome="flex-1 text-left">{contact.phone}</span>
               {copied ? (
-                <Check className="h-3 w-3 text-primary" />
+                <Check classNome="h-3 w-3 text-primary" />
               ) : (
-                <Copy className="h-3 w-3 text-slate-600" />
+                <Copiar classNome="h-3 w-3 text-slate-600" />
               )}
             </button>
 
             {contact.email && (
-              <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-300">
-                <Mail className="h-4 w-4 text-slate-500" />
-                <span className="truncate">{contact.email}</span>
+              <div classNome="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-300">
+                <Mail classNome="h-4 w-4 text-slate-500" />
+                <span classNome="truncate">{contact.email}</span>
               </div>
             )}
           </div>
 
           {/* Divider */}
-          <div className="my-4 border-t border-slate-800" />
+          <div classNome="my-4 border-t border-slate-800" />
 
-          {/* Tags */}
+          {/* Etiquetas */}
           <div>
-            <div className="flex items-center gap-2 px-1 text-xs font-medium uppercase tracking-wider text-slate-500">
-              <TagIcon className="h-3 w-3" />
-              Tags
+            <div classNome="flex items-center gap-2 px-1 text-xs font-medium uppercase tracking-wider text-slate-500">
+              <TagIcon classNome="h-3 w-3" />
+              Etiquetas
             </div>
-            <div className="mt-2 flex flex-wrap gap-1">
+            <div classNome="mt-2 flex flex-wrap gap-1">
               {tags.length === 0 ? (
-                <p className="px-1 text-xs text-slate-600">No tags</p>
+                <p classNome="px-1 text-xs text-slate-600">Nenhuma etiqueta</p>
               ) : (
                 tags.map((tag) => (
                   <span
                     key={tag.contact_tag_id}
-                    className="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                    classNome="rounded-full px-2 py-0.5 text-[10px] font-medium"
                     style={{
-                      backgroundColor: `${tag.color}20`,
+                      backgroundCor: `${tag.color}20`,
                       color: tag.color,
                     }}
                   >
@@ -204,36 +204,36 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
           </div>
 
           {/* Divider */}
-          <div className="my-4 border-t border-slate-800" />
+          <div classNome="my-4 border-t border-slate-800" />
 
-          {/* Active Deals */}
+          {/* Ativo Deals */}
           <div>
-            <div className="flex items-center gap-2 px-1 text-xs font-medium uppercase tracking-wider text-slate-500">
-              <DollarSign className="h-3 w-3" />
-              Active Deals
+            <div classNome="flex items-center gap-2 px-1 text-xs font-medium uppercase tracking-wider text-slate-500">
+              <DollarSign classNome="h-3 w-3" />
+              Ativo Deals
             </div>
-            <div className="mt-2 space-y-2">
+            <div classNome="mt-2 space-y-2">
               {deals.length === 0 ? (
-                <p className="px-1 text-xs text-slate-600">No deals</p>
+                <p classNome="px-1 text-xs text-slate-600">No deals</p>
               ) : (
                 deals.map((deal) => (
                   <div
                     key={deal.id}
-                    className="rounded-lg bg-slate-800 px-3 py-2"
+                    classNome="rounded-lg bg-slate-800 px-3 py-2"
                   >
-                    <p className="text-sm font-medium text-white">
+                    <p classNome="text-sm font-medium text-white">
                       {deal.title}
                     </p>
-                    <div className="mt-1 flex items-center justify-between text-xs text-slate-400">
+                    <div classNome="mt-1 flex items-center justify-between text-xs text-slate-400">
                       <span>
                         {deal.currency ?? "$"}
                         {deal.value.toLocaleString()}
                       </span>
                       {deal.stage && (
                         <span
-                          className="rounded-full px-1.5 py-0.5 text-[10px]"
+                          classNome="rounded-full px-1.5 py-0.5 text-[10px]"
                           style={{
-                            backgroundColor: `${deal.stage.color}20`,
+                            backgroundCor: `${deal.stage.color}20`,
                             color: deal.stage.color,
                           }}
                         >
@@ -248,43 +248,43 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
           </div>
 
           {/* Divider */}
-          <div className="my-4 border-t border-slate-800" />
+          <div classNome="my-4 border-t border-slate-800" />
 
-          {/* Notes */}
+          {/* Notas */}
           <div>
-            <div className="flex items-center gap-2 px-1 text-xs font-medium uppercase tracking-wider text-slate-500">
-              <StickyNote className="h-3 w-3" />
-              Notes
+            <div classNome="flex items-center gap-2 px-1 text-xs font-medium uppercase tracking-wider text-slate-500">
+              <StickyNota classNome="h-3 w-3" />
+              Notas
             </div>
-            <div className="mt-2">
-              <div className="flex gap-2">
+            <div classNome="mt-2">
+              <div classNome="flex gap-2">
                 <textarea
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  placeholder="Add a note..."
+                  value={newNota}
+                  onChange={(e) => setNovoNota(e.target.value)}
+                  placeholder="Adicionar a note..."
                   rows={2}
-                  className="flex-1 resize-none rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-primary/50"
+                  classNome="flex-1 resize-none rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-primary/50"
                 />
                 <Button
                   size="sm"
-                  className="h-auto bg-primary px-2 hover:bg-primary/90"
-                  onClick={handleAddNote}
-                  disabled={!newNote.trim() || addingNote}
+                  classNome="h-auto bg-primary px-2 hover:bg-primary/90"
+                  onClick={handleAdicionarNota}
+                  disabled={!newNota.trim() || addingNota}
                 >
-                  <Plus className="h-3 w-3" />
+                  <Plus classNome="h-3 w-3" />
                 </Button>
               </div>
 
-              <div className="mt-2 space-y-2">
+              <div classNome="mt-2 space-y-2">
                 {notes.map((note) => (
                   <div
                     key={note.id}
-                    className="rounded-lg bg-slate-800 px-3 py-2"
+                    classNome="rounded-lg bg-slate-800 px-3 py-2"
                   >
-                    <p className="whitespace-pre-wrap text-xs text-slate-300">
+                    <p classNome="whitespace-pre-wrap text-xs text-slate-300">
                       {note.note_text}
                     </p>
-                    <p className="mt-1 text-[10px] text-slate-600">
+                    <p classNome="mt-1 text-[10px] text-slate-600">
                       {format(new Date(note.created_at), "MMM d, yyyy HH:mm")}
                     </p>
                   </div>

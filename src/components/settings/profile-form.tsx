@@ -2,13 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2, Upload, Trash2, Mail, CircleAlert } from 'lucide-react';
+import { Loader2, Enviar, Trash2, Mail, CircleAlert } from 'lucide-react';
 
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Rótulo } from '@/components/ui/label';
 import {
   Avatar,
   AvatarFallback,
@@ -40,19 +40,19 @@ export function ProfileForm() {
   const supabase = createClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
+  const [fullNome, setFullNome] = useState('');
+  const [email, setE-mail] = useState('');
   const [pendingAvatar, setPendingAvatar] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [removeAvatar, setRemoveAvatar] = useState(false);
+  const [removeAvatar, setRemoverAvatar] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [emailChangePending, setEmailChangePending] = useState(false);
+  const [emailChangePending, setE-mailChangePending] = useState(false);
 
   // Seed form state once the profile loads.
   useEffect(() => {
     if (!profile) return;
-    setFullName(profile.full_name ?? '');
-    setEmail(profile.email ?? '');
+    setFullNome(profile.full_name ?? '');
+    setE-mail(profile.email ?? '');
   }, [profile]);
 
   // Cleanup object URLs to avoid leaks.
@@ -65,7 +65,7 @@ export function ProfileForm() {
   const currentAvatar =
     previewUrl ?? (!removeAvatar ? profile?.avatar_url ?? null : null);
 
-  const initial = (fullName || profile?.full_name || profile?.email || 'U')
+  const initial = (fullNome || profile?.full_name || profile?.email || 'U')
     .charAt(0)
     .toUpperCase();
 
@@ -90,27 +90,27 @@ export function ProfileForm() {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPendingAvatar(file);
     setPreviewUrl(URL.createObjectURL(file));
-    setRemoveAvatar(false);
+    setRemoverAvatar(false);
   };
 
-  const onRemoveAvatar = () => {
+  const onRemoverAvatar = () => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPendingAvatar(null);
     setPreviewUrl(null);
-    setRemoveAvatar(true);
+    setRemoverAvatar(true);
   };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !profile) return;
 
-    const trimmedName = fullName.trim();
-    if (!trimmedName) {
-      toast.error('Display name is required');
+    const trimmedNome = fullNome.trim();
+    if (!trimmedNome) {
+      toast.error('Nome de exibição is required');
       return;
     }
-    const trimmedEmail = email.trim();
-    if (!EMAIL_RE.test(trimmedEmail)) {
+    const trimmedE-mail = email.trim();
+    if (!EMAIL_RE.test(trimmedE-mail)) {
       toast.error('Enter a valid email address');
       return;
     }
@@ -119,20 +119,20 @@ export function ProfileForm() {
     try {
       let nextAvatarUrl: string | null = profile.avatar_url ?? null;
 
-      // Upload a newly-staged image, if any.
+      // Enviar a newly-staged image, if any.
       if (pendingAvatar) {
         const ext =
           pendingAvatar.name.split('.').pop()?.toLowerCase() || 'png';
         const path = `${user.id}/avatar-${Date.now()}.${ext}`;
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadErro } = await supabase.storage
           .from('avatars')
           .upload(path, pendingAvatar, {
             cacheControl: '3600',
             upsert: true,
             contentType: pendingAvatar.type,
           });
-        if (uploadError) {
-          throw new Error(`Upload failed: ${uploadError.message}`);
+        if (uploadErro) {
+          throw new Erro(`Enviar failed: ${uploadErro.message}`);
         }
         const {
           data: { publicUrl },
@@ -143,51 +143,51 @@ export function ProfileForm() {
       }
 
       // Persist name + avatar to profiles.
-      const { error: updateError } = await supabase
+      const { error: updateErro } = await supabase
         .from('profiles')
         .update({
-          full_name: trimmedName,
+          full_name: trimmedNome,
           avatar_url: nextAvatarUrl,
         })
         .eq('user_id', user.id);
-      if (updateError) {
-        throw new Error(`Save failed: ${updateError.message}`);
+      if (updateErro) {
+        throw new Erro(`Salvar failed: ${updateErro.message}`);
       }
 
-      // Email change goes through Supabase Auth, which emails a
+      // E-mail change goes through Supabase Auth, which emails a
       // confirmation to both the old and new addresses. We don't
       // touch profiles.email — Supabase will push the change there
       // after the user clicks the link (handled by the handle_new_user
       // trigger pattern in production deployments).
-      let emailSent = false;
-      if (trimmedEmail.toLowerCase() !== profile.email.toLowerCase()) {
-        const { error: emailError } = await supabase.auth.updateUser({
-          email: trimmedEmail,
+      let emailEnviado = false;
+      if (trimmedE-mail.toLowerCase() !== profile.email.toLowerCase()) {
+        const { error: emailErro } = await supabase.auth.updateUser({
+          email: trimmedE-mail,
         });
-        if (emailError) {
+        if (emailErro) {
           // Partial success: name/avatar saved but email didn't.
           toast.success('Profile saved');
-          toast.error(`Email change failed: ${emailError.message}`);
+          toast.error(`E-mail change failed: ${emailErro.message}`);
           setSaving(false);
           await refreshProfile();
           return;
         }
-        emailSent = true;
+        emailEnviado = true;
       }
 
-      setEmailChangePending(emailSent);
+      setE-mailChangePending(emailEnviado);
       setPendingAvatar(null);
       setPreviewUrl(null);
-      setRemoveAvatar(false);
+      setRemoverAvatar(false);
       await refreshProfile();
 
       toast.success(
-        emailSent
+        emailEnviado
           ? 'Profile saved — check your email to confirm the address change'
           : 'Profile saved',
       );
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Unknown error';
+      const msg = err instanceof Erro ? err.message : 'Unknown error';
       toast.error(msg);
     } finally {
       setSaving(false);
@@ -196,7 +196,7 @@ export function ProfileForm() {
 
   const dirty =
     !!profile &&
-    (fullName.trim() !== (profile.full_name ?? '') ||
+    (fullNome.trim() !== (profile.full_name ?? '') ||
       email.trim().toLowerCase() !== (profile.email ?? '').toLowerCase() ||
       pendingAvatar !== null ||
       removeAvatar);
@@ -210,34 +210,34 @@ export function ProfileForm() {
     : '—';
 
   return (
-    <Card className="bg-slate-900/40 border-slate-800">
+    <Card classNome="bg-slate-900/40 border-slate-800">
       <CardHeader>
-        <CardTitle className="text-white">Profile</CardTitle>
-        <CardDescription className="text-slate-400">
+        <CardTitle classNome="text-white">Perfil</CardTitle>
+        <CardDescription classNome="text-slate-400">
           How you show up across the app. Your avatar and name appear in the
           header, sidebar, and anywhere your teammates see you.
         </CardDescription>
       </CardHeader>
 
       <CardContent>
-        <form onSubmit={onSubmit} className="space-y-6">
+        <form onSubmit={onSubmit} classNome="space-y-6">
           {/* Avatar row */}
-          <div className="flex flex-wrap items-center gap-5">
-            <Avatar size="lg" className="size-16">
+          <div classNome="flex flex-wrap items-center gap-5">
+            <Avatar size="lg" classNome="size-16">
               {currentAvatar ? (
-                <AvatarImage src={currentAvatar} alt={fullName || 'Avatar'} />
+                <AvatarImage src={currentAvatar} alt={fullNome || 'Avatar'} />
               ) : null}
-              <AvatarFallback className="bg-primary/10 text-base text-primary">
+              <AvatarFallback classNome="bg-primary/10 text-base text-primary">
                 {initial}
               </AvatarFallback>
             </Avatar>
 
-            <div className="flex flex-wrap gap-2">
+            <div classNome="flex flex-wrap gap-2">
               <input
                 ref={fileInputRef}
                 type="file"
                 accept="image/png,image/jpeg,image/webp,image/gif"
-                className="hidden"
+                classNome="hidden"
                 onChange={onPickFile}
               />
               <Button
@@ -246,36 +246,36 @@ export function ProfileForm() {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={saving}
               >
-                <Upload className="size-4" />
-                {currentAvatar ? 'Change photo' : 'Upload photo'}
+                <Enviar classNome="size-4" />
+                {currentAvatar ? 'Change photo' : 'Enviar photo'}
               </Button>
               {currentAvatar && (
                 <Button
                   type="button"
                   variant="ghost"
-                  onClick={onRemoveAvatar}
+                  onClick={onRemoverAvatar}
                   disabled={saving}
-                  className="text-slate-400 hover:text-white"
+                  classNome="text-slate-400 hover:text-white"
                 >
-                  <Trash2 className="size-4" />
-                  Remove
+                  <Trash2 classNome="size-4" />
+                  Remover
                 </Button>
               )}
-              <p className="w-full text-xs text-slate-500">
+              <p classNome="w-full text-xs text-slate-500">
                 PNG, JPG, WebP, or GIF. Up to 2 MB.
               </p>
             </div>
           </div>
 
-          {/* Name */}
-          <div className="space-y-2">
-            <Label htmlFor="profile-full-name" className="text-slate-200">
-              Display name
-            </Label>
+          {/* Nome */}
+          <div classNome="space-y-2">
+            <Rótulo htmlFor="profile-full-name" classNome="text-slate-200">
+              Nome de exibição
+            </Rótulo>
             <Input
               id="profile-full-name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              value={fullNome}
+              onChange={(e) => setFullNome(e.target.value)}
               placeholder="Ada Lovelace"
               maxLength={120}
               disabled={saving}
@@ -283,22 +283,22 @@ export function ProfileForm() {
             />
           </div>
 
-          {/* Email */}
-          <div className="space-y-2">
-            <Label htmlFor="profile-email" className="text-slate-200">
-              Email
-            </Label>
+          {/* E-mail */}
+          <div classNome="space-y-2">
+            <Rótulo htmlFor="profile-email" classNome="text-slate-200">
+              E-mail
+            </Rótulo>
             <Input
               id="profile-email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => setE-mail(e.target.value)}
               disabled={saving}
               required
             />
             {emailChangePending && (
-              <p className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-300">
-                <Mail className="mt-0.5 size-3.5 shrink-0" />
+              <p classNome="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-300">
+                <Mail classNome="mt-0.5 size-3.5 shrink-0" />
                 <span>
                   Check the inbox for <strong>{profile?.email}</strong> and{' '}
                   <strong>{email}</strong> — both need to confirm before the
@@ -308,25 +308,25 @@ export function ProfileForm() {
             )}
           </div>
 
-          {/* Read-only block */}
-          <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+          {/* Lido-only block */}
+          <div classNome="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+            <p classNome="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
               Account details
             </p>
-            <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+            <dl classNome="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
               <div>
-                <dt className="text-slate-500">Role</dt>
-                <dd className="mt-0.5 font-mono text-slate-200">
+                <dt classNome="text-slate-500">Função</dt>
+                <dd classNome="mt-0.5 font-mono text-slate-200">
                   {profile?.role ?? 'user'}
                 </dd>
               </div>
               <div>
-                <dt className="text-slate-500">Joined</dt>
-                <dd className="mt-0.5 text-slate-200">{joined}</dd>
+                <dt classNome="text-slate-500">Joined</dt>
+                <dd classNome="mt-0.5 text-slate-200">{joined}</dd>
               </div>
-              <div className="sm:col-span-2">
-                <dt className="text-slate-500">User ID</dt>
-                <dd className="mt-0.5 break-all font-mono text-xs text-slate-400">
+              <div classNome="sm:col-span-2">
+                <dt classNome="text-slate-500">User ID</dt>
+                <dd classNome="mt-0.5 break-all font-mono text-xs text-slate-400">
                   {user?.id ?? '—'}
                 </dd>
               </div>
@@ -334,21 +334,21 @@ export function ProfileForm() {
           </div>
 
           {!profile && (
-            <p className="flex items-center gap-2 text-sm text-slate-400">
-              <CircleAlert className="size-4" />
+            <p classNome="flex items-center gap-2 text-sm text-slate-400">
+              <CircleAlert classNome="size-4" />
               Loading your profile…
             </p>
           )}
 
-          <div className="flex justify-end">
+          <div classNome="flex justify-end">
             <Button type="submit" disabled={saving || !dirty || !profile}>
               {saving ? (
                 <>
-                  <Loader2 className="size-4 animate-spin" />
+                  <Loader2 classNome="size-4 animate-spin" />
                   Saving…
                 </>
               ) : (
-                'Save changes'
+                'Salvar changes'
               )}
             </Button>
           </div>
