@@ -48,7 +48,7 @@ function LoginPageInner() {
     setError(null);
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithSenha({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
