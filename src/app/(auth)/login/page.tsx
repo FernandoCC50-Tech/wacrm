@@ -155,6 +155,7 @@ function LoginPageInner() {
               Create account
             </Link>
           </p>
+          <p className="text-center text-xs text-muted-foreground mt-4">Produto by Oxigênio Comunicação &amp; O2Nexus Tecnologia</p>
         </CardContent>
       </Card>
     </div>
