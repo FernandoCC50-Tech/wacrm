@@ -13,6 +13,7 @@ services:
       - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
       - AUTOMATION_CRON_SECRET=${AUTOMATION_CRON_SECRET}
     networks:
+      - rede_geral
       - rede_o2_public
     deploy:
       replicas: 1
@@ -33,6 +34,7 @@ services:
           cpus: '0.25'
       labels:
         - traefik.enable=true
+        - traefik.docker.network=rede_geral
         - traefik.http.routers.wacrm.entrypoints=web
         - traefik.http.routers.wacrm.rule=Host(`whatsapp.gestordocs.com.br`)
         - traefik.http.routers.wacrm-secure.entrypoints=websecure
@@ -43,5 +45,7 @@ services:
         - traefik.http.services.wacrm.loadbalancer.server.port=3000
 
 networks:
+  rede_geral:
+    external: true
   rede_o2_public:
     external: true
