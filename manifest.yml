@@ -1,0 +1,7 @@
+nome: wacrm
+descricao: CRM via WhatsApp (Next.js + Supabase)
+depende_de:
+  - Swarm stack wacrm (stack.yml)
+  - variaveis META_APP_SECRET e AUTOMATION_CRON_SECRET via .env (nao versionado)
+rede: rede_geral (Traefik)
+dados_sensiveis: .env (nao versionado, correto)
